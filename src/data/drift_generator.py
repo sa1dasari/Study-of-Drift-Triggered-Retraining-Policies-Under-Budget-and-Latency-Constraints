@@ -79,14 +79,14 @@ class DriftGenerator:
                 y (np.ndarray): Shape (n_samples,) - binary labels {0, 1}
         """
         # Generate all features at once: shape (n_samples, n_features)
-        x = self.rng.normal(size=(n_samples, self.n_features))
+        X = self.rng.normal(size=(n_samples, self.n_features))
         y = []
 
         for t in range(n_samples):
             w = self._get_weights(t)
 
             # Linear model: logit = X[t] · w
-            logit = x[t] @ w
+            logit = X[t] @ w
 
             # Apply logistic transformation to get probability
             prob = 1 / (1 + np.exp(-logit))
@@ -95,4 +95,4 @@ class DriftGenerator:
             label = self.rng.binomial(1, prob)
             y.append(label)
 
-        return x, np.array(y)
+        return X, np.array(y)
