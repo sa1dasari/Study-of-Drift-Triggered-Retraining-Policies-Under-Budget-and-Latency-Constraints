@@ -36,8 +36,15 @@ class StreamingModel:
         self.is_initialized = False
 
     def predict(self, X):
+        """
+        Make predictions on new samples.
 
-        # Make predictions on new samples.
+        Args:
+            X (np.ndarray): Input features, shape (n_samples, n_features)
+
+        Returns:
+            np.ndarray: Predicted labels {0, 1}, shape (n_samples,)
+        """
         return self.model.predict(X)
 
     def partial_fit(self, X, y):
