@@ -32,7 +32,7 @@ def main():
     # - PeriodicPolicy: Retrain every 500 samples, max 10 retrains allowed
     # - MetricsTracker: Records prediction accuracy/errors over time
     model = StreamingModel()
-    policy = PeriodicPolicy(interval=500, budget=10, latency=0)
+    policy = PeriodicPolicy(interval=500, budget=10, retrain_latency=10, deploy_latency=1)
     metrics = MetricsTracker()
 
     # Step 3: Run the experiment

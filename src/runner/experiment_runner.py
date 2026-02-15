@@ -91,8 +91,8 @@ class ExperimentRunner:
                 # This resets model weights and trains from scratch on window
                 self.model.retrain(np.array(window_X), np.array(window_y))
 
-                # Update policy's remaining budget counter
-                self.policy.on_retrain()
+                # Update policy's remaining budget counter and record retrain time
+                self.policy.on_retrain(t)
 
                 # Reset window for next cycle
                 # Next retrain will be on the new samples collected from now on
