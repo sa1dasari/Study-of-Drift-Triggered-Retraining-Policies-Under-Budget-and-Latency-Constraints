@@ -1,0 +1,4 @@
+drift_type,drift_point,policy_type,policy_interval,budget,retrain_latency,deploy_latency,overall_accuracy,pre_drift_accuracy,post_drift_accuracy,accuracy_drop,total_retrains,budget_utilization,retrains_before_drift,retrains_after_drift,random_seed
+abrupt,5000,periodic,2000,5,10,1,0.75,0.7706,0.7294,-0.0411999999999999,5,1.0,3,2,42
+abrupt,5000,periodic,2000,5,10,1,0.7376,0.7118,0.7634,0.05159999999999998,5,1.0,3,2,123
+abrupt,5000,periodic,2000,5,10,1,0.8056,0.823,0.7882,-0.03479999999999994,5,1.0,3,2,456
