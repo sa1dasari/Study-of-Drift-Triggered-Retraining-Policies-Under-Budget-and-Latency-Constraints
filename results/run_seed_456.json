@@ -3,78 +3,128 @@
     "drift_type": "abrupt",
     "drift_point": 5000,
     "policy_type": "periodic",
-    "policy_interval": 1000,
-    "budget": 10,
-    "retrain_latency": 500,
-    "deploy_latency": 20,
+    "policy_interval": 500,
+    "budget": 20,
+    "retrain_latency": 10,
+    "deploy_latency": 1,
     "total_samples": 10000,
     "random_seed": 456
   },
   "performance_metrics": {
-    "overall_accuracy": 0.8057,
-    "pre_drift_accuracy": 0.8228,
-    "post_drift_accuracy": 0.7886,
-    "accuracy_drop": -0.03420000000000001
+    "overall_accuracy": 0.7995,
+    "pre_drift_accuracy": 0.8164,
+    "post_drift_accuracy": 0.7826,
+    "accuracy_drop": -0.03380000000000005
   },
   "retraining_metrics": {
-    "total_retrains": 10,
-    "budget_used": 10,
-    "budget_total": 10,
+    "total_retrains": 20,
+    "budget_used": 20,
+    "budget_total": 20,
     "budget_utilization": 1.0,
-    "retrains_before_drift": 5,
-    "retrains_after_drift": 5,
+    "retrains_before_drift": 10,
+    "retrains_after_drift": 10,
     "retrain_timestamps": [
       0,
+      500,
       1000,
+      1500,
       2000,
+      2500,
       3000,
+      3500,
       4000,
+      4500,
       5000,
+      5500,
       6000,
+      6500,
       7000,
+      7500,
       8000,
-      9000
+      8500,
+      9000,
+      9500
     ],
     "retrain_latency_windows": [
       [
         0,
-        520
+        11
+      ],
+      [
+        500,
+        511
       ],
       [
         1000,
-        1520
+        1011
+      ],
+      [
+        1500,
+        1511
       ],
       [
         2000,
-        2520
+        2011
+      ],
+      [
+        2500,
+        2511
       ],
       [
         3000,
-        3520
+        3011
+      ],
+      [
+        3500,
+        3511
       ],
       [
         4000,
-        4520
+        4011
+      ],
+      [
+        4500,
+        4511
       ],
       [
         5000,
-        5520
+        5011
+      ],
+      [
+        5500,
+        5511
       ],
       [
         6000,
-        6520
+        6011
+      ],
+      [
+        6500,
+        6511
       ],
       [
         7000,
-        7520
+        7011
+      ],
+      [
+        7500,
+        7511
       ],
       [
         8000,
-        8520
+        8011
+      ],
+      [
+        8500,
+        8511
       ],
       [
         9000,
-        9520
+        9011
+      ],
+      [
+        9500,
+        9511
       ]
     ]
   },
