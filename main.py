@@ -23,14 +23,14 @@ def main():
     3. Run the experiment using the ExperimentRunner
     4. Report final model accuracy
     """
-    # Step 1: Generate synthetic data with abrupt drift at t=5000
+    # Step 1: Generate synthetic data with gradual drift starting at t=5000
     # (default parameters: 10 features, drift_point=5000)
     # To ensure reproducibility, we run multiple seeds to see how the policy performs under different random conditions.
     seeds = [42, 123, 456]
 
     for seed in seeds:
         generator = DriftGenerator(
-            drift_type="abrupt",
+            drift_type="gradual",
             drift_point=5000,
             seed=seed
         )
@@ -42,11 +42,11 @@ def main():
         # - High latency: retrain_latency=500, deploy_latency=20
         # - MetricsTracker: Records prediction accuracy/errors over time
         model = StreamingModel()
-        policy = PeriodicPolicy(interval=500, budget=20, retrain_latency=500, deploy_latency=20)
+        policy = PeriodicPolicy(interval=2000, budget=5, retrain_latency=10, deploy_latency=1)
         metrics = MetricsTracker()
 
         # Set metadata in metrics for post-analysis
-        metrics.set_drift_point(5000)  # Abrupt drift occurs at t=5000
+        metrics.set_drift_point(5000)  # Gradual drift starts at t=5000
         metrics.set_budget(policy.budget)
 
         # Step 3: Run the experiment
@@ -60,7 +60,7 @@ def main():
 
         print("EXPERIMENT RESULTS")
         print(f"\nConfiguration:")
-        print(f"  Drift Type: abrupt (at t={metrics.drift_point})")
+        print(f"  Drift Type: gradual (starting at t={metrics.drift_point})")
         print(f"  Policy: Periodic (interval={policy.interval})")
         print(f"  Budget: {policy.budget} retrains")
         print(f"  Seed: {seed}")
@@ -110,20 +110,20 @@ def main():
         print("=" * 70)
 
         # Step 5: Export results to file formats for analysis
-        config = {
-            "drift_type": "abrupt",
-            "drift_point": 5000,
-            "policy_type": "periodic",
-            "policy_interval": policy.interval,
-            "budget": policy.budget,
-            "random_seed": seed,
-        }
-
-        print("\nExporting results...")
-        export_to_json(metrics, policy, config, f"results/run_seed_{seed}.json")
-        export_to_csv(metrics, policy, config, f"results/per_sample_metrics_seed_{seed}.csv")
-        export_summary_to_csv(metrics, policy, config, "results/summary_results.csv")
-        print(f"Results exported for seed {seed}!")
+        # config = {
+        #     "drift_type": "gradual",
+        #     "drift_point": 5000,
+        #     "policy_type": "periodic",
+        #     "policy_interval": policy.interval,
+        #     "budget": policy.budget,
+        #     "random_seed": seed,
+        # }
+        #
+        # print("\nExporting results...")
+        # export_to_json(metrics, policy, config, f"results/run_seed_{seed}.json")
+        # export_to_csv(metrics, policy, config, f"results/per_sample_metrics_seed_{seed}.csv")
+        # export_summary_to_csv(metrics, policy, config, "results/summary_results.csv")
+        # print(f"Results exported for seed {seed}!")
 
 if __name__ == "__main__":
     main()
