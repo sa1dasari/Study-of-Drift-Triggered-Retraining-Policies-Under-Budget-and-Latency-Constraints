@@ -45,7 +45,7 @@ class MetricsTracker:
 
         # Metadata (set by experiment runner or externally)
         self.sample_count = 0
-        self.drift_point = None  # Set externally if known (e.g., 5000 for abrupt drift)
+        self.drift_point = None  # Set externally if known (e.g., 5000 for drift start)
         self.total_budget = None  # Set externally (e.g., 5, 10, 20)
 
     def update(self, y_true, y_pred, t=None):

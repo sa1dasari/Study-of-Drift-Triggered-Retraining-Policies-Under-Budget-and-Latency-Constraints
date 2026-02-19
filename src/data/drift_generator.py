@@ -29,7 +29,7 @@ class DriftGenerator:
     def __init__(
             self,
             n_features=10,
-            drift_type="abrupt",
+            drift_type="gradual",
             drift_point=5000,
             seed=42
     ):
