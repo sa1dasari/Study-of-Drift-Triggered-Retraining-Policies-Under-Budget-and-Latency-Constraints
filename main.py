@@ -110,20 +110,20 @@ def main():
         print("=" * 70)
 
         # Step 5: Export results to file formats for analysis
-        # config = {
-        #     "drift_type": "gradual",
-        #     "drift_point": 5000,
-        #     "policy_type": "periodic",
-        #     "policy_interval": policy.interval,
-        #     "budget": policy.budget,
-        #     "random_seed": seed,
-        # }
-        #
-        # print("\nExporting results...")
-        # export_to_json(metrics, policy, config, f"results/run_seed_{seed}.json")
-        # export_to_csv(metrics, policy, config, f"results/per_sample_metrics_seed_{seed}.csv")
-        # export_summary_to_csv(metrics, policy, config, "results/summary_results.csv")
-        # print(f"Results exported for seed {seed}!")
+        config = {
+            "drift_type": "gradual",
+            "drift_point": 5000,
+            "policy_type": "periodic",
+            "policy_interval": policy.interval,
+            "budget": policy.budget,
+            "random_seed": seed,
+        }
+
+        print("\nExporting results...")
+        export_to_json(metrics, policy, config, f"results/run_seed_{seed}.json")
+        export_to_csv(metrics, policy, config, f"results/per_sample_metrics_seed_{seed}.csv")
+        export_summary_to_csv(metrics, policy, config, "results/summary_results.csv")
+        print(f"Results exported for seed {seed}!")
 
 if __name__ == "__main__":
     main()
