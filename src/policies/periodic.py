@@ -25,10 +25,17 @@ class PeriodicPolicy(RetrainPolicy):
         remaining_budget (int): Inherited from RetrainPolicy, counts down retrains
     """
 
-    def __init__(self, interval, budget, latency):
+    def __init__(self, interval, budget, retrain_latency, deploy_latency):
+        """
+        Initialize periodic retraining policy.
 
-        # Initialize periodic retraining policy.
-        super().__init__(budget, latency)
+        Args:
+            interval (int): Number of timesteps between retrains
+            budget (int): Maximum number of retrains allowed
+            retrain_latency (int): Timesteps to complete retraining
+            deploy_latency (int): Timesteps to wait after retraining before deployment
+        """
+        super().__init__(budget, retrain_latency, deploy_latency)
         self.interval = interval
 
     def should_retrain(self, t, metrics):
@@ -36,17 +43,22 @@ class PeriodicPolicy(RetrainPolicy):
         Decide whether to retrain based on periodic schedule.
 
         Retrains are triggered when:
-        1. Current timestep t is a multiple of the interval
-        2. Budget allows (remaining_budget > 0)
+        1. Currently, not in a latency period (retrain/deploy not in progress)
+        2. Current timestep t is a multiple of the interval
+        3. Budget allows (remaining_budget > 0)
 
         Args:
             t (int): Current timestep
             metrics (MetricsTracker): Metrics object (not used in periodic policy)
 
         Returns:
-            bool: True if timestep is multiple of interval AND budget remains
+            bool: True if conditions are met for a retrain
         """
-        # First check budget constraint: if no budget left, never retrain
+        # First check if already in latency period: if so, no new retrain
+        if self.is_in_latency_period(t):
+            return False
+
+        # Check budget constraint: if no budget left, never retrain
         if self.remaining_budget <= 0:
             return False
 

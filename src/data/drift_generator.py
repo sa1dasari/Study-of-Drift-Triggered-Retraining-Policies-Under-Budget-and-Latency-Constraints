@@ -29,7 +29,7 @@ class DriftGenerator:
     def __init__(
             self,
             n_features=10,
-            drift_type="abrupt",
+            drift_type="gradual",
             drift_point=5000,
             seed=42
     ):
@@ -43,9 +43,16 @@ class DriftGenerator:
         # Drifted concept: random weight vector after drift
         self.weights_2 = self.rng.normal(size=n_features)
 
-    # Get the weight vector at timestep t based on drift type.
     def _get_weights(self, t):
+        """
+        Get the weight vector at timestep t based on drift type.
 
+        Args:
+            t (int): Current timestep
+
+        Returns:
+            np.ndarray: Weight vector for the current timestep
+        """
         if self.drift_type == "abrupt":
             # Sudden switch from weights_1 to weights_2 at drift_point
             return self.weights_1 if t < self.drift_point else self.weights_2

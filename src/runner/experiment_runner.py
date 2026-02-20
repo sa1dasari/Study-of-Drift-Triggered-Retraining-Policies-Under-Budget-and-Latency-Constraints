@@ -64,6 +64,13 @@ class ExperimentRunner:
         # These are reset whenever retraining occurs
         window_X, window_y = [], []
 
+        # Initialize model with first sample so predictions can be made from t=0
+        # This ensures we get predictions for all samples, not n-1
+        if len(X) > 0:
+            x_init = X[0].reshape(1, -1)
+            y_init = np.array([y[0]])
+            self.model.partial_fit(x_init, y_init)
+
         # Process each sample sequentially (streaming)
         for t in range(len(X)):
             # Step 1: Extract single sample and reshape for model compatibility
@@ -71,13 +78,13 @@ class ExperimentRunner:
             x_t = X[t].reshape(1, -1)
             y_t = np.array([y[t]])
 
-            # Step 2 & 3: Make prediction and record accuracy (only if initialized)
-            # Skip for t=0 since model isn't yet initialized with data
+            # Step 2 & 3: Make prediction and record accuracy
+            # Model is initialized before loop, so predictions are made for all samples
             if self.model.is_initialized:
                 # Predict on current sample
                 y_pred = self.model.predict(x_t)
-                # Record whether prediction was correct (will be 1 if correct, 0 if wrong)
-                self.metrics.update(y_t, y_pred)
+                # Update metrics with true label, prediction, and timestamp
+                self.metrics.update(y_t, y_pred, t=t)
 
             # Step 4: Add current sample to sliding window
             # window_X grows until next retrain, window_y tracks corresponding labels
@@ -91,8 +98,11 @@ class ExperimentRunner:
                 # This resets model weights and trains from scratch on window
                 self.model.retrain(np.array(window_X), np.array(window_y))
 
-                # Update policy's remaining budget counter
-                self.policy.on_retrain()
+                # Update policy's remaining budget counter and record retrain time
+                self.policy.on_retrain(t)
+
+                # Record retrain event in metrics for post-analysis
+                self.metrics.record_retrain(t, self.policy.retrain_latency, self.policy.deploy_latency)
 
                 # Reset window for next cycle
                 # Next retrain will be on the new samples collected from now on

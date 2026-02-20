@@ -11,6 +11,8 @@ from src.models.base_model import StreamingModel
 from src.policies.periodic import PeriodicPolicy
 from src.evaluation.metrics import MetricsTracker
 from src.runner.experiment_runner import ExperimentRunner
+from src.evaluation.results_export import export_to_json, export_to_csv, export_summary_to_csv
+from src.evaluation.plot_results import plot_results
 
 def main():
     """
@@ -22,36 +24,113 @@ def main():
     3. Run the experiment using the ExperimentRunner
     4. Report final model accuracy
     """
-    # Step 1: Generate synthetic data with abrupt drift at t=5000
-    # (default parameters: 10 features, drift_point=5000, seed=42)
-    generator = DriftGenerator(drift_type="abrupt")
-    X, y = generator.generate(10000)
+    # Step 1: Generate synthetic data with gradual drift starting at t=5000
+    # (default parameters: 10 features, drift_point=5000)
+    # To ensure reproducibility, we run multiple seeds to see how the policy performs under different random conditions.
+    seeds = [42, 123, 456]
 
-    # Step 2: Initialize components
-    # - StreamingModel: Uses SGDClassifier for online learning
-    # - PeriodicPolicy: Retrain every 500 samples, max 10 retrains allowed
-    # - MetricsTracker: Records prediction accuracy/errors over time
-    model = StreamingModel()
-    policy = PeriodicPolicy(interval=500, budget=10, latency=0)
-    metrics = MetricsTracker()
+    for seed in seeds:
+        generator = DriftGenerator(
+            drift_type="gradual",
+            drift_point=5000,
+            seed=seed
+        )
+        X, y = generator.generate(10000)
 
-    # Step 3: Run the experiment
-    # The runner processes each sample sequentially, updating metrics,
-    # checking the retraining policy, and adapting the model
-    runner = ExperimentRunner(model, policy, metrics)
-    runner.run(X, y)
+        # Step 2: Initialize components
+        # - StreamingModel: Uses SGDClassifier for online learning
+        # - PeriodicPolicy: High budget (20 retrains), high latency
+        # - High latency: retrain_latency=500, deploy_latency=20
+        # - MetricsTracker: Records prediction accuracy/errors over time
+        model = StreamingModel()
+        policy = PeriodicPolicy(interval=500, budget=20, retrain_latency=500, deploy_latency=20)
+        metrics = MetricsTracker()
 
-    # Step 4: Report final results
-    # Calculate average accuracy as 1 - average_error
-    print(f"Total samples processed: {len(X)}")
-    print(f"Metrics recorded: {len(metrics.errors)}")
-    print(f"Retrains executed: {policy.budget - policy.remaining_budget}")
+        # Set metadata in metrics for post-analysis
+        metrics.set_drift_point(5000)  # Gradual drift starts at t=5000
+        metrics.set_budget(policy.budget)
 
-    if len(metrics.errors) > 0:
-        final_accuracy = 1 - sum(metrics.errors) / len(metrics.errors)
-        print("Final accuracy:", final_accuracy)
-    else:
-        print("No metrics recorded - model may not have been initialized properly")
+        # Step 3: Run the experiment
+        # The runner processes each sample sequentially, updating metrics,
+        # checking the retraining policy, and adapting the model
+        runner = ExperimentRunner(model, policy, metrics)
+        runner.run(X, y)
+
+        # Step 4: Generate and report comprehensive results
+        summary = metrics.get_summary()
+
+        print("EXPERIMENT RESULTS")
+        print(f"\nConfiguration:")
+        print(f"  Drift Type: gradual (starting at t={metrics.drift_point})")
+        print(f"  Policy: Periodic (interval={policy.interval})")
+        print(f"  Budget: {policy.budget} retrains")
+        print(f"  Seed: {seed}")
+        print(f"  Latency: retrain={policy.retrain_latency}s, deploy={policy.deploy_latency}s")
+        print(f"  Total Samples: {len(X)}")
+
+        print(f"\nPerformance Metrics:")
+        print(f"  Overall Accuracy: {summary['overall_accuracy']:.4f}")
+        pre_acc = summary.get('pre_drift_accuracy')
+        if pre_acc is not None:
+            print(f"  Pre-Drift Accuracy: {pre_acc:.4f} (t=[0, {metrics.drift_point}))")
+        post_acc = summary.get('post_drift_accuracy')
+        if post_acc is not None:
+            print(f"  Post-Drift Accuracy: {post_acc:.4f} (t=[{metrics.drift_point}, {len(X)}))")
+        if pre_acc is not None and post_acc is not None:
+            print(f"  Accuracy Drop (post - pre): {summary['accuracy_drop']:.4f}")
+        print(f"  Cumulative Error Rate: {summary['cumulative_error_rate']:.4f}")
+        print(f"  Cumulative Error: {summary['cumulative_error']:.0f}")
+        print(f"  Max Degradation: {summary['max_degradation']:.4f}")
+        print(f"  Average Degradation: {summary['average_degradation']:.4f}")
+        print(f"  Latency Cost: {summary['latency_cost']} timesteps")
+        if summary.get('errors_during_latency') is not None:
+            print(f"  Errors During Latency: {summary['errors_during_latency']:.0f}")
+        if summary.get('error_in_drift_window') is not None:
+            print(f"  Errors in Drift Window (t=[{metrics.drift_point}, {metrics.drift_point + 1000})): {int(summary['error_in_drift_window'])}")
+
+        print(f"\nRetraining Events:")
+        print(f"  Total Retrains: {summary['total_retrains']}")
+        print(f"  Budget Used: {summary.get('budget_used')} / {summary.get('budget_total')}")
+        if summary.get('budget_utilization') is not None:
+            print(f"  Budget Utilization: {summary['budget_utilization']:.1%}")
+        print(f"  Retrains Before Drift: {summary.get('retrains_before_drift')}")
+        print(f"  Retrains After Drift: {summary.get('retrains_after_drift')}")
+
+        print(f"\nRetrain Timing:")
+        if metrics.retrain_times:
+            print(f"  Retrain Timesteps: {metrics.retrain_times}")
+            print(f"  Latency Windows (retrain + deploy):")
+            for start, end in metrics.retrain_latency_windows:
+                print(f"    [{start}, {end})")
+        else:
+            print(f"  No retrains occurred")
+
+        print(f"\nData Points:")
+        print(f"  Predictions Made: {summary['predictions_made']}")
+        print(f"  Total Samples: {summary['total_samples']}")
+        print("=" * 70)
+
+        # Step 5: Export results to file formats for analysis
+        config = {
+            "drift_type": "gradual",
+            "drift_point": 5000,
+            "policy_type": "periodic",
+            "policy_interval": policy.interval,
+            "budget": policy.budget,
+            "random_seed": seed,
+        }
+
+        print("\nExporting results...")
+        export_to_json(metrics, policy, config, f"results/run_seed_{seed}.json")
+        export_to_csv(metrics, policy, config, f"results/per_sample_metrics_seed_{seed}.csv")
+        export_summary_to_csv(metrics, policy, config, "results/summary_results.csv")
+        print(f"Results exported for seed {seed}!")
+
+    # Generate plots after all seeds complete
+    print("\n" + "=" * 70)
+    print("Generating visualization...")
+    plot_results(seeds, policy, drift_point=5000, drift_type="gradual")
+    print("=" * 70)
 
 if __name__ == "__main__":
     main()
