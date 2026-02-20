@@ -12,6 +12,7 @@ from src.policies.periodic import PeriodicPolicy
 from src.evaluation.metrics import MetricsTracker
 from src.runner.experiment_runner import ExperimentRunner
 from src.evaluation.results_export import export_to_json, export_to_csv, export_summary_to_csv
+from src.evaluation.plot_results import plot_results
 
 def main():
     """
@@ -38,11 +39,11 @@ def main():
 
         # Step 2: Initialize components
         # - StreamingModel: Uses SGDClassifier for online learning
-        # - PeriodicPolicy: Medium budget (10 retrains), Med latency
-        # - Med latency: retrain_latency=10, deploy_latency=1
+        # - PeriodicPolicy: Medium budget (10 retrains), high latency
+        # - High latency: retrain_latency=500, deploy_latency=20
         # - MetricsTracker: Records prediction accuracy/errors over time
         model = StreamingModel()
-        policy = PeriodicPolicy(interval=1000, budget=10, retrain_latency=100, deploy_latency=5)
+        policy = PeriodicPolicy(interval=1000, budget=10, retrain_latency=500, deploy_latency=20)
         metrics = MetricsTracker()
 
         # Set metadata in metrics for post-analysis
@@ -124,6 +125,12 @@ def main():
         export_to_csv(metrics, policy, config, f"results/per_sample_metrics_seed_{seed}.csv")
         export_summary_to_csv(metrics, policy, config, "results/summary_results.csv")
         print(f"Results exported for seed {seed}!")
+
+    # Generate plots after all seeds complete
+    print("\n" + "=" * 70)
+    print("Generating visualization...")
+    plot_results(seeds, policy, drift_point=5000, drift_type="gradual")
+    print("=" * 70)
 
 if __name__ == "__main__":
     main()
