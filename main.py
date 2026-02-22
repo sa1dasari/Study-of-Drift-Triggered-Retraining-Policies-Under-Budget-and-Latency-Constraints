@@ -40,11 +40,11 @@ def main():
 
         # Step 2: Initialize components
         # - StreamingModel: Uses SGDClassifier for online learning
-        # - PeriodicPolicy: Med budget (10 retrains), med latency
-        # - Med latency: retrain_latency=100, deploy_latency=5
+        # - PeriodicPolicy: Med budget (10 retrains), high latency
+        # - High latency: retrain_latency=500, deploy_latency=20
         # - MetricsTracker: Records prediction accuracy/errors over time
         model = StreamingModel()
-        policy = PeriodicPolicy(interval=2000, budget=5, retrain_latency=100, deploy_latency=5)
+        policy = PeriodicPolicy(interval=2000, budget=10, retrain_latency=500, deploy_latency=20)
         metrics = MetricsTracker()
 
         # Set metadata in metrics for post-analysis
