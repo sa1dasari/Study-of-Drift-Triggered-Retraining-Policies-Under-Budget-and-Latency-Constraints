@@ -11,3 +11,8 @@ WEEK 2:
 2. Run abrupt drift with periodic retraining with various budgets and latency levels.
 3. Run gradual drift with periodic retraining with various budgets and latency levels.
 5. Analyze and document the results of the preliminary experiments, noting any issues or insights.
+
+WEEK 3:
+
+1. Run recurring drift with periodic retraining with various budgets and latency levels.
+2. Analyze and document the results of the experiments, noting any issues or insights.

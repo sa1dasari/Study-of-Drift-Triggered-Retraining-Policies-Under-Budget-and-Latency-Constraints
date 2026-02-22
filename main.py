@@ -24,30 +24,31 @@ def main():
     3. Run the experiment using the ExperimentRunner
     4. Report final model accuracy
     """
-    # Step 1: Generate synthetic data with gradual drift starting at t=5000
-    # (default parameters: 10 features, drift_point=5000)
+    # Step 1: Generate synthetic data with recurring drift
     # To ensure reproducibility, we run multiple seeds to see how the policy performs under different random conditions.
     seeds = [42, 123, 456]
+    drift_type = "recurring"
 
     for seed in seeds:
         generator = DriftGenerator(
-            drift_type="gradual",
+            drift_type="recurring",
             drift_point=5000,
+            recurrence_period=2000,  # Concept switches every 2000 timesteps after drift_point
             seed=seed
         )
         X, y = generator.generate(10000)
 
         # Step 2: Initialize components
         # - StreamingModel: Uses SGDClassifier for online learning
-        # - PeriodicPolicy: High budget (20 retrains), high latency
-        # - High latency: retrain_latency=500, deploy_latency=20
+        # - PeriodicPolicy: Low budget (5 retrains), low latency
+        # - Low latency: retrain_latency=100, deploy_latency=5
         # - MetricsTracker: Records prediction accuracy/errors over time
         model = StreamingModel()
-        policy = PeriodicPolicy(interval=500, budget=20, retrain_latency=500, deploy_latency=20)
+        policy = PeriodicPolicy(interval=2000, budget=5, retrain_latency=100, deploy_latency=5)
         metrics = MetricsTracker()
 
         # Set metadata in metrics for post-analysis
-        metrics.set_drift_point(5000)  # Gradual drift starts at t=5000
+        metrics.set_drift_point(5000)  # Drift starts at t=5000
         metrics.set_budget(policy.budget)
 
         # Step 3: Run the experiment
@@ -61,7 +62,8 @@ def main():
 
         print("EXPERIMENT RESULTS")
         print(f"\nConfiguration:")
-        print(f"  Drift Type: gradual (starting at t={metrics.drift_point})")
+        print(f"  Drift Type: {drift_type} (starting at t={metrics.drift_point})")
+        print(f"  Recurrence Period: {generator.recurrence_period} timesteps")
         print(f"  Policy: Periodic (interval={policy.interval})")
         print(f"  Budget: {policy.budget} retrains")
         print(f"  Seed: {seed}")
@@ -112,8 +114,9 @@ def main():
 
         # Step 5: Export results to file formats for analysis
         config = {
-            "drift_type": "gradual",
+            "drift_type": drift_type,
             "drift_point": 5000,
+            "recurrence_period": generator.recurrence_period,
             "policy_type": "periodic",
             "policy_interval": policy.interval,
             "budget": policy.budget,
@@ -129,7 +132,7 @@ def main():
     # Generate plots after all seeds complete
     print("\n" + "=" * 70)
     print("Generating visualization...")
-    plot_results(seeds, policy, drift_point=5000, drift_type="gradual")
+    plot_results(seeds, policy, drift_point=5000, drift_type=drift_type)
     print("=" * 70)
 
 if __name__ == "__main__":

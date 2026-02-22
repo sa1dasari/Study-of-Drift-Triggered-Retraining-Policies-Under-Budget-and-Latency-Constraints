@@ -19,8 +19,9 @@ class DriftGenerator:
 
     Attributes:
         n_features (int): Number of input features
-        drift_type (str): Type of drift - "abrupt" or "gradual"
+        drift_type (str): Type of drift - "abrupt", "gradual", or "recurring"
         drift_point (int): Timestep at which drift is introduced
+        recurrence_period (int): Period for recurring drift (timesteps between concept switches)
         rng (np.random.Generator): Random number generator with fixed seed
         weights_1 (np.ndarray): Initial weight vector before drift
         weights_2 (np.ndarray): New weight vector after drift
@@ -31,11 +32,13 @@ class DriftGenerator:
             n_features=10,
             drift_type="gradual",
             drift_point=5000,
+            recurrence_period=2000,
             seed=42
     ):
         self.n_features = n_features
         self.drift_type = drift_type
         self.drift_point = drift_point
+        self.recurrence_period = recurrence_period
         self.rng = np.random.default_rng(seed)
 
         # Initial concept: random weight vector before drift
@@ -62,6 +65,20 @@ class DriftGenerator:
             # alpha goes from 0 to 1, linearly interpolating between the two weight vectors
             alpha = min(1, max(0, (t - self.drift_point) / 1000))
             return (1 - alpha) * self.weights_1 + alpha * self.weights_2
+
+        elif self.drift_type == "recurring":
+            # Periodic switching between concepts after drift_point
+            # The concept alternates between weights_1 and weights_2 every recurrence_period timesteps
+            if t < self.drift_point:
+                return self.weights_1
+            else:
+                # Calculate which period we're in after drift starts
+                periods_elapsed = (t - self.drift_point) // self.recurrence_period
+                # Even periods use weights_2, odd periods return to weights_1
+                if periods_elapsed % 2 == 0:
+                    return self.weights_2
+                else:
+                    return self.weights_1
 
         else:
             # Default: no drift, always use initial weights
