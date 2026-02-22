@@ -32,7 +32,7 @@ class DriftGenerator:
             n_features=10,
             drift_type="gradual",
             drift_point=5000,
-            recurrence_period=2000,
+            recurrence_period=1000,
             seed=42
     ):
         self.n_features = n_features
