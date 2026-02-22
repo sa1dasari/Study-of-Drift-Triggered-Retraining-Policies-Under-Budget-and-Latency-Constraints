@@ -16,3 +16,5 @@ WEEK 3:
 
 1. Run recurring drift with periodic retraining with various budgets and latency levels.
 2. Analyze and document the results of the experiments, noting any issues or insights.
+3. Come up with Intro and related work sections for the paper.
+4. Start drafting the methods section of the paper, detailing the experimental setup and parameters.
