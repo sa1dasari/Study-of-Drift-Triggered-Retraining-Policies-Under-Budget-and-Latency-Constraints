@@ -33,18 +33,18 @@ def main():
         generator = DriftGenerator(
             drift_type="recurring",
             drift_point=5000,
-            recurrence_period=2000,  # Concept switches every 2000 timesteps after drift_point
+            recurrence_period=1000,  # Concept switches every 1000 timesteps after drift_point
             seed=seed
         )
         X, y = generator.generate(10000)
 
         # Step 2: Initialize components
         # - StreamingModel: Uses SGDClassifier for online learning
-        # - PeriodicPolicy: Low budget (5 retrains), low latency
-        # - Low latency: retrain_latency=100, deploy_latency=5
+        # - PeriodicPolicy: High budget (20 retrains), high latency
+        # - High latency: retrain_latency=500, deploy_latency= 20
         # - MetricsTracker: Records prediction accuracy/errors over time
         model = StreamingModel()
-        policy = PeriodicPolicy(interval=2000, budget=5, retrain_latency=100, deploy_latency=5)
+        policy = PeriodicPolicy(interval=2000, budget=20, retrain_latency=500, deploy_latency=20)
         metrics = MetricsTracker()
 
         # Set metadata in metrics for post-analysis
