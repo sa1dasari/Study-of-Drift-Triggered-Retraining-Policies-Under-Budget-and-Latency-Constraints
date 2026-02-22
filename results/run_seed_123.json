@@ -5,16 +5,16 @@
     "policy_type": "periodic",
     "policy_interval": 2000,
     "budget": 5,
-    "retrain_latency": 100,
-    "deploy_latency": 5,
+    "retrain_latency": 10,
+    "deploy_latency": 1,
     "total_samples": 10000,
     "random_seed": 123
   },
   "performance_metrics": {
-    "overall_accuracy": 0.7228,
-    "pre_drift_accuracy": 0.7098,
-    "post_drift_accuracy": 0.7358,
-    "accuracy_drop": 0.026000000000000023
+    "overall_accuracy": 0.7287,
+    "pre_drift_accuracy": 0.7156,
+    "post_drift_accuracy": 0.7418,
+    "accuracy_drop": 0.0262
   },
   "retraining_metrics": {
     "total_retrains": 5,
@@ -33,23 +33,23 @@
     "retrain_latency_windows": [
       [
         0,
-        105
+        11
       ],
       [
         2000,
-        2105
+        2011
       ],
       [
         4000,
-        4105
+        4011
       ],
       [
         6000,
-        6105
+        6011
       ],
       [
         8000,
-        8105
+        8011
       ]
     ]
   },
