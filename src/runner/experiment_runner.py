@@ -32,7 +32,6 @@ class ExperimentRunner:
         Args:
             model (StreamingModel): Initialized StreamingModel instance
             policy (RetrainPolicy): Initialized RetrainPolicy instance
-                                   (e.g., PeriodicPolicy)
             metrics (MetricsTracker): Initialized MetricsTracker instance
         """
         self.model = model
@@ -53,8 +52,8 @@ class ExperimentRunner:
         7. Always: do incremental update (partial_fit)
 
         The window accumulates all data since last retraining and is cleared
-        after each retrain, so the model retrains on the most recent 'interval'
-        samples (in the periodic policy case).
+        after each retrain, so the model retrains on the most recent samples
+        collected since the last retrain event.
 
         Args:
             X (np.ndarray): Feature matrix, shape (n_samples, n_features)

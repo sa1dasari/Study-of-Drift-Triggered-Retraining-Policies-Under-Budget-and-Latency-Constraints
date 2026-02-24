@@ -31,15 +31,18 @@ def plot_results(seeds, policy, drift_point, drift_type, recurrence_period=1000,
     colors = ['#3498db', '#e74c3c', '#2ecc71']
     total_latency = policy.retrain_latency + policy.deploy_latency
 
-    # Calculate actual retrain times (respecting latency constraints)
+    # Read actual retrain times from the last seed's per-sample CSV
+    # (retrain events are recorded in the metrics during the run)
     retrain_times = []
-    t = 0
-    while t < total_samples and len(retrain_times) < policy.budget:
-        if t % policy.interval == 0:
-            # Check if not in latency period
-            if not retrain_times or t >= retrain_times[-1] + total_latency:
-                retrain_times.append(t)
-        t += 1
+    try:
+        last_seed = seeds[-1]
+        df_tmp = pd.read_csv(f'results/per_sample_metrics_seed_{last_seed}.csv')
+        # Retrain events are where retrain_active transitions from False to True
+        df_tmp['retrain_active'] = df_tmp['retrain_active'].astype(str).str.strip().str.lower() == 'true'
+        transitions = df_tmp['retrain_active'] & ~df_tmp['retrain_active'].shift(1, fill_value=False)
+        retrain_times = df_tmp.loc[transitions, 'timestamp'].tolist()
+    except Exception:
+        retrain_times = []
 
     # Plot 1: Drift and Retrain Timeline
     ax1 = axes[0]
@@ -146,7 +149,7 @@ def plot_results(seeds, policy, drift_point, drift_type, recurrence_period=1000,
     ax2.grid(alpha=0.3)
 
     # Add config info
-    config_text = f'Policy: Periodic | Budget={policy.budget} | Interval={policy.interval} | Latency={total_latency}'
+    config_text = f'Policy: Error Threshold | Budget={policy.budget} | Threshold={policy.error_threshold} | Window={policy.window_size} | Latency={total_latency}'
     fig.text(0.5, 0.02, config_text, ha='center', fontsize=10, style='italic',
              bbox=dict(boxstyle='round', facecolor='wheat', alpha=0.5))
 

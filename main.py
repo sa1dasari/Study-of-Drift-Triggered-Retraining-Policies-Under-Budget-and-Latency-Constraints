@@ -8,7 +8,7 @@ can adapt a model to changing data distributions under budget and latency constr
 
 from src.data.drift_generator import DriftGenerator
 from src.models.base_model import StreamingModel
-from src.policies.periodic import PeriodicPolicy
+from src.policies.error_threshold import ErrorThresholdPolicy
 from src.evaluation.metrics import MetricsTracker
 from src.runner.experiment_runner import ExperimentRunner
 from src.evaluation.results_export import export_to_json, export_to_csv, export_summary_to_csv
@@ -24,14 +24,14 @@ def main():
     3. Run the experiment using the ExperimentRunner
     4. Report final model accuracy
     """
-    # Step 1: Generate synthetic data with recurring drift
+    # Step 1: Generate synthetic data with abrupt drift
     # To ensure reproducibility, we run multiple seeds to see how the policy performs under different random conditions.
     seeds = [42, 123, 456]
-    drift_type = "recurring"
+    drift_type = "abrupt"
 
     for seed in seeds:
         generator = DriftGenerator(
-            drift_type="recurring",
+            drift_type="abrupt",
             drift_point=5000,
             recurrence_period=1000,  # Concept switches every 1000 timesteps after drift_point
             seed=seed
@@ -40,11 +40,14 @@ def main():
 
         # Step 2: Initialize components
         # - StreamingModel: Uses SGDClassifier for online learning
-        # - PeriodicPolicy: High budget (20 retrains), high latency
-        # - High latency: retrain_latency=500, deploy_latency= 20
+        # - ErrorThresholdPolicy: Retrain when recent error rate exceeds threshold
+        #   error_threshold=0.27: retrain when >27% error rate in recent window
+        #   window_size=200: evaluate error rate over last 200 predictions
+        #   budget=5: allows up to 5 retrains during the experiment
+        # - Low latency: retrain_latency=10, deploy_latency=1
         # - MetricsTracker: Records prediction accuracy/errors over time
         model = StreamingModel()
-        policy = PeriodicPolicy(interval=2000, budget=20, retrain_latency=500, deploy_latency=20)
+        policy = ErrorThresholdPolicy(error_threshold=0.27, window_size=200, budget=5, retrain_latency=10, deploy_latency=1)
         metrics = MetricsTracker()
 
         # Set metadata in metrics for post-analysis
@@ -64,7 +67,7 @@ def main():
         print(f"\nConfiguration:")
         print(f"  Drift Type: {drift_type} (starting at t={metrics.drift_point})")
         print(f"  Recurrence Period: {generator.recurrence_period} timesteps")
-        print(f"  Policy: Periodic (interval={policy.interval})")
+        print(f"  Policy: ErrorThreshold (threshold={policy.error_threshold}, window={policy.window_size})")
         print(f"  Budget: {policy.budget} retrains")
         print(f"  Seed: {seed}")
         print(f"  Latency: retrain={policy.retrain_latency}s, deploy={policy.deploy_latency}s")
@@ -117,8 +120,9 @@ def main():
             "drift_type": drift_type,
             "drift_point": 5000,
             "recurrence_period": generator.recurrence_period,
-            "policy_type": "periodic",
-            "policy_interval": policy.interval,
+            "policy_type": "error_threshold",
+            "error_threshold": policy.error_threshold,
+            "window_size": policy.window_size,
             "budget": policy.budget,
             "random_seed": seed,
         }
