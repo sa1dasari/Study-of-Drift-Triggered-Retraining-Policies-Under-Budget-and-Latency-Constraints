@@ -5,77 +5,127 @@
     "policy_type": "error_threshold",
     "error_threshold": 0.27,
     "window_size": 200,
-    "budget": 10,
-    "retrain_latency": 500,
-    "deploy_latency": 20,
+    "budget": 20,
+    "retrain_latency": 10,
+    "deploy_latency": 1,
     "total_samples": 10000,
     "random_seed": 42
   },
   "performance_metrics": {
-    "overall_accuracy": 0.7523,
-    "pre_drift_accuracy": 0.7736,
-    "post_drift_accuracy": 0.731,
-    "accuracy_drop": -0.04259999999999997
+    "overall_accuracy": 0.7509,
+    "pre_drift_accuracy": 0.767,
+    "post_drift_accuracy": 0.7348,
+    "accuracy_drop": -0.032200000000000006
   },
   "retraining_metrics": {
-    "total_retrains": 10,
-    "budget_used": 10,
-    "budget_total": 10,
+    "total_retrains": 20,
+    "budget_used": 20,
+    "budget_total": 20,
     "budget_utilization": 1.0,
-    "retrains_before_drift": 3,
-    "retrains_after_drift": 7,
+    "retrains_before_drift": 20,
+    "retrains_after_drift": 0,
     "retrain_timestamps": [
       408,
-      2582,
-      4626,
-      5146,
-      5666,
-      6215,
-      6735,
-      7255,
-      7775,
-      8533
+      685,
+      696,
+      707,
+      718,
+      729,
+      740,
+      751,
+      762,
+      773,
+      784,
+      795,
+      806,
+      817,
+      828,
+      839,
+      850,
+      861,
+      872,
+      883
     ],
     "retrain_latency_windows": [
       [
         408,
-        928
+        419
       ],
       [
-        2582,
-        3102
+        685,
+        696
       ],
       [
-        4626,
-        5146
+        696,
+        707
       ],
       [
-        5146,
-        5666
+        707,
+        718
       ],
       [
-        5666,
-        6186
+        718,
+        729
       ],
       [
-        6215,
-        6735
+        729,
+        740
       ],
       [
-        6735,
-        7255
+        740,
+        751
       ],
       [
-        7255,
-        7775
+        751,
+        762
       ],
       [
-        7775,
-        8295
+        762,
+        773
       ],
       [
-        8533,
-        9053
+        773,
+        784
+      ],
+      [
+        784,
+        795
+      ],
+      [
+        795,
+        806
+      ],
+      [
+        806,
+        817
+      ],
+      [
+        817,
+        828
+      ],
+      [
+        828,
+        839
+      ],
+      [
+        839,
+        850
+      ],
+      [
+        850,
+        861
+      ],
+      [
+        861,
+        872
+      ],
+      [
+        872,
+        883
+      ],
+      [
+        883,
+        894
       ]
     ]
   },

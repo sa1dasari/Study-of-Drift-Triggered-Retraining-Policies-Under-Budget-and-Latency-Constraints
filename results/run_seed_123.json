@@ -5,77 +5,127 @@
     "policy_type": "error_threshold",
     "error_threshold": 0.27,
     "window_size": 200,
-    "budget": 10,
-    "retrain_latency": 500,
-    "deploy_latency": 20,
+    "budget": 20,
+    "retrain_latency": 10,
+    "deploy_latency": 1,
     "total_samples": 10000,
     "random_seed": 123
   },
   "performance_metrics": {
-    "overall_accuracy": 0.7439,
-    "pre_drift_accuracy": 0.7202,
-    "post_drift_accuracy": 0.7676,
-    "accuracy_drop": 0.0474
+    "overall_accuracy": 0.7353,
+    "pre_drift_accuracy": 0.7062,
+    "post_drift_accuracy": 0.7644,
+    "accuracy_drop": 0.05819999999999992
   },
   "retraining_metrics": {
-    "total_retrains": 10,
-    "budget_used": 10,
-    "budget_total": 10,
+    "total_retrains": 20,
+    "budget_used": 20,
+    "budget_total": 20,
     "budget_utilization": 1.0,
-    "retrains_before_drift": 10,
+    "retrains_before_drift": 20,
     "retrains_after_drift": 0,
     "retrain_timestamps": [
       199,
-      719,
-      1239,
-      1759,
-      2280,
-      2800,
-      3320,
-      3849,
-      4369,
-      4889
+      210,
+      328,
+      379,
+      390,
+      401,
+      412,
+      423,
+      434,
+      445,
+      456,
+      467,
+      478,
+      489,
+      500,
+      511,
+      522,
+      533,
+      544,
+      555
     ],
     "retrain_latency_windows": [
       [
         199,
-        719
+        210
       ],
       [
-        719,
-        1239
+        210,
+        221
       ],
       [
-        1239,
-        1759
+        328,
+        339
       ],
       [
-        1759,
-        2279
+        379,
+        390
       ],
       [
-        2280,
-        2800
+        390,
+        401
       ],
       [
-        2800,
-        3320
+        401,
+        412
       ],
       [
-        3320,
-        3840
+        412,
+        423
       ],
       [
-        3849,
-        4369
+        423,
+        434
       ],
       [
-        4369,
-        4889
+        434,
+        445
       ],
       [
-        4889,
-        5409
+        445,
+        456
+      ],
+      [
+        456,
+        467
+      ],
+      [
+        467,
+        478
+      ],
+      [
+        478,
+        489
+      ],
+      [
+        489,
+        500
+      ],
+      [
+        500,
+        511
+      ],
+      [
+        511,
+        522
+      ],
+      [
+        522,
+        533
+      ],
+      [
+        533,
+        544
+      ],
+      [
+        544,
+        555
+      ],
+      [
+        555,
+        566
       ]
     ]
   },
