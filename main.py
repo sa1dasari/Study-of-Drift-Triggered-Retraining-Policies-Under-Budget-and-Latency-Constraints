@@ -129,7 +129,7 @@ def main():
         print("\nExporting results...")
         export_to_json(metrics, policy, config, f"results/run_seed_{seed}.json")
         export_to_csv(metrics, policy, config, f"results/per_sample_metrics_seed_{seed}.csv")
-        export_summary_to_csv(metrics, policy, config, "results/summary_results_periodic_retrain.csv")
+        export_summary_to_csv(metrics, policy, config, "results/summary_results_error_threshold_retrain.csv")
         print(f"Results exported for seed {seed}!")
 
     # Generate plots after all seeds complete
