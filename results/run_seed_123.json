@@ -6,126 +6,101 @@
     "error_threshold": 0.27,
     "window_size": 200,
     "budget": 20,
-    "retrain_latency": 100,
-    "deploy_latency": 5,
+    "retrain_latency": 500,
+    "deploy_latency": 20,
     "total_samples": 10000,
     "random_seed": 123
   },
   "performance_metrics": {
-    "overall_accuracy": 0.738,
+    "overall_accuracy": 0.7392,
     "pre_drift_accuracy": 0.7126,
-    "post_drift_accuracy": 0.7634,
-    "accuracy_drop": 0.050799999999999956
+    "post_drift_accuracy": 0.7658,
+    "accuracy_drop": 0.053200000000000025
   },
   "retraining_metrics": {
-    "total_retrains": 20,
-    "budget_used": 20,
+    "total_retrains": 15,
+    "budget_used": 15,
     "budget_total": 20,
-    "budget_utilization": 1.0,
-    "retrains_before_drift": 20,
-    "retrains_after_drift": 0,
+    "budget_utilization": 0.75,
+    "retrains_before_drift": 10,
+    "retrains_after_drift": 5,
     "retrain_timestamps": [
       199,
-      418,
-      523,
-      628,
-      733,
-      838,
-      943,
-      1048,
-      1153,
-      1258,
-      1363,
-      1613,
-      1718,
-      1823,
-      1928,
-      2090,
-      2212,
-      2317,
-      2422,
-      2527
+      719,
+      1239,
+      1759,
+      2279,
+      2799,
+      3327,
+      3847,
+      4367,
+      4887,
+      6854,
+      7587,
+      8681,
+      9201,
+      9970
     ],
     "retrain_latency_windows": [
       [
         199,
-        304
+        719
       ],
       [
-        418,
-        523
+        719,
+        1239
       ],
       [
-        523,
-        628
+        1239,
+        1759
       ],
       [
-        628,
-        733
+        1759,
+        2279
       ],
       [
-        733,
-        838
+        2279,
+        2799
       ],
       [
-        838,
-        943
+        2799,
+        3319
       ],
       [
-        943,
-        1048
+        3327,
+        3847
       ],
       [
-        1048,
-        1153
+        3847,
+        4367
       ],
       [
-        1153,
-        1258
+        4367,
+        4887
       ],
       [
-        1258,
-        1363
+        4887,
+        5407
       ],
       [
-        1363,
-        1468
+        6854,
+        7374
       ],
       [
-        1613,
-        1718
+        7587,
+        8107
       ],
       [
-        1718,
-        1823
+        8681,
+        9201
       ],
       [
-        1823,
-        1928
+        9201,
+        9721
       ],
       [
-        1928,
-        2033
-      ],
-      [
-        2090,
-        2195
-      ],
-      [
-        2212,
-        2317
-      ],
-      [
-        2317,
-        2422
-      ],
-      [
-        2422,
-        2527
-      ],
-      [
-        2527,
-        2632
+        9970,
+        10490
       ]
     ]
   },
