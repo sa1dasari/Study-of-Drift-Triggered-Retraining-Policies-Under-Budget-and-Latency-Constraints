@@ -47,7 +47,7 @@ def plot_summary():
 
     # Create figure with 2x3 subplots (5 plots)
     fig, axes = plt.subplots(2, 3, figsize=(16, 10))
-    fig.suptitle('Error Threshold Policy: Summary Results Across All Configurations', fontsize=14, fontweight='bold')
+    fig.suptitle('Periodic Policy: Summary Results Across All Configurations', fontsize=14, fontweight='bold')
 
     latency_order = ['Low (11)', 'Med (105)', 'High (520)']
     budget_order = ['Low (5)', 'Med (10)', 'High (20)']
