@@ -10,7 +10,7 @@ WEEK 2:
 1. Run preliminary experiments to test the drift simulation and retraining policies.
 2. Run abrupt drift with periodic retraining with various budgets and latency levels.
 3. Run gradual drift with periodic retraining with various budgets and latency levels.
-4. Analyze and document the results of the preliminary experiments, noting any issues or insights.
+5. Analyze and document the results of the preliminary experiments, noting any issues or insights.
 
 WEEK 3:
 
