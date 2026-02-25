@@ -1,7 +1,7 @@
 """
 Summary Results Visualization Script.
 
-Run this script separately to generate comprehensive plots from summary_results.csv.
+Run this script separately to generate comprehensive plots from summary_results_periodic_retrain.csv.
 Usage: python plot_summary.py
 """
 
@@ -13,10 +13,10 @@ import numpy as np
 
 
 def plot_summary():
-    """Generate comprehensive plots from summary_results.csv."""
+    """Generate comprehensive plots from summary_results_periodic_retrain.csv."""
 
     # Load data
-    df = pd.read_csv('results/summary_results.csv')
+    df = pd.read_csv('results/summary_results_periodic_retrain.csv')
 
     print(f"Loaded {len(df)} experiment runs")
     print(f"Drift types: {df['drift_type'].unique()}")
@@ -224,10 +224,10 @@ def plot_summary():
     ax6.grid(axis='y', alpha=0.3)
 
     plt.tight_layout(rect=[0, 0, 1, 0.96])
-    plt.savefig('results/summary_results_plot.png', dpi=150, bbox_inches='tight')
+    plt.savefig('results/summary_results_plot_periodic_retrain.png', dpi=150, bbox_inches='tight')
     plt.close()
 
-    print("\nGraph saved: results/summary_results_plot.png")
+    print("\nGraph saved: results/summary_results_plot_periodic_retrain.png")
 
     # Print summary statistics
     print("\n" + "=" * 60)
