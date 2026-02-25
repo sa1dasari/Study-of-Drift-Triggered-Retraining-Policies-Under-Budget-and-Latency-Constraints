@@ -5,47 +5,127 @@
     "policy_type": "error_threshold",
     "error_threshold": 0.27,
     "window_size": 200,
-    "budget": 10,
-    "retrain_latency": 500,
-    "deploy_latency": 20,
+    "budget": 20,
+    "retrain_latency": 10,
+    "deploy_latency": 1,
     "total_samples": 10000,
     "random_seed": 456
   },
   "performance_metrics": {
-    "overall_accuracy": 0.8011,
+    "overall_accuracy": 0.8005,
     "pre_drift_accuracy": 0.8202,
-    "post_drift_accuracy": 0.782,
-    "accuracy_drop": -0.03820000000000001
+    "post_drift_accuracy": 0.7808,
+    "accuracy_drop": -0.03939999999999999
   },
   "retraining_metrics": {
-    "total_retrains": 4,
-    "budget_used": 4,
-    "budget_total": 10,
-    "budget_utilization": 0.4,
+    "total_retrains": 20,
+    "budget_used": 20,
+    "budget_total": 20,
+    "budget_utilization": 1.0,
     "retrains_before_drift": 0,
-    "retrains_after_drift": 4,
+    "retrains_after_drift": 20,
     "retrain_timestamps": [
       5052,
-      6001,
-      7144,
-      8280
+      5063,
+      5074,
+      5085,
+      5096,
+      5107,
+      5118,
+      5129,
+      5140,
+      5151,
+      5162,
+      5173,
+      5184,
+      5195,
+      5206,
+      5217,
+      5228,
+      5239,
+      5250,
+      5261
     ],
     "retrain_latency_windows": [
       [
         5052,
-        5572
+        5063
       ],
       [
-        6001,
-        6521
+        5063,
+        5074
       ],
       [
-        7144,
-        7664
+        5074,
+        5085
       ],
       [
-        8280,
-        8800
+        5085,
+        5096
+      ],
+      [
+        5096,
+        5107
+      ],
+      [
+        5107,
+        5118
+      ],
+      [
+        5118,
+        5129
+      ],
+      [
+        5129,
+        5140
+      ],
+      [
+        5140,
+        5151
+      ],
+      [
+        5151,
+        5162
+      ],
+      [
+        5162,
+        5173
+      ],
+      [
+        5173,
+        5184
+      ],
+      [
+        5184,
+        5195
+      ],
+      [
+        5195,
+        5206
+      ],
+      [
+        5206,
+        5217
+      ],
+      [
+        5217,
+        5228
+      ],
+      [
+        5228,
+        5239
+      ],
+      [
+        5239,
+        5250
+      ],
+      [
+        5250,
+        5261
+      ],
+      [
+        5261,
+        5272
       ]
     ]
   },
