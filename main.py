@@ -24,14 +24,14 @@ def main():
     3. Run the experiment using the ExperimentRunner
     4. Report final model accuracy
     """
-    # Step 1: Generate synthetic data with abrupt drift
+    # Step 1: Generate synthetic data with gradual drift
     # To ensure reproducibility, we run multiple seeds to see how the policy performs under different random conditions.
     seeds = [42, 123, 456]
-    drift_type = "abrupt"
+    drift_type = "gradual"
 
     for seed in seeds:
         generator = DriftGenerator(
-            drift_type="abrupt",
+            drift_type="gradual",
             drift_point=5000,
             recurrence_period=1000,  # Concept switches every 1000 timesteps after drift_point
             seed=seed
