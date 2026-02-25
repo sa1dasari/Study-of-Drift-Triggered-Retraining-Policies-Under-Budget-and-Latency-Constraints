@@ -8,7 +8,7 @@ can adapt a model to changing data distributions under budget and latency constr
 
 from src.data.drift_generator import DriftGenerator
 from src.models.base_model import StreamingModel
-from src.policies.periodic import PeriodicPolicy
+from src.policies.error_threshold_policy import ErrorThresholdPolicy
 from src.evaluation.metrics import MetricsTracker
 from src.runner.experiment_runner import ExperimentRunner
 from src.evaluation.results_export import export_to_json, export_to_csv, export_summary_to_csv
@@ -24,14 +24,14 @@ def main():
     3. Run the experiment using the ExperimentRunner
     4. Report final model accuracy
     """
-    # Step 1: Generate synthetic data with recurring drift
+    # Step 1: Generate synthetic data with gradual drift
     # To ensure reproducibility, we run multiple seeds to see how the policy performs under different random conditions.
     seeds = [42, 123, 456]
-    drift_type = "recurring"
+    drift_type = "gradual"
 
     for seed in seeds:
         generator = DriftGenerator(
-            drift_type="recurring",
+            drift_type="gradual",
             drift_point=5000,
             recurrence_period=1000,  # Concept switches every 1000 timesteps after drift_point
             seed=seed
@@ -40,11 +40,14 @@ def main():
 
         # Step 2: Initialize components
         # - StreamingModel: Uses SGDClassifier for online learning
-        # - PeriodicPolicy: High budget (20 retrains), high latency
-        # - High latency: retrain_latency=500, deploy_latency= 20
+        # - ErrorThresholdPolicy: Retrain when recent error rate exceeds threshold
+        #   error_threshold=0.27: retrain when >27% error rate in recent window
+        #   window_size=200: evaluate error rate over last 200 predictions
+        #   budget=20: allows up to 20 retrains during the experiment
+        # - High latency: retrain_latency=500, deploy_latency=20
         # - MetricsTracker: Records prediction accuracy/errors over time
         model = StreamingModel()
-        policy = PeriodicPolicy(interval=2000, budget=20, retrain_latency=500, deploy_latency=20)
+        policy = ErrorThresholdPolicy(error_threshold=0.27, window_size=200, budget=20, retrain_latency=500, deploy_latency=20)
         metrics = MetricsTracker()
 
         # Set metadata in metrics for post-analysis
@@ -126,7 +129,7 @@ def main():
         print("\nExporting results...")
         export_to_json(metrics, policy, config, f"results/run_seed_{seed}.json")
         export_to_csv(metrics, policy, config, f"results/per_sample_metrics_seed_{seed}.csv")
-        export_summary_to_csv(metrics, policy, config, "results/summary_results.csv")
+        export_summary_to_csv(metrics, policy, config, "results/summary_results_error_threshold_retrain.csv")
         print(f"Results exported for seed {seed}!")
 
     # Generate plots after all seeds complete
