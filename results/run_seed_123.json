@@ -6,16 +6,16 @@
     "error_threshold": 0.27,
     "window_size": 200,
     "budget": 10,
-    "retrain_latency": 10,
-    "deploy_latency": 1,
+    "retrain_latency": 100,
+    "deploy_latency": 5,
     "total_samples": 10000,
     "random_seed": 123
   },
   "performance_metrics": {
-    "overall_accuracy": 0.7348,
-    "pre_drift_accuracy": 0.7066,
-    "post_drift_accuracy": 0.763,
-    "accuracy_drop": 0.056400000000000006
+    "overall_accuracy": 0.7382,
+    "pre_drift_accuracy": 0.7174,
+    "post_drift_accuracy": 0.759,
+    "accuracy_drop": 0.04159999999999997
   },
   "retraining_metrics": {
     "total_retrains": 10,
@@ -26,56 +26,56 @@
     "retrains_after_drift": 0,
     "retrain_timestamps": [
       199,
-      210,
-      221,
-      232,
-      252,
-      263,
-      297,
-      308,
-      319,
-      330
+      410,
+      734,
+      839,
+      944,
+      1049,
+      1154,
+      1259,
+      1389,
+      1579
     ],
     "retrain_latency_windows": [
       [
         199,
-        210
+        304
       ],
       [
-        210,
-        221
+        410,
+        515
       ],
       [
-        221,
-        232
+        734,
+        839
       ],
       [
-        232,
-        243
+        839,
+        944
       ],
       [
-        252,
-        263
+        944,
+        1049
       ],
       [
-        263,
-        274
+        1049,
+        1154
       ],
       [
-        297,
-        308
+        1154,
+        1259
       ],
       [
-        308,
-        319
+        1259,
+        1364
       ],
       [
-        319,
-        330
+        1389,
+        1494
       ],
       [
-        330,
-        341
+        1579,
+        1684
       ]
     ]
   },
