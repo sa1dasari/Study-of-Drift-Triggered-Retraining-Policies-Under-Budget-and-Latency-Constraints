@@ -8,7 +8,7 @@ can adapt a model to changing data distributions under budget and latency constr
 
 from src.data.drift_generator import DriftGenerator
 from src.models.base_model import StreamingModel
-from src.policies.error_threshold import ErrorThresholdPolicy
+from src.policies.periodic import PeriodicPolicy
 from src.evaluation.metrics import MetricsTracker
 from src.runner.experiment_runner import ExperimentRunner
 from src.evaluation.results_export import export_to_json, export_to_csv, export_summary_to_csv
@@ -67,7 +67,7 @@ def main():
         print(f"\nConfiguration:")
         print(f"  Drift Type: {drift_type} (starting at t={metrics.drift_point})")
         print(f"  Recurrence Period: {generator.recurrence_period} timesteps")
-        print(f"  Policy: ErrorThreshold (threshold={policy.error_threshold}, window={policy.window_size})")
+        print(f"  Policy: Periodic (interval={policy.interval})")
         print(f"  Budget: {policy.budget} retrains")
         print(f"  Seed: {seed}")
         print(f"  Latency: retrain={policy.retrain_latency}s, deploy={policy.deploy_latency}s")
@@ -120,9 +120,8 @@ def main():
             "drift_type": drift_type,
             "drift_point": 5000,
             "recurrence_period": generator.recurrence_period,
-            "policy_type": "error_threshold",
-            "error_threshold": policy.error_threshold,
-            "window_size": policy.window_size,
+            "policy_type": "periodic",
+            "policy_interval": policy.interval,
             "budget": policy.budget,
             "random_seed": seed,
         }
