@@ -8,7 +8,7 @@ can adapt a model to changing data distributions under budget and latency constr
 
 from src.data.drift_generator import DriftGenerator
 from src.models.base_model import StreamingModel
-from src.policies.periodic import PeriodicPolicy
+from src.policies.error_threshold_policy import ErrorThresholdPolicy
 from src.evaluation.metrics import MetricsTracker
 from src.runner.experiment_runner import ExperimentRunner
 from src.evaluation.results_export import export_to_json, export_to_csv, export_summary_to_csv
