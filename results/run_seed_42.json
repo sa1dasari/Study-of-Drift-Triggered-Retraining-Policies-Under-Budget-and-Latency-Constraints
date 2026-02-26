@@ -6,76 +6,76 @@
     "error_threshold": 0.27,
     "window_size": 200,
     "budget": 10,
-    "retrain_latency": 100,
-    "deploy_latency": 5,
+    "retrain_latency": 500,
+    "deploy_latency": 20,
     "total_samples": 10000,
     "random_seed": 42
   },
   "performance_metrics": {
-    "overall_accuracy": 0.7551,
-    "pre_drift_accuracy": 0.7782,
-    "post_drift_accuracy": 0.732,
-    "accuracy_drop": -0.04620000000000002
+    "overall_accuracy": 0.7523,
+    "pre_drift_accuracy": 0.7784,
+    "post_drift_accuracy": 0.7262,
+    "accuracy_drop": -0.052200000000000024
   },
   "retraining_metrics": {
     "total_retrains": 10,
     "budget_used": 10,
     "budget_total": 10,
     "budget_utilization": 1.0,
-    "retrains_before_drift": 5,
-    "retrains_after_drift": 5,
+    "retrains_before_drift": 3,
+    "retrains_after_drift": 7,
     "retrain_timestamps": [
       408,
-      558,
-      3636,
-      4319,
-      4645,
-      5209,
-      5510,
-      5615,
-      5720,
-      5825
+      3114,
+      3634,
+      5192,
+      5712,
+      6557,
+      7077,
+      7609,
+      8192,
+      8712
     ],
     "retrain_latency_windows": [
       [
         408,
-        513
+        928
       ],
       [
-        558,
-        663
+        3114,
+        3634
       ],
       [
-        3636,
-        3741
+        3634,
+        4154
       ],
       [
-        4319,
-        4424
+        5192,
+        5712
       ],
       [
-        4645,
-        4750
+        5712,
+        6232
       ],
       [
-        5209,
-        5314
+        6557,
+        7077
       ],
       [
-        5510,
-        5615
+        7077,
+        7597
       ],
       [
-        5615,
-        5720
+        7609,
+        8129
       ],
       [
-        5720,
-        5825
+        8192,
+        8712
       ],
       [
-        5825,
-        5930
+        8712,
+        9232
       ]
     ]
   },
