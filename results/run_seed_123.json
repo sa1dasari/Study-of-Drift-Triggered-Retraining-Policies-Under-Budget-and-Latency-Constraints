@@ -5,77 +5,127 @@
     "policy_type": "error_threshold",
     "error_threshold": 0.27,
     "window_size": 200,
-    "budget": 10,
-    "retrain_latency": 500,
-    "deploy_latency": 20,
+    "budget": 20,
+    "retrain_latency": 10,
+    "deploy_latency": 1,
     "total_samples": 10000,
     "random_seed": 123
   },
   "performance_metrics": {
-    "overall_accuracy": 0.7345,
-    "pre_drift_accuracy": 0.7128,
-    "post_drift_accuracy": 0.7562,
-    "accuracy_drop": 0.043399999999999994
+    "overall_accuracy": 0.734,
+    "pre_drift_accuracy": 0.7092,
+    "post_drift_accuracy": 0.7588,
+    "accuracy_drop": 0.04959999999999998
   },
   "retraining_metrics": {
-    "total_retrains": 10,
-    "budget_used": 10,
-    "budget_total": 10,
+    "total_retrains": 20,
+    "budget_used": 20,
+    "budget_total": 20,
     "budget_utilization": 1.0,
-    "retrains_before_drift": 10,
+    "retrains_before_drift": 20,
     "retrains_after_drift": 0,
     "retrain_timestamps": [
       199,
-      719,
-      1239,
-      1759,
-      2284,
-      2804,
-      3326,
-      3846,
-      4366,
-      4886
+      210,
+      419,
+      430,
+      441,
+      452,
+      463,
+      474,
+      485,
+      496,
+      507,
+      518,
+      529,
+      540,
+      551,
+      562,
+      573,
+      584,
+      595,
+      606
     ],
     "retrain_latency_windows": [
       [
         199,
-        719
+        210
       ],
       [
-        719,
-        1239
+        210,
+        221
       ],
       [
-        1239,
-        1759
+        419,
+        430
       ],
       [
-        1759,
-        2279
+        430,
+        441
       ],
       [
-        2284,
-        2804
+        441,
+        452
       ],
       [
-        2804,
-        3324
+        452,
+        463
       ],
       [
-        3326,
-        3846
+        463,
+        474
       ],
       [
-        3846,
-        4366
+        474,
+        485
       ],
       [
-        4366,
-        4886
+        485,
+        496
       ],
       [
-        4886,
-        5406
+        496,
+        507
+      ],
+      [
+        507,
+        518
+      ],
+      [
+        518,
+        529
+      ],
+      [
+        529,
+        540
+      ],
+      [
+        540,
+        551
+      ],
+      [
+        551,
+        562
+      ],
+      [
+        562,
+        573
+      ],
+      [
+        573,
+        584
+      ],
+      [
+        584,
+        595
+      ],
+      [
+        595,
+        606
+      ],
+      [
+        606,
+        617
       ]
     ]
   },
