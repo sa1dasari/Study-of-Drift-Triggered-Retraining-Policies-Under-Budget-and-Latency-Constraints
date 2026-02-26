@@ -9,9 +9,10 @@ matplotlib.use('Agg')  # Non-interactive backend for saving files
 import matplotlib.pyplot as plt
 import pandas as pd
 import numpy as np
+import json
 
 
-def plot_results(seeds, policy, drift_point, drift_type, recurrence_period=1000, total_samples=10000):
+def plot_results(seeds, policy, drift_point, drift_type, recurrence_period=1000, total_samples=10000, policy_type="periodic"):
     """
     Generate summary plots after all seeds have been run.
 
@@ -26,20 +27,31 @@ def plot_results(seeds, policy, drift_point, drift_type, recurrence_period=1000,
         drift_type: Type of drift (abrupt/gradual/recurring)
         recurrence_period: Period for recurring drift (timesteps between concept switches)
         total_samples: Total number of samples in experiment
+        policy_type: Type of policy ("periodic" or "error_threshold")
     """
     fig, axes = plt.subplots(2, 1, figsize=(12, 8))
     colors = ['#3498db', '#e74c3c', '#2ecc71']
     total_latency = policy.retrain_latency + policy.deploy_latency
 
-    # Calculate actual retrain times (respecting latency constraints)
-    retrain_times = []
-    t = 0
-    while t < total_samples and len(retrain_times) < policy.budget:
-        if t % policy.interval == 0:
-            # Check if not in latency period
-            if not retrain_times or t >= retrain_times[-1] + total_latency:
-                retrain_times.append(t)
-        t += 1
+    # Calculate retrain times based on policy type
+    if policy_type == "error_threshold":
+        # For error threshold policy, read retrain times from the first seed's JSON results
+        retrain_times = []
+        try:
+            with open(f'results/run_seed_{seeds[0]}.json', 'r') as f:
+                run_data = json.load(f)
+                retrain_times = run_data.get('retraining_metrics', {}).get('retrain_timestamps', [])
+        except (FileNotFoundError, json.JSONDecodeError):
+            retrain_times = []
+    else:
+        # Periodic policy: calculate retrain times from interval
+        retrain_times = []
+        t = 0
+        while t < total_samples and len(retrain_times) < policy.budget:
+            if t % policy.interval == 0:
+                if not retrain_times or t >= retrain_times[-1] + total_latency:
+                    retrain_times.append(t)
+            t += 1
 
     # Plot 1: Drift and Retrain Timeline
     ax1 = axes[0]
@@ -146,7 +158,10 @@ def plot_results(seeds, policy, drift_point, drift_type, recurrence_period=1000,
     ax2.grid(alpha=0.3)
 
     # Add config info
-    config_text = f'Policy: Periodic | Budget={policy.budget} | Interval={policy.interval} | Latency={total_latency}'
+    if policy_type == "error_threshold":
+        config_text = f'Policy: Error Threshold | Budget={policy.budget} | Threshold={policy.error_threshold} | Window={policy.window_size} | Latency={total_latency}'
+    else:
+        config_text = f'Policy: Periodic | Budget={policy.budget} | Interval={policy.interval} | Latency={total_latency}'
     fig.text(0.5, 0.02, config_text, ha='center', fontsize=10, style='italic',
              bbox=dict(boxstyle='round', facecolor='wheat', alpha=0.5))
 

@@ -27,7 +27,8 @@ def export_to_json(metrics, policy, config, filepath):
             "drift_type": config.get("drift_type", "unknown"),
             "drift_point": metrics.drift_point,
             "policy_type": config.get("policy_type", "unknown"),
-            "policy_interval": config.get("policy_interval", None),
+            "error_threshold": config.get("error_threshold", None),
+            "window_size": config.get("window_size", None),
             "budget": metrics.total_budget,
             "retrain_latency": policy.retrain_latency,
             "deploy_latency": policy.deploy_latency,
@@ -135,7 +136,8 @@ def export_summary_to_csv(metrics, policy, config, filepath):
         "drift_type": config.get("drift_type", "unknown"),
         "drift_point": metrics.drift_point,
         "policy_type": config.get("policy_type", "unknown"),
-        "policy_interval": config.get("policy_interval", None),
+        "error_threshold": config.get("error_threshold", None),
+        "window_size": config.get("window_size", None),
         "budget": metrics.total_budget,
         "retrain_latency": policy.retrain_latency,
         "deploy_latency": policy.deploy_latency,
@@ -153,9 +155,21 @@ def export_summary_to_csv(metrics, policy, config, filepath):
     Path(filepath).parent.mkdir(parents=True, exist_ok=True)
 
     # Check if file exists to append or create
-    file_exists = Path(filepath).exists()
+    file_exists = Path(filepath).exists() and Path(filepath).stat().st_size > 0
 
     with open(filepath, "a" if file_exists else "w", newline="") as f:
+        # Ensure the file ends with a newline before appending
+        if file_exists:
+            f.seek(0, 2)  # Seek to end
+            pos = f.tell()
+            if pos > 0:
+                # Read last character to check for trailing newline
+                with open(filepath, "r") as rf:
+                    rf.seek(pos - 1)
+                    last_char = rf.read(1)
+                if last_char != "\n":
+                    f.write("\n")
+
         writer = csv.DictWriter(f, fieldnames=summary_data.keys())
 
         if not file_exists:
