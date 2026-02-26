@@ -43,11 +43,11 @@ def main():
         # - ErrorThresholdPolicy: Retrain when recent error rate exceeds threshold
         #   error_threshold=0.27: retrain when >27% error rate in recent window
         #   window_size=200: evaluate error rate over last 200 predictions
-        #   budget=10: allows up to 10 retrains during the experiment
-        # - High latency: retrain_latency=500, deploy_latency=20
+        #   budget=20: allows up to 20 retrains during the experiment
+        # - Low latency: retrain_latency=10, deploy_latency=1
         # - MetricsTracker: Records prediction accuracy/errors over time
         model = StreamingModel()
-        policy = ErrorThresholdPolicy(error_threshold=0.27, window_size=200, budget=10, retrain_latency=500, deploy_latency=20)
+        policy = ErrorThresholdPolicy(error_threshold=0.27, window_size=200, budget=20, retrain_latency=10, deploy_latency=1)
         metrics = MetricsTracker()
 
         # Set metadata in metrics for post-analysis
