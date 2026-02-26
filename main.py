@@ -43,11 +43,11 @@ def main():
         # - ErrorThresholdPolicy: Retrain when recent error rate exceeds threshold
         #   error_threshold=0.27: retrain when >27% error rate in recent window
         #   window_size=200: evaluate error rate over last 200 predictions
-        #   budget=20: allows up to 20 retrains during the experiment
-        # - High latency: retrain_latency=500, deploy_latency=20
+        #   budget=5: allows up to 5 retrains during the experiment
+        # - Low latency: retrain_latency=10, deploy_latency=1
         # - MetricsTracker: Records prediction accuracy/errors over time
         model = StreamingModel()
-        policy = ErrorThresholdPolicy(error_threshold=0.27, window_size=200, budget=20, retrain_latency=500, deploy_latency=20)
+        policy = ErrorThresholdPolicy(error_threshold=0.27, window_size=200, budget=5, retrain_latency=10, deploy_latency=1)
         metrics = MetricsTracker()
 
         # Set metadata in metrics for post-analysis
@@ -67,7 +67,7 @@ def main():
         print(f"\nConfiguration:")
         print(f"  Drift Type: {drift_type} (starting at t={metrics.drift_point})")
         print(f"  Recurrence Period: {generator.recurrence_period} timesteps")
-        print(f"  Policy: Periodic (interval={policy.interval})")
+        print(f"  Policy: Error Threshold (threshold={policy.error_threshold}, window={policy.window_size})")
         print(f"  Budget: {policy.budget} retrains")
         print(f"  Seed: {seed}")
         print(f"  Latency: retrain={policy.retrain_latency}s, deploy={policy.deploy_latency}s")
@@ -120,8 +120,9 @@ def main():
             "drift_type": drift_type,
             "drift_point": 5000,
             "recurrence_period": generator.recurrence_period,
-            "policy_type": "periodic",
-            "policy_interval": policy.interval,
+            "policy_type": "error_threshold",
+            "error_threshold": policy.error_threshold,
+            "window_size": policy.window_size,
             "budget": policy.budget,
             "random_seed": seed,
         }
@@ -135,7 +136,7 @@ def main():
     # Generate plots after all seeds complete
     print("\n" + "=" * 70)
     print("Generating visualization...")
-    plot_results(seeds, policy, drift_point=5000, drift_type=drift_type)
+    plot_results(seeds, policy, drift_point=5000, drift_type=drift_type, policy_type="error_threshold")
     print("=" * 70)
 
 if __name__ == "__main__":
