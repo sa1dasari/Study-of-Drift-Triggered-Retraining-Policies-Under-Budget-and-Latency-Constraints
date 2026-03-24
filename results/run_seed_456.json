@@ -6,16 +6,16 @@
     "error_threshold": 0.27,
     "window_size": 200,
     "budget": 5,
-    "retrain_latency": 10,
-    "deploy_latency": 1,
+    "retrain_latency": 100,
+    "deploy_latency": 5,
     "total_samples": 10000,
     "random_seed": 456
   },
   "performance_metrics": {
-    "overall_accuracy": 0.8068,
+    "overall_accuracy": 0.805,
     "pre_drift_accuracy": 0.8202,
-    "post_drift_accuracy": 0.7934,
-    "accuracy_drop": -0.026800000000000046
+    "post_drift_accuracy": 0.7898,
+    "accuracy_drop": -0.030400000000000094
   },
   "retraining_metrics": {
     "total_retrains": 5,
@@ -26,31 +26,31 @@
     "retrains_after_drift": 5,
     "retrain_timestamps": [
       5052,
-      5063,
-      5074,
-      5085,
-      5096
+      5157,
+      6004,
+      6109,
+      7150
     ],
     "retrain_latency_windows": [
       [
         5052,
-        5063
+        5157
       ],
       [
-        5063,
-        5074
+        5157,
+        5262
       ],
       [
-        5074,
-        5085
+        6004,
+        6109
       ],
       [
-        5085,
-        5096
+        6109,
+        6214
       ],
       [
-        5096,
-        5107
+        7150,
+        7255
       ]
     ]
   },
