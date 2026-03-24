@@ -5,77 +5,127 @@
     "policy_type": "error_threshold",
     "error_threshold": 0.27,
     "window_size": 200,
-    "budget": 10,
-    "retrain_latency": 500,
-    "deploy_latency": 20,
+    "budget": 20,
+    "retrain_latency": 10,
+    "deploy_latency": 1,
     "total_samples": 10000,
     "random_seed": 42
   },
   "performance_metrics": {
-    "overall_accuracy": 0.7539,
-    "pre_drift_accuracy": 0.7766,
-    "post_drift_accuracy": 0.7312,
-    "accuracy_drop": -0.045399999999999996
+    "overall_accuracy": 0.7561,
+    "pre_drift_accuracy": 0.7666,
+    "post_drift_accuracy": 0.7456,
+    "accuracy_drop": -0.020999999999999908
   },
   "retraining_metrics": {
-    "total_retrains": 10,
-    "budget_used": 10,
-    "budget_total": 10,
+    "total_retrains": 20,
+    "budget_used": 20,
+    "budget_total": 20,
     "budget_utilization": 1.0,
-    "retrains_before_drift": 5,
-    "retrains_after_drift": 5,
+    "retrains_before_drift": 20,
+    "retrains_after_drift": 0,
     "retrain_timestamps": [
       408,
-      2211,
-      3155,
-      3710,
-      4319,
-      5092,
-      5612,
-      6132,
-      6735,
-      7255
+      419,
+      430,
+      441,
+      452,
+      463,
+      474,
+      485,
+      496,
+      507,
+      518,
+      529,
+      540,
+      551,
+      562,
+      573,
+      584,
+      595,
+      606,
+      617
     ],
     "retrain_latency_windows": [
       [
         408,
-        928
+        419
       ],
       [
-        2211,
-        2731
+        419,
+        430
       ],
       [
-        3155,
-        3675
+        430,
+        441
       ],
       [
-        3710,
-        4230
+        441,
+        452
       ],
       [
-        4319,
-        4839
+        452,
+        463
       ],
       [
-        5092,
-        5612
+        463,
+        474
       ],
       [
-        5612,
-        6132
+        474,
+        485
       ],
       [
-        6132,
-        6652
+        485,
+        496
       ],
       [
-        6735,
-        7255
+        496,
+        507
       ],
       [
-        7255,
-        7775
+        507,
+        518
+      ],
+      [
+        518,
+        529
+      ],
+      [
+        529,
+        540
+      ],
+      [
+        540,
+        551
+      ],
+      [
+        551,
+        562
+      ],
+      [
+        562,
+        573
+      ],
+      [
+        573,
+        584
+      ],
+      [
+        584,
+        595
+      ],
+      [
+        595,
+        606
+      ],
+      [
+        606,
+        617
+      ],
+      [
+        617,
+        628
       ]
     ]
   },
