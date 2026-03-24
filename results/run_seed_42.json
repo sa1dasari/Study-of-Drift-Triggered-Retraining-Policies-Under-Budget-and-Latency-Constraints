@@ -6,126 +6,126 @@
     "error_threshold": 0.27,
     "window_size": 200,
     "budget": 20,
-    "retrain_latency": 10,
-    "deploy_latency": 1,
+    "retrain_latency": 100,
+    "deploy_latency": 5,
     "total_samples": 10000,
     "random_seed": 42
   },
   "performance_metrics": {
-    "overall_accuracy": 0.7561,
-    "pre_drift_accuracy": 0.7666,
-    "post_drift_accuracy": 0.7456,
-    "accuracy_drop": -0.020999999999999908
+    "overall_accuracy": 0.7588,
+    "pre_drift_accuracy": 0.7756,
+    "post_drift_accuracy": 0.742,
+    "accuracy_drop": -0.03359999999999996
   },
   "retraining_metrics": {
     "total_retrains": 20,
     "budget_used": 20,
     "budget_total": 20,
     "budget_utilization": 1.0,
-    "retrains_before_drift": 20,
-    "retrains_after_drift": 0,
+    "retrains_before_drift": 7,
+    "retrains_after_drift": 13,
     "retrain_timestamps": [
       408,
-      419,
-      430,
-      441,
-      452,
-      463,
-      474,
-      485,
-      496,
-      507,
-      518,
-      529,
-      540,
-      551,
-      562,
-      573,
-      584,
-      595,
-      606,
-      617
+      693,
+      2196,
+      2765,
+      2890,
+      3636,
+      4319,
+      5181,
+      5472,
+      5577,
+      5682,
+      6041,
+      6146,
+      6735,
+      7168,
+      7273,
+      7378,
+      7724,
+      7829,
+      7934
     ],
     "retrain_latency_windows": [
       [
         408,
-        419
+        513
       ],
       [
-        419,
-        430
+        693,
+        798
       ],
       [
-        430,
-        441
+        2196,
+        2301
       ],
       [
-        441,
-        452
+        2765,
+        2870
       ],
       [
-        452,
-        463
+        2890,
+        2995
       ],
       [
-        463,
-        474
+        3636,
+        3741
       ],
       [
-        474,
-        485
+        4319,
+        4424
       ],
       [
-        485,
-        496
+        5181,
+        5286
       ],
       [
-        496,
-        507
+        5472,
+        5577
       ],
       [
-        507,
-        518
+        5577,
+        5682
       ],
       [
-        518,
-        529
+        5682,
+        5787
       ],
       [
-        529,
-        540
+        6041,
+        6146
       ],
       [
-        540,
-        551
+        6146,
+        6251
       ],
       [
-        551,
-        562
+        6735,
+        6840
       ],
       [
-        562,
-        573
+        7168,
+        7273
       ],
       [
-        573,
-        584
+        7273,
+        7378
       ],
       [
-        584,
-        595
+        7378,
+        7483
       ],
       [
-        595,
-        606
+        7724,
+        7829
       ],
       [
-        606,
-        617
+        7829,
+        7934
       ],
       [
-        617,
-        628
+        7934,
+        8039
       ]
     ]
   },
