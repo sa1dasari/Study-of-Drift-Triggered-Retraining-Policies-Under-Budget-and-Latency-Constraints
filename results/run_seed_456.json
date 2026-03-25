@@ -5,127 +5,32 @@
     "policy_type": "drift_triggered",
     "error_threshold": null,
     "window_size": 500,
-    "budget": 20,
-    "retrain_latency": 10,
-    "deploy_latency": 1,
+    "budget": 10,
+    "retrain_latency": 500,
+    "deploy_latency": 20,
     "total_samples": 10000,
     "random_seed": 456
   },
   "performance_metrics": {
-    "overall_accuracy": 0.7995,
+    "overall_accuracy": 0.8068,
     "pre_drift_accuracy": 0.8202,
-    "post_drift_accuracy": 0.7788,
-    "accuracy_drop": -0.04139999999999999
+    "post_drift_accuracy": 0.7934,
+    "accuracy_drop": -0.026800000000000046
   },
   "retraining_metrics": {
-    "total_retrains": 20,
-    "budget_used": 20,
-    "budget_total": 20,
-    "budget_utilization": 1.0,
+    "total_retrains": 1,
+    "budget_used": 1,
+    "budget_total": 10,
+    "budget_utilization": 0.1,
     "retrains_before_drift": 0,
-    "retrains_after_drift": 20,
+    "retrains_after_drift": 1,
     "retrain_timestamps": [
-      5034,
-      5045,
-      5056,
-      5067,
-      5078,
-      5089,
-      5100,
-      5111,
-      5122,
-      5133,
-      5144,
-      5155,
-      5166,
-      5177,
-      5188,
-      5199,
-      5210,
-      5221,
-      5232,
-      5243
+      5034
     ],
     "retrain_latency_windows": [
       [
         5034,
-        5045
-      ],
-      [
-        5045,
-        5056
-      ],
-      [
-        5056,
-        5067
-      ],
-      [
-        5067,
-        5078
-      ],
-      [
-        5078,
-        5089
-      ],
-      [
-        5089,
-        5100
-      ],
-      [
-        5100,
-        5111
-      ],
-      [
-        5111,
-        5122
-      ],
-      [
-        5122,
-        5133
-      ],
-      [
-        5133,
-        5144
-      ],
-      [
-        5144,
-        5155
-      ],
-      [
-        5155,
-        5166
-      ],
-      [
-        5166,
-        5177
-      ],
-      [
-        5177,
-        5188
-      ],
-      [
-        5188,
-        5199
-      ],
-      [
-        5199,
-        5210
-      ],
-      [
-        5210,
-        5221
-      ],
-      [
-        5221,
-        5232
-      ],
-      [
-        5232,
-        5243
-      ],
-      [
-        5243,
-        5254
+        5554
       ]
     ]
   },
