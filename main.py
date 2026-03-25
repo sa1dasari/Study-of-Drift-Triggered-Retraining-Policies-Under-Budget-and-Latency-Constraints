@@ -47,7 +47,7 @@ def main():
         # - High latency: retrain_latency=500, deploy_latency=20
         # - MetricsTracker: Records prediction accuracy/errors over time
         model = StreamingModel()
-        policy = DriftTriggeredPolicy(delta=0.002, window_size=500, min_samples=300, budget=5, retrain_latency=500, deploy_latency=20)
+        policy = DriftTriggeredPolicy(delta=0.002, window_size=500, min_samples=300, budget=10, retrain_latency=500, deploy_latency=20)
         metrics = MetricsTracker()
 
         # Set metadata in metrics for post-analysis
