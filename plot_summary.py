@@ -1,7 +1,10 @@
 """
 Summary Results Visualization Script.
 
-Run this script separately to generate comprehensive plots from summary_results_error_threshold_retrain.csv.
+Run this script separately to generate comprehensive plots from
+summary_results_drift_triggered_retrain.csv after all experiment
+configurations have been executed.
+
 Usage: python plot_summary.py
 """
 
@@ -13,10 +16,10 @@ import numpy as np
 
 
 def plot_summary():
-    """Generate comprehensive plots from summary_results_error_threshold_retrain.csv."""
+    """Generate comprehensive plots from summary_results_drift_triggered_retrain.csv."""
 
     # Load data
-    df = pd.read_csv('results/summary_results_error_threshold_retrain.csv')
+    df = pd.read_csv('results/summary_results_drift_triggered_retrain.csv')
 
     print(f"Loaded {len(df)} experiment runs")
     print(f"Drift types: {df['drift_type'].unique()}")
@@ -45,59 +48,58 @@ def plot_summary():
     df['budget_label'] = df['budget'].apply(get_budget_label)
     df['total_latency'] = df['retrain_latency'] + df['deploy_latency']
 
-    # Create figure with 2x3 subplots (5 plots)
+    # Create figure with 2x3 subplots
     fig, axes = plt.subplots(2, 3, figsize=(16, 10))
-    fig.suptitle('Periodic Policy: Summary Results Across All Configurations', fontsize=14, fontweight='bold')
+    fig.suptitle('Drift-Triggered (ADWIN) Policy: Summary Results Across All Configurations',
+                 fontsize=14, fontweight='bold')
 
     latency_order = ['Low (11)', 'Med (105)', 'High (520)']
     budget_order = ['Low (5)', 'Med (10)', 'High (20)']
 
     # =========================================================================
-    # Plot 1: Line plot - Accuracy vs Latency, separate lines per drift type
+    # Plot 1: Line plot – Accuracy vs Latency, separate lines per drift type
     # =========================================================================
     ax1 = axes[0, 0]
 
-    colors_drift = {'abrupt': '#3498db', 'gradual': '#e74c3c'}
-    markers = {'abrupt': 'o', 'gradual': 's'}
+    colors_drift = {'abrupt': '#3498db', 'gradual': '#e74c3c', 'recurring': '#9b59b6'}
+    markers = {'abrupt': 'o', 'gradual': 's', 'recurring': 'D'}
 
     for drift_type in df['drift_type'].unique():
         df_drift = df[df['drift_type'] == drift_type]
         grouped = df_drift.groupby('total_latency')['overall_accuracy'].mean()
         ax1.plot(grouped.index, grouped.values, marker=markers.get(drift_type, 'o'),
-                color=colors_drift.get(drift_type, 'gray'), linewidth=2, markersize=8,
-                label=f'{drift_type.capitalize()} Drift')
+                 color=colors_drift.get(drift_type, 'gray'), linewidth=2, markersize=8,
+                 label=f'{drift_type.capitalize()} Drift')
 
     ax1.set_xlabel('Total Latency (timesteps)', fontsize=10)
     ax1.set_ylabel('Overall Accuracy', fontsize=10)
     ax1.set_title('Accuracy vs Latency by Drift Type', fontsize=11)
     ax1.legend(fontsize=9)
     ax1.grid(alpha=0.3)
-    ax1.set_ylim(0.72, 0.80)
 
     # =========================================================================
-    # Plot 2: Bar chart - Mean accuracy by drift type
+    # Plot 2: Bar chart – Mean accuracy by drift type
     # =========================================================================
     ax2 = axes[0, 1]
 
     drift_means = df.groupby('drift_type')['overall_accuracy'].agg(['mean', 'std'])
-    colors = ['#3498db', '#e74c3c']
+    bar_colors = [colors_drift.get(dt, 'gray') for dt in drift_means.index]
 
-    bars = ax2.bar(drift_means.index, drift_means['mean'], yerr=drift_means['std'],
-                   color=colors, alpha=0.8, capsize=5)
+    bars = ax2.bar(drift_means.index.str.capitalize(), drift_means['mean'],
+                   yerr=drift_means['std'], color=bar_colors, alpha=0.8, capsize=5)
 
     # Add value labels
     for bar, (idx, row) in zip(bars, drift_means.iterrows()):
         ax2.text(bar.get_x() + bar.get_width()/2, bar.get_height() + row['std'] + 0.005,
-                f'{row["mean"]:.4f}', ha='center', va='bottom', fontsize=10)
+                 f'{row["mean"]:.4f}', ha='center', va='bottom', fontsize=10)
 
     ax2.set_xlabel('Drift Type', fontsize=10)
     ax2.set_ylabel('Mean Overall Accuracy', fontsize=10)
     ax2.set_title('Mean Accuracy by Drift Type', fontsize=11)
-    ax2.set_ylim(0.70, 0.82)
     ax2.grid(axis='y', alpha=0.3)
 
     # =========================================================================
-    # Plot 3: Heatmap - Accuracy across Budget × Latency
+    # Plot 3: Heatmap – Accuracy across Budget × Latency
     # =========================================================================
     ax3 = axes[0, 2]
 
@@ -107,7 +109,7 @@ def plot_summary():
     pivot = pivot.reindex(index=[b for b in budget_order if b in pivot.index],
                           columns=[l for l in latency_order if l in pivot.columns])
 
-    im = ax3.imshow(pivot.values, cmap='viridis', aspect='auto', vmin=0.73, vmax=0.78)
+    im = ax3.imshow(pivot.values, cmap='viridis', aspect='auto')
 
     # Set labels
     ax3.set_xticks(np.arange(len(pivot.columns)))
@@ -127,13 +129,15 @@ def plot_summary():
         for j in range(len(pivot.columns)):
             val = pivot.values[i, j]
             if not np.isnan(val):
-                # Use white text for darker colors (lower values in viridis)
-                text_color = 'white' if val < 0.76 else 'black'
+                # Adaptive text colour based on value position in colour-map range
+                vmin, vmax = pivot.values[~np.isnan(pivot.values)].min(), pivot.values[~np.isnan(pivot.values)].max()
+                mid = (vmin + vmax) / 2
+                text_color = 'white' if val < mid else 'black'
                 ax3.text(j, i, f'{val:.3f}', ha='center', va='center',
-                        color=text_color, fontsize=9)
+                         color=text_color, fontsize=9)
 
     # =========================================================================
-    # Plot 4: Bar chart - Budget Utilization
+    # Plot 4: Bar chart – Budget Utilization by Budget & Latency
     # =========================================================================
     ax4 = axes[1, 0]
 
@@ -152,7 +156,7 @@ def plot_summary():
             for bar, val in zip(bars, vals):
                 if not np.isnan(val):
                     ax4.text(bar.get_x() + bar.get_width()/2, bar.get_height() + 0.02,
-                            f'{val:.0%}', ha='center', va='bottom', fontsize=8)
+                             f'{val:.0%}', ha='center', va='bottom', fontsize=8)
 
     ax4.set_xlabel('Budget', fontsize=10)
     ax4.set_ylabel('Budget Utilization', fontsize=10)
@@ -165,11 +169,10 @@ def plot_summary():
     ax4.grid(axis='y', alpha=0.3)
 
     # =========================================================================
-    # Plot 5: Bar chart - Errors during first drift window (by drift type)
+    # Plot 5: Grouped bar – Retrains After Drift by Drift Type & Latency
     # =========================================================================
     ax5 = axes[1, 1]
 
-    # Group by drift type and latency
     grouped = df.groupby(['drift_type', 'latency_label'])['retrains_after_drift'].mean().unstack()
     grouped = grouped.reindex(columns=[l for l in latency_order if l in grouped.columns])
 
@@ -183,7 +186,7 @@ def plot_summary():
             for bar, val in zip(bars, vals):
                 if not np.isnan(val):
                     ax5.text(bar.get_x() + bar.get_width()/2, bar.get_height() + 0.1,
-                            f'{val:.1f}', ha='center', va='bottom', fontsize=8)
+                             f'{val:.1f}', ha='center', va='bottom', fontsize=8)
 
     ax5.set_xlabel('Drift Type', fontsize=10)
     ax5.set_ylabel('Avg Retrains After Drift', fontsize=10)
@@ -194,11 +197,10 @@ def plot_summary():
     ax5.grid(axis='y', alpha=0.3)
 
     # =========================================================================
-    # Plot 6: Bar chart - Error Count in Drift Window
+    # Plot 6: Grouped bar – Retrains After Drift by Drift Type & Budget
     # =========================================================================
     ax6 = axes[1, 2]
 
-    # Group by drift type and budget
     grouped = df.groupby(['drift_type', 'budget_label'])['retrains_after_drift'].mean().unstack()
     grouped = grouped.reindex(columns=[b for b in budget_order if b in grouped.columns])
 
@@ -213,28 +215,28 @@ def plot_summary():
             for bar, val in zip(bars, vals):
                 if not np.isnan(val):
                     ax6.text(bar.get_x() + bar.get_width()/2, bar.get_height() + 0.1,
-                            f'{val:.1f}', ha='center', va='bottom', fontsize=8)
+                             f'{val:.1f}', ha='center', va='bottom', fontsize=8)
 
     ax6.set_xlabel('Drift Type', fontsize=10)
-    ax6.set_ylabel('Avg Errors in Drift Window', fontsize=10)
-    ax6.set_title('Error Count in Drift Window by Drift Type & Budget', fontsize=11)
+    ax6.set_ylabel('Avg Retrains After Drift', fontsize=10)
+    ax6.set_title('Retrains After Drift by Drift Type & Budget', fontsize=11)
     ax6.set_xticks(x + width)
     ax6.set_xticklabels([dt.capitalize() for dt in grouped.index])
     ax6.legend(title='Budget', fontsize=8)
     ax6.grid(axis='y', alpha=0.3)
 
     plt.tight_layout(rect=[0, 0, 1, 0.96])
-    plt.savefig('results/summary_results_plot_error_threshold_retrain.png', dpi=150, bbox_inches='tight')
+    plt.savefig('results/summary_results_plot_drift_triggered_retrain.png', dpi=150, bbox_inches='tight')
     plt.close()
 
-    print("\nGraph saved: results/summary_results_plot_error_threshold_retrain.png")
+    print("\nGraph saved: results/summary_results_plot_drift_triggered_retrain.png")
 
     # Print summary statistics
     print("\n" + "=" * 60)
-    print("SUMMARY STATISTICS")
+    print("SUMMARY STATISTICS – Drift-Triggered (ADWIN) Policy")
     print("=" * 60)
 
-    for drift_type in ['abrupt', 'gradual']:
+    for drift_type in sorted(df['drift_type'].unique()):
         print(f"\n{drift_type.upper()} DRIFT:")
         df_drift = df[df['drift_type'] == drift_type]
 
@@ -243,6 +245,7 @@ def plot_summary():
         print(f"  Post-Drift Accuracy: {df_drift['post_drift_accuracy'].mean():.4f}")
         print(f"  Accuracy Drop: {df_drift['accuracy_drop'].mean():.4f}")
         print(f"  Avg Budget Utilization: {df_drift['budget_utilization'].mean():.1%}")
+        print(f"  Avg Retrains After Drift: {df_drift['retrains_after_drift'].mean():.1f}")
 
 
 if __name__ == "__main__":
