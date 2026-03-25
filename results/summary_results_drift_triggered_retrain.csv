@@ -1,0 +1,4 @@
+drift_type,drift_point,policy_type,error_threshold,window_size,budget,retrain_latency,deploy_latency,overall_accuracy,pre_drift_accuracy,post_drift_accuracy,accuracy_drop,total_retrains,budget_utilization,retrains_before_drift,retrains_after_drift,random_seed
+abrupt,5000,drift_triggered,,500,5,10,1,0.7529,0.7732,0.7326,-0.04059999999999997,0,0.0,0,0,42
+abrupt,5000,drift_triggered,,500,5,10,1,0.7395,0.714,0.765,0.051000000000000045,0,0.0,0,0,123
+abrupt,5000,drift_triggered,,500,5,10,1,0.8034,0.8202,0.7866,-0.033600000000000074,5,1.0,0,5,456
