@@ -5,31 +5,36 @@
     "policy_type": "drift_triggered",
     "error_threshold": null,
     "window_size": 500,
-    "budget": 5,
+    "budget": 10,
     "retrain_latency": 10,
     "deploy_latency": 1,
     "total_samples": 10000,
     "random_seed": 456
   },
   "performance_metrics": {
-    "overall_accuracy": 0.803,
+    "overall_accuracy": 0.8025,
     "pre_drift_accuracy": 0.8202,
-    "post_drift_accuracy": 0.7858,
-    "accuracy_drop": -0.034399999999999986
+    "post_drift_accuracy": 0.7848,
+    "accuracy_drop": -0.03539999999999999
   },
   "retraining_metrics": {
-    "total_retrains": 5,
-    "budget_used": 5,
-    "budget_total": 5,
+    "total_retrains": 10,
+    "budget_used": 10,
+    "budget_total": 10,
     "budget_utilization": 1.0,
     "retrains_before_drift": 0,
-    "retrains_after_drift": 5,
+    "retrains_after_drift": 10,
     "retrain_timestamps": [
       5034,
       5045,
       5056,
       5067,
-      5078
+      5078,
+      5089,
+      5100,
+      5111,
+      5122,
+      5133
     ],
     "retrain_latency_windows": [
       [
@@ -51,6 +56,26 @@
       [
         5078,
         5089
+      ],
+      [
+        5089,
+        5100
+      ],
+      [
+        5100,
+        5111
+      ],
+      [
+        5111,
+        5122
+      ],
+      [
+        5122,
+        5133
+      ],
+      [
+        5133,
+        5144
       ]
     ]
   },
