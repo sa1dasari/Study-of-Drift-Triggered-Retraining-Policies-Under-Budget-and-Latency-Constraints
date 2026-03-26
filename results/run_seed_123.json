@@ -1,31 +1,58 @@
 {
   "configuration": {
-    "drift_type": "gradual",
+    "drift_type": "recurring",
     "drift_point": 5000,
     "policy_type": "drift_triggered",
     "error_threshold": null,
     "window_size": 500,
-    "budget": 20,
-    "retrain_latency": 500,
-    "deploy_latency": 20,
+    "budget": 5,
+    "retrain_latency": 10,
+    "deploy_latency": 1,
     "total_samples": 10000,
     "random_seed": 123
   },
   "performance_metrics": {
-    "overall_accuracy": 0.7361,
+    "overall_accuracy": 0.7249,
     "pre_drift_accuracy": 0.714,
-    "post_drift_accuracy": 0.7582,
-    "accuracy_drop": 0.04420000000000002
+    "post_drift_accuracy": 0.7358,
+    "accuracy_drop": 0.02180000000000004
   },
   "retraining_metrics": {
-    "total_retrains": 0,
-    "budget_used": 0,
-    "budget_total": 20,
-    "budget_utilization": 0.0,
+    "total_retrains": 5,
+    "budget_used": 5,
+    "budget_total": 5,
+    "budget_utilization": 1.0,
     "retrains_before_drift": 0,
-    "retrains_after_drift": 0,
-    "retrain_timestamps": [],
-    "retrain_latency_windows": []
+    "retrains_after_drift": 5,
+    "retrain_timestamps": [
+      8572,
+      8583,
+      8594,
+      8605,
+      8616
+    ],
+    "retrain_latency_windows": [
+      [
+        8572,
+        8583
+      ],
+      [
+        8583,
+        8594
+      ],
+      [
+        8594,
+        8605
+      ],
+      [
+        8605,
+        8616
+      ],
+      [
+        8616,
+        8627
+      ]
+    ]
   },
   "data_metrics": {
     "predictions_made": 10000,

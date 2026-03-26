@@ -24,15 +24,16 @@ def main():
     3. Run the experiment using the ExperimentRunner
     4. Report final model accuracy
     """
-    # Step 1: Generate synthetic data with gradual drift
+    # Step 1: Generate synthetic data with recurring drift
     # To ensure reproducibility, we run multiple seeds to see how the policy performs under different random conditions.
     seeds = [42, 123, 456]
-    drift_type = "gradual"
+    drift_type = "recurring"
 
     for seed in seeds:
         generator = DriftGenerator(
-            drift_type="gradual",
+            drift_type="recurring",
             drift_point=5000,
+            recurrence_period=1000,  # Concept switches every 1000 timesteps after drift_point
             seed=seed
         )
         X, y = generator.generate(10000)
@@ -43,11 +44,11 @@ def main():
         #   delta=0.002: confidence parameter for Hoeffding bound (lower = less sensitive)
         #   window_size=500: max recent errors considered for drift detection
         #   min_samples=300: minimum observations before detection activates
-        #   budget=20: allows up to 20 retrains during the experiment
-        # - High latency: retrain_latency=500, deploy_latency=20
+        #   budget=5: allows up to 5 retrains during the experiment
+        # - Low latency: retrain_latency=10, deploy_latency=1
         # - MetricsTracker: Records prediction accuracy/errors over time
         model = StreamingModel()
-        policy = DriftTriggeredPolicy(delta=0.002, window_size=500, min_samples=300, budget=20, retrain_latency=500, deploy_latency=20)
+        policy = DriftTriggeredPolicy(delta=0.002, window_size=500, min_samples=300, budget=5, retrain_latency=10, deploy_latency=1)
         metrics = MetricsTracker()
 
         # Set metadata in metrics for post-analysis
@@ -65,7 +66,8 @@ def main():
 
         print("EXPERIMENT RESULTS")
         print(f"\nConfiguration:")
-        print(f"  Drift Type: {drift_type} (at t={metrics.drift_point})")
+        print(f"  Drift Type: {drift_type} (starting at t={metrics.drift_point})")
+        print(f"  Recurrence Period: {generator.recurrence_period} timesteps")
         print(f"  Policy: Drift-Triggered / ADWIN (delta={policy.delta}, window={policy.window_size}, min_samples={policy.min_samples})")
         print(f"  Budget: {policy.budget} retrains")
         print(f"  Seed: {seed}")
@@ -118,6 +120,7 @@ def main():
         config = {
             "drift_type": drift_type,
             "drift_point": 5000,
+            "recurrence_period": generator.recurrence_period,
             "policy_type": "drift_triggered",
             "delta": policy.delta,
             "window_size": policy.window_size,
