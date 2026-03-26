@@ -24,14 +24,14 @@ def main():
     3. Run the experiment using the ExperimentRunner
     4. Report final model accuracy
     """
-    # Step 1: Generate synthetic data with abrupt drift
+    # Step 1: Generate synthetic data with gradual drift
     # To ensure reproducibility, we run multiple seeds to see how the policy performs under different random conditions.
     seeds = [42, 123, 456]
-    drift_type = "abrupt"
+    drift_type = "gradual"
 
     for seed in seeds:
         generator = DriftGenerator(
-            drift_type="abrupt",
+            drift_type="gradual",
             drift_point=5000,
             seed=seed
         )
@@ -43,11 +43,11 @@ def main():
         #   delta=0.002: confidence parameter for Hoeffding bound (lower = less sensitive)
         #   window_size=500: max recent errors considered for drift detection
         #   min_samples=300: minimum observations before detection activates
-        #   budget=20: allows up to 20 retrains during the experiment
-        # - High latency: retrain_latency=500, deploy_latency=20
+        #   budget=5: allows up to 5 retrains during the experiment
+        # - Low latency: retrain_latency=10, deploy_latency=1
         # - MetricsTracker: Records prediction accuracy/errors over time
         model = StreamingModel()
-        policy = DriftTriggeredPolicy(delta=0.002, window_size=500, min_samples=300, budget=20, retrain_latency=500, deploy_latency=20)
+        policy = DriftTriggeredPolicy(delta=0.002, window_size=500, min_samples=300, budget=5, retrain_latency=10, deploy_latency=1)
         metrics = MetricsTracker()
 
         # Set metadata in metrics for post-analysis
