@@ -6,8 +6,8 @@
     "error_threshold": null,
     "window_size": 500,
     "budget": 10,
-    "retrain_latency": 10,
-    "deploy_latency": 1,
+    "retrain_latency": 100,
+    "deploy_latency": 5,
     "total_samples": 10000,
     "random_seed": 456
   },
