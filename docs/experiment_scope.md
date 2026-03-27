@@ -105,28 +105,6 @@ Each of the 81 runs per policy produces:
 | Per-sample CSV | `results/per_sample_metrics_seed_{seed}.csv` | Per-timestep accuracy, error, latency flags |
 | Summary CSV row | `results/summary_results_{policy}_retrain.csv` | One row appended per run; 81 rows total per policy |
 
-### Summary CSV Columns
-
-| Column | Type | Description |
-|---|---|---|
-| `drift_type` | str | abrupt / gradual / recurring |
-| `drift_point` | int | Always 5000 |
-| `policy_type` | str | periodic / error_threshold / drift_triggered |
-| `policy_interval` or `error_threshold` | float | Policy-specific parameter |
-| `window_size` | int | Sliding-window size (error-threshold & ADWIN only) |
-| `budget` | int | K = 5, 10, or 20 |
-| `retrain_latency` | int | 10, 100, or 500 |
-| `deploy_latency` | int | 1, 5, or 20 |
-| `overall_accuracy` | float | Mean accuracy over all 10,000 timesteps |
-| `pre_drift_accuracy` | float | Mean accuracy for t ∈ [0, 5000) |
-| `post_drift_accuracy` | float | Mean accuracy for t ∈ [5000, 10000) |
-| `accuracy_drop` | float | post_drift − pre_drift (negative = degradation) |
-| `total_retrains` | int | Number of retrains actually executed |
-| `budget_utilization` | float | total_retrains / budget |
-| `retrains_before_drift` | int | Retrains fired during stable period |
-| `retrains_after_drift` | int | Retrains fired after drift onset |
-| `random_seed` | int | 42, 123, or 456 |
-
 ### Visualisation Artifacts
 
 | File | Description |
