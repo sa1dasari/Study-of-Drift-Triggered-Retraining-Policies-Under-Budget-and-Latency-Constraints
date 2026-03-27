@@ -11,7 +11,6 @@ This document explains how to read and interpret every output artifact in the `r
    - [Configuration Columns](#21-configuration-columns)
    - [Performance Columns](#22-performance-columns)
    - [Retraining Columns](#23-retraining-columns)
-   - [Differences Between the Three CSVs](#24-differences-between-the-three-csvs)
 3. [How to Read the CSV Data](#3-how-to-read-the-csv-data)
    - [Filtering and Grouping](#31-filtering-and-grouping)
    - [Worked Example: Comparing Policies Under Abrupt Drift](#32-worked-example)
@@ -26,8 +25,6 @@ This document explains how to read and interpret every output artifact in the `r
    - [Periodic Policy](#51-periodic-policy)
    - [Error-Threshold Policy](#52-error-threshold-policy)
    - [Drift-Triggered (ADWIN) Policy](#53-drift-triggered-adwin-policy)
-6. [Cross-Policy Comparison Tips](#6-cross-policy-comparison-tips)
-7. [Common Patterns and What They Mean](#7-common-patterns-and-what-they-mean)
 
 ---
 
@@ -99,20 +96,6 @@ These columns describe how the retraining budget was spent.
 > **Key relationship:** `total_retrains = retrains_before_drift + retrains_after_drift`
 >
 > **Budget efficiency** can be assessed by comparing `retrains_after_drift / total_retrains`. A policy that spends most of its budget post-drift is more efficient than one that wastes retrains pre-drift.
-
----
-
-### 2.4 Differences Between the Three CSVs
-
-The three CSV files share the same column schema with minor variations in which policy-specific columns are populated:
-
-| Column | Periodic CSV | Error-Threshold CSV | Drift-Triggered CSV |
-|---|---|---|---|
-| `policy_interval` | ✅ Filled (`500`/`1000`/`2000`) | — Empty | — Empty |
-| `error_threshold` | — Empty | ✅ Filled (`0.27`) | — Empty |
-| `window_size` | — Empty | ✅ Filled (`200`) | ✅ Filled (`500`) |
-
----
 
 ## 3. How to Read the CSV Data
 
@@ -356,44 +339,3 @@ Each policy produces a 2×3 dashboard PNG with six panels. The layout is:
 | Panel 4 (Budget Util.) | **Very low** (3–33%) | ADWIN with δ=0.002 is highly conservative; for 2 out of 3 seeds it detects 0 drift under abrupt/gradual |
 | Panel 5 (Retrains After Drift × Latency) | Recurring drift bars highest; gradual drift bars at or near 0 | ADWIN detects repeated concept switches in recurring drift but misses the slow shift in gradual drift entirely |
 | Panel 6 (Retrains After Drift × Budget) | Gradual drift: all bars at 0. Recurring drift: staircase visible | ADWIN cannot detect gradual drift at δ=0.002. For recurring drift, more budget allows more responses to repeated switches |
-
----
-
-## 6. Cross-Policy Comparison Tips
-
-When comparing dashboards side-by-side across the three policies:
-
-### Accuracy (Panel 2)
-- All three policies achieve similar mean accuracy (~0.76). This is because the model's per-sample `partial_fit` provides baseline adaptation even without full retrains.
-- The policies differ more in **how** they use their budget than in raw accuracy.
-
-### Budget Efficiency (Panel 4)
-- **Periodic:** Predictable, deterministic utilisation. Good if you want guaranteed budget consumption.
-- **Error-threshold:** High utilisation but potentially wasteful — may fire retrains pre-drift when noise pushes the error rate above threshold.
-- **ADWIN:** Very low utilisation — preserves budget but may *under-spend*, leaving adaptation on the table.
-
-### Post-Drift Responsiveness (Panel 5)
-- Compare the **height of green bars** (low latency) across the three policy dashboards for the same drift type.
-- Periodic and error-threshold generally deploy more retrains post-drift than ADWIN.
-- ADWIN excels specifically under **recurring drift** where repeated distributional changes give the Hoeffding bound test more signal to work with.
-
-### The Latency Tax (Panel 4 + Panel 5)
-- Compare the gap between green (low latency) and red (high latency) bars in Panel 4 across policies.
-- The periodic policy suffers the most from the "latency tax" at K=20 because its 500-step interval collides with the 520-step latency window, effectively halving its effective budget.
-
----
-
-## 7. Common Patterns and What They Mean
-
-| Pattern | Where to see it | Interpretation |
-|---|---|---|
-| **Pre-drift accuracy varies by seed (0.71–0.82)** | `pre_drift_accuracy` column in CSV | The random weight vectors create easier/harder classification problems per seed. This is expected — compare policies within the same seed for fairness. |
-| **Accuracy drop is positive for some seeds** | `accuracy_drop` column | The post-drift concept (w₂) is inherently easier than the pre-drift concept (w₁) for that seed. Not a policy effect. |
-| **0 total retrains (ADWIN, certain seeds)** | `total_retrains` = 0 in drift-triggered CSV | ADWIN did not detect drift for that seed/config. The model relied entirely on `partial_fit` incremental updates. |
-| **budget_utilization > 0 but retrains_after_drift = 0** | Error-threshold CSV, seeds 42/123 | The error threshold was exceeded by pre-drift noise, consuming the entire budget before drift occurred. |
-| **budget_utilization = 0.5 at high latency + K=20** | Periodic CSV, `retrain_latency=500`, `budget=20` | The 520-step latency window exceeds the 500-step interval, blocking every alternate retrain. Only ~10 of 20 fire. |
-| **Recurring drift has the most retrains after drift** | Panel 5 across all policy dashboards | Recurring drift generates 5 concept switches in the post-drift period, giving every policy repeated opportunities/triggers to retrain. |
-| **Gradual drift + ADWIN = 0 retrains** | Panel 5/6 of ADWIN dashboard | Gradual drift changes the error distribution so slowly that the Hoeffding bound is never exceeded within the 500-sample window at δ = 0.002. |
-| **Flat heatmap (Panel 3)** | ADWIN dashboard | Since most runs have 0 retrains, budget and latency have no effect — the model is just doing `partial_fit` in every case. |
-| **Nearly identical accuracy across all 3 policies** | Panel 2 across all dashboards | The SGD online learner's `partial_fit` provides a strong baseline; full retrains offer marginal improvement on top of incremental learning. |
-

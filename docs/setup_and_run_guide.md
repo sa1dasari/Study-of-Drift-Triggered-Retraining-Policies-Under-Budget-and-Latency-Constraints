@@ -19,7 +19,6 @@ A step-by-step guide for anyone who has freshly cloned this repository and wants
 6. [Full-Factorial Run (Reproducing All 243 Experiments)](#6-full-factorial-run-reproducing-all-243-experiments)
 7. [Generating Summary Dashboard Plots](#7-generating-summary-dashboard-plots)
 8. [Understanding the Output Files](#8-understanding-the-output-files)
-9. [Troubleshooting](#9-troubleshooting)
 
 ---
 
@@ -336,9 +335,9 @@ Same drift × budget × latency grid. Fixed parameters: `error_threshold=0.27`, 
 
 Same drift × budget × latency grid. Fixed parameters: `delta=0.002`, `window_size=500`, `min_samples=300`.
 
-### 6.3 Alternatively: Write an automation wrapper
+### 6.3 Alternatively: USe below automation wrapper
 
-Instead of editing `main.py` 81 times, you can create a small wrapper script. Here is a ready-to-use example:
+Instead of editing `main.py` 81 times, you can use the below small wrapper script. Save this as `run_all_experiments.py` in the project root and run it.It will loop through all configurations for all three policies, running each one sequentially and appending results to the appropriate summary CSV.
 
 ```python
 """
