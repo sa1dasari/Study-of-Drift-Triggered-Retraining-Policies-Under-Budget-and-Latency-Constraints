@@ -6,126 +6,56 @@
     "error_threshold": null,
     "window_size": 500,
     "budget": 20,
-    "retrain_latency": 10,
-    "deploy_latency": 1,
+    "retrain_latency": 100,
+    "deploy_latency": 5,
     "total_samples": 10000,
     "random_seed": 456
   },
   "performance_metrics": {
-    "overall_accuracy": 0.803,
+    "overall_accuracy": 0.8077,
     "pre_drift_accuracy": 0.8202,
-    "post_drift_accuracy": 0.7858,
-    "accuracy_drop": -0.034399999999999986
+    "post_drift_accuracy": 0.7952,
+    "accuracy_drop": -0.025000000000000022
   },
   "retraining_metrics": {
-    "total_retrains": 20,
-    "budget_used": 20,
+    "total_retrains": 6,
+    "budget_used": 6,
     "budget_total": 20,
-    "budget_utilization": 1.0,
+    "budget_utilization": 0.3,
     "retrains_before_drift": 0,
-    "retrains_after_drift": 20,
+    "retrains_after_drift": 6,
     "retrain_timestamps": [
       5034,
-      5045,
-      5056,
-      5067,
-      5078,
-      5089,
-      5100,
-      5111,
-      5122,
-      5133,
-      5144,
-      5155,
-      5166,
-      5177,
-      5188,
-      5199,
-      5210,
-      5221,
-      5232,
-      5243
+      5469,
+      6011,
+      6370,
+      6475,
+      9029
     ],
     "retrain_latency_windows": [
       [
         5034,
-        5045
+        5139
       ],
       [
-        5045,
-        5056
+        5469,
+        5574
       ],
       [
-        5056,
-        5067
+        6011,
+        6116
       ],
       [
-        5067,
-        5078
+        6370,
+        6475
       ],
       [
-        5078,
-        5089
+        6475,
+        6580
       ],
       [
-        5089,
-        5100
-      ],
-      [
-        5100,
-        5111
-      ],
-      [
-        5111,
-        5122
-      ],
-      [
-        5122,
-        5133
-      ],
-      [
-        5133,
-        5144
-      ],
-      [
-        5144,
-        5155
-      ],
-      [
-        5155,
-        5166
-      ],
-      [
-        5166,
-        5177
-      ],
-      [
-        5177,
-        5188
-      ],
-      [
-        5188,
-        5199
-      ],
-      [
-        5199,
-        5210
-      ],
-      [
-        5210,
-        5221
-      ],
-      [
-        5221,
-        5232
-      ],
-      [
-        5232,
-        5243
-      ],
-      [
-        5243,
-        5254
+        9029,
+        9134
       ]
     ]
   },
