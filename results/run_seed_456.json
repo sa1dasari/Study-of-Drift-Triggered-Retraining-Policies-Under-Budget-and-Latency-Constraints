@@ -6,76 +6,61 @@
     "error_threshold": null,
     "window_size": 500,
     "budget": 10,
-    "retrain_latency": 10,
-    "deploy_latency": 1,
+    "retrain_latency": 100,
+    "deploy_latency": 5,
     "total_samples": 10000,
     "random_seed": 456
   },
   "performance_metrics": {
-    "overall_accuracy": 0.8055,
+    "overall_accuracy": 0.8023,
     "pre_drift_accuracy": 0.8202,
-    "post_drift_accuracy": 0.7908,
-    "accuracy_drop": -0.029400000000000093
+    "post_drift_accuracy": 0.7844,
+    "accuracy_drop": -0.035800000000000054
   },
   "retraining_metrics": {
-    "total_retrains": 10,
-    "budget_used": 10,
+    "total_retrains": 7,
+    "budget_used": 7,
     "budget_total": 10,
-    "budget_utilization": 1.0,
+    "budget_utilization": 0.7,
     "retrains_before_drift": 0,
-    "retrains_after_drift": 10,
+    "retrains_after_drift": 7,
     "retrain_timestamps": [
       5034,
-      5045,
-      5056,
-      5067,
-      5078,
-      5089,
-      5100,
-      5111,
-      5122,
-      5133
+      5139,
+      5470,
+      6402,
+      8490,
+      9032,
+      9485
     ],
     "retrain_latency_windows": [
       [
         5034,
-        5045
+        5139
       ],
       [
-        5045,
-        5056
+        5139,
+        5244
       ],
       [
-        5056,
-        5067
+        5470,
+        5575
       ],
       [
-        5067,
-        5078
+        6402,
+        6507
       ],
       [
-        5078,
-        5089
+        8490,
+        8595
       ],
       [
-        5089,
-        5100
+        9032,
+        9137
       ],
       [
-        5100,
-        5111
-      ],
-      [
-        5111,
-        5122
-      ],
-      [
-        5122,
-        5133
-      ],
-      [
-        5133,
-        5144
+        9485,
+        9590
       ]
     ]
   },
