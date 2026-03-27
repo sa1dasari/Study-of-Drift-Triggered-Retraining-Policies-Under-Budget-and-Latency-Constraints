@@ -34,8 +34,8 @@ def plot_results(seeds, policy, drift_point, drift_type, recurrence_period=1000,
     total_latency = policy.retrain_latency + policy.deploy_latency
 
     # Calculate retrain times based on policy type
-    if policy_type == "error_threshold":
-        # For error threshold policy, read retrain times from the first seed's JSON results
+    if policy_type in ("error_threshold", "drift_triggered"):
+        # For error threshold / drift triggered policy, read retrain times from the first seed's JSON results
         retrain_times = []
         try:
             with open(f'results/run_seed_{seeds[0]}.json', 'r') as f:
@@ -160,6 +160,8 @@ def plot_results(seeds, policy, drift_point, drift_type, recurrence_period=1000,
     # Add config info
     if policy_type == "error_threshold":
         config_text = f'Policy: Error Threshold | Budget={policy.budget} | Threshold={policy.error_threshold} | Window={policy.window_size} | Latency={total_latency}'
+    elif policy_type == "drift_triggered":
+        config_text = f'Policy: Drift-Triggered (ADWIN) | Budget={policy.budget} | δ={policy.delta} | Window={policy.window_size} | MinSamples={policy.min_samples} | Latency={total_latency}'
     else:
         config_text = f'Policy: Periodic | Budget={policy.budget} | Interval={policy.interval} | Latency={total_latency}'
     fig.text(0.5, 0.02, config_text, ha='center', fontsize=10, style='italic',

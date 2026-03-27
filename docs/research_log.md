@@ -1,20 +1,94 @@
-WEEK 1:
+# Research Log
+
+---
+
+## WEEK 1 — Project Bootstrapping & Design Lock-In
 
 1. Set up the development environment and tools for the project.
+   - Python 3.13, virtual environment, dependencies: `numpy ≥ 1.22`, `pandas ≥ 1.3`, `matplotlib ≥ 3.4`, `scikit-learn ≥ 1.5`, `scipy ≥ 1.7`.
 2. Create a skeleton structure for the project, including folders for data, scripts, and documentation.
+   - Established `src/data`, `src/models`, `src/policies`, `src/runner`, `src/evaluation`, `docs/`, `results/`.
 3. Create a skeleton for the paper.
-4. Lock my drift modules and policy parameters
+4. Lock my drift modules and policy parameters.
+   - Drift parameters finalized: 10 features, 10,000 samples, drift at t = 5000, recurrence period = 1000.
+   - `DriftGenerator` class implemented with abrupt, gradual, and recurring modes using weight-vector switching.
+   - `StreamingModel` wrapping `SGDClassifier(loss="log_loss")` with `partial_fit()` + `retrain()` methods.
+   - `RetrainPolicy` base class with budget decrement and latency-guard (`is_in_latency_period`) logic.
+   - Full factorial design scoped: 3 drift × 3 policy × 3 budget × 3 latency × 3 seeds = 243 runs.
 
-WEEK 2: 
+---
+
+## WEEK 2 — Periodic Policy Experiments (Abrupt & Gradual Drift)
 
 1. Run preliminary experiments to test the drift simulation and retraining policies.
+   - Verified that `DriftGenerator` produces deterministic output for seeds 42, 123, 456.
+   - Confirmed `ExperimentRunner` streaming loop: predict → evaluate → buffer → maybe retrain → partial_fit.
 2. Run abrupt drift with periodic retraining with various budgets and latency levels.
+   - 27 runs (3 budgets × 3 latencies × 3 seeds).
+   - Observation: periodic policy achieves 100 % budget utilisation at low/medium latency but only ~50 % at high latency with K = 20 because the 520-step latency window exceeds the 500-step interval, halving usable retrains from 20 to ~10.
 3. Run gradual drift with periodic retraining with various budgets and latency levels.
-5. Analyze and document the results of the preliminary experiments, noting any issues or insights.
+   - 27 runs.
+   - Observation: accuracy drop under gradual drift is comparable to abrupt drift (≈ −0.03 to −0.05) because the 1,000-step transition still fully shifts the concept within two periodic intervals.
+4. Analyze and document the results of the preliminary experiments, noting any issues or insights.
+   - Key insight: pre-drift accuracy varies significantly across seeds (e.g., seed 42 ≈ 0.77, seed 123 ≈ 0.71, seed 456 ≈ 0.82), confirming the importance of multi-seed evaluation.
+   - Periodic retrains fire evenly across the stream — roughly half before drift and half after, regardless of drift type.
 
-WEEK 3:
+---
+
+## WEEK 3 — Periodic Policy Experiments (Recurring Drift) & Paper Drafting
 
 1. Run recurring drift with periodic retraining with various budgets and latency levels.
+   - Final 27 runs for periodic policy. Summary CSV now contains all 81 rows.
+   - Observation: recurring drift creates multiple accuracy dips (one per concept switch every 1,000 steps), and the periodic policy can only coincidentally align a retrain with a switch.
 2. Analyze and document the results of the experiments, noting any issues or insights.
-3. Come up with Intro and related work sections for the paper.
+   - Under recurring drift with high latency, the model spends a large fraction of post-drift time inside latency windows, meaning stale weights dominate predictions.
+   - Budget utilization remains 100 % at low/medium latency for all budget levels, confirming the latency–budget interaction only bites at high latency.
+3. Drafted up an intro and related work sections for the paper.
 4. Start drafting the methods section of the paper, detailing the experimental setup and parameters.
+
+---
+
+## WEEK 4 — Error-Threshold Policy Calibration & Full Runs
+
+1. Did a threshold calibration for error threshold policy and documented it.
+   - Swept thresholds in [0.20, 0.25, 0.27, 0.30, 0.35] with window = 200 over seed 42 + abrupt drift.
+   - Threshold = 0.20 → fires 8 times pre-drift (pure noise triggers, budget wasted).
+   - Threshold = 0.27 → fires 5 times pre-drift for seeds 42/123, 0 times for seed 456 — selected as best trade-off.
+   - Threshold = 0.35 → never fires pre-drift, but delays detection by ~300 steps post-drift.
+2. Ran experiments with error threshold retraining policy across all drift types, budgets, and latency levels.
+   - 81 runs total (3 drift × 3 budget × 3 latency × 3 seeds).
+   - Critical finding (abrupt drift): for seeds 42 and 123 with K = 5, **all 5 retrains fired before t = 5000**, leaving 0 retrains for the actual drift. This means the model ran entirely on stale-or-incremental weights post-drift.
+   - For seed 456, all retrains fired post-drift (0 before, 5 after) — the error threshold was not exceeded by pre-drift noise for this seed, showcasing high seed sensitivity.
+3. Analyzed the results of the experiments, comparing the performance of the error threshold policy under various conditions.
+   - Budget utilisation: 100 % for low/medium latency at all budget levels. At high latency with K = 5, seed 456 achieved only 80 % (4 out of 5 retrains) because the 520-step latency window blocked the final trigger.
+   - Post-drift accuracy: comparable across policies (~0.73–0.79 depending on seed), suggesting that the error-threshold policy did not dramatically improve post-drift performance when budget was wasted pre-drift.
+
+---
+
+## WEEK 5 — ADWIN Calibration & Paper Sections
+
+1. Did a threshold calibration for drift triggered policy and documented it.
+   - Swept δ ∈ {0.05, 0.01, 0.005, 0.002, 0.001} with window = 500 and min_samples = 300.
+   - δ = 0.05 → fires ~3 times pre-drift (false alarms) on some seeds.
+   - δ = 0.002 → 0 false alarms across all seeds/drift types during the pre-drift phase. Selected as final value.
+   - δ = 0.001 → also 0 false alarms, but sometimes missed abrupt drift entirely for seeds 42/123 (too conservative).
+   - min_samples = 300 was chosen to skip the warm-up noise in the first 300 steps where `partial_fit` is still converging.
+2. Worked on drafting the sections of paper related to the error threshold policy, including the experimental setup and discussion.
+
+---
+
+## WEEK 6 — Full ADWIN Runs & Cross-Policy Analysis
+
+1. Continued to run experiments for error threshold and drift trigger policies across all drift types, budgets, and latency levels.
+   - All 81 drift-triggered runs completed. Summary CSV: `summary_results_drift_triggered_retrain.csv` (81 rows).
+   - All three policy summary CSVs verified: 82 lines each (1 header + 81 data rows).
+2. Analyzed the results of the experiments, comparing the performance of different policies under various conditions.
+   - **ADWIN seed-sensitivity (abrupt drift):** Seeds 42 and 123 → 0 retrains across *all* 9 budget × latency configs (0 % budget utilisation). Seed 456 → fully utilised budget at low/medium latency.
+   - **ADWIN recurring drift:** more consistent detection across seeds because the repeated concept switches provide multiple opportunities for the Hoeffding bound to be exceeded.
+   - **Cross-policy observation:** Periodic policy has the most stable budget utilisation (100 % unless high-latency blocks it). Error-threshold is intermediate (variable, but generally uses full budget). ADWIN is the most variable (0 %–100 % depending on seed).
+   - **Accuracy comparison (abrupt, seed 456, K = 5, low latency):** Periodic = 0.806, Error-threshold = 0.802, ADWIN = 0.803 — all policies are close when detection actually fires.
+   - **Accuracy comparison (abrupt, seed 42, K = 5, low latency):** Periodic = 0.750, Error-threshold = 0.753, ADWIN = 0.753 — ADWIN matches error-threshold despite 0 retrains because the model's `partial_fit` online learning provides a baseline adaptation.
+3. Generated summary dashboard plots for all three policies (2 × 3 panel each) using `plot_summary.py`.
+   - Periodic: `results/summary_results_plot_periodic_retrain.png`
+   - Error-threshold: `results/summary_results_plot_error_threshold_retrain.png`
+   - Drift-triggered: `results/summary_results_plot_drift_triggered_retrain.png`
