@@ -11,7 +11,7 @@ This repository contains a reproducible empirical systems study comparing three 
 ## Repository Structure
 
 ```
-├── main.py                  # Entry point – configures and launches experiment runs
+├── main.py                  # CLI entry point – full-factorial sweep (--policy, --seeds)
 ├── plot_summary.py          # Generates 2×3 summary dashboard from summary CSVs
 ├── docs/
 │   ├── setup_and_run_guide.md   # ★ Start here — setup, running, reproducing experiments

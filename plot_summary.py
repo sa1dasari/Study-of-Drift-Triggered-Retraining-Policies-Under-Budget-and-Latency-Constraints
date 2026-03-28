@@ -11,11 +11,38 @@ Usage:
     python plot_summary.py --policy drift_triggered_10seed  # 10-seed drift-triggered only
 """
 
+import warnings
+
 import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 import pandas as pd
 import numpy as np
+
+# ── Known label mappings ────────────────────────────────────────────────
+# Extend these dicts when new budget or latency levels are added.
+_LATENCY_LABELS = {
+    11:  'Low (11)',
+    105: 'Med (105)',
+    520: 'High (520)',
+}
+
+_BUDGET_LABELS = {
+    5:  'Low (5)',
+    10: 'Med (10)',
+    20: 'High (20)',
+}
+
+
+def _lookup_label(value, known, kind='value'):
+    """Return the human-readable label for *value*, or warn and fall back."""
+    if value in known:
+        return known[value]
+    warnings.warn(
+        f"Unmapped {kind} = {value}; no entry in label dict. "
+        f"Add it to the corresponding mapping in plot_summary.py."
+    )
+    return f'{value}'
 
 
 def plot_summary_for_policy(csv_path, output_path, policy_name):
@@ -33,35 +60,28 @@ def plot_summary_for_policy(csv_path, output_path, policy_name):
     print(f"  Budgets     : {sorted(df['budget'].unique())}")
     print(f"  Latencies   : {sorted(df['retrain_latency'].unique())}")
 
-    # ── Helper labels ───────────────────────────────────────────────────
-    def get_latency_label(row):
-        total = row['retrain_latency'] + row['deploy_latency']
-        if total <= 20:
-            return 'Low (11)'
-        elif total <= 150:
-            return 'Med (105)'
-        else:
-            return 'High (520)'
-
-    def get_budget_label(budget):
-        if budget <= 5:
-            return 'Low (5)'
-        elif budget <= 10:
-            return 'Med (10)'
-        else:
-            return 'High (20)'
-
-    df['latency_label'] = df.apply(get_latency_label, axis=1)
-    df['budget_label'] = df['budget'].apply(get_budget_label)
+    # ── Derived columns ─────────────────────────────────────────────────
     df['total_latency'] = df['retrain_latency'] + df['deploy_latency']
+    df['latency_label'] = df['total_latency'].apply(
+        lambda v: _lookup_label(v, _LATENCY_LABELS, kind='total_latency'))
+    df['budget_label'] = df['budget'].apply(
+        lambda v: _lookup_label(v, _BUDGET_LABELS, kind='budget'))
+
+    # ── Dynamic ordering (sorted by numeric value) ──────────────────────
+    latency_order = [
+        _lookup_label(v, _LATENCY_LABELS, kind='total_latency')
+        for v in sorted(df['total_latency'].unique())
+    ]
+    budget_order = [
+        _lookup_label(v, _BUDGET_LABELS, kind='budget')
+        for v in sorted(df['budget'].unique())
+    ]
 
     # ── Figure ──────────────────────────────────────────────────────────
     fig, axes = plt.subplots(2, 3, figsize=(16, 10))
     fig.suptitle(f'{policy_name} Policy: Summary Results Across All Configurations',
                  fontsize=14, fontweight='bold')
 
-    latency_order = ['Low (11)', 'Med (105)', 'High (520)']
-    budget_order = ['Low (5)', 'Med (10)', 'High (20)']
 
     colors_drift = {'abrupt': '#3498db', 'gradual': '#e74c3c', 'recurring': '#9b59b6'}
     markers = {'abrupt': 'o', 'gradual': 's', 'recurring': 'D'}

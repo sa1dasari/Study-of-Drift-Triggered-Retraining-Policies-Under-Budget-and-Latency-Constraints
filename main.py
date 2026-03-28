@@ -1,94 +1,166 @@
 """
 Main entry point for the Drift-Triggered Retraining Policy experiment.
 
-Runs all combinations for the Drift-Triggered (ADWIN) retraining policy:
-  3 drift types × 3 budgets × 3 latency levels × 10 seeds = 270 runs
+Runs full-factorial sweeps for one or all retraining policies:
+  3 drift types × 3 budgets × 3 latency levels × N seeds
 
+Usage:
+    python main.py                       # all 3 policies (810 runs with 10 seeds)
+    python main.py --policy periodic     # periodic only   (270 runs)
+    python main.py --policy error_threshold
+    python main.py --policy drift_triggered
+    python main.py --seeds 3             # use 3-seed set instead of 10
 """
 
+import argparse
 from pathlib import Path
 import time
 
 from src.data.drift_generator import DriftGenerator
 from src.models.base_model import StreamingModel
+from src.policies.periodic import PeriodicPolicy
+from src.policies.error_threshold_policy import ErrorThresholdPolicy
 from src.policies.drift_triggered_policy import DriftTriggeredPolicy
 from src.evaluation.metrics import MetricsTracker
 from src.runner.experiment_runner import ExperimentRunner
 from src.evaluation.results_export import export_to_json, export_to_csv, export_summary_to_csv
 
+# ── Seed sets ───────────────────────────────────────────────────────────
+SEEDS_3 = [42, 123, 456]
+SEEDS_10 = [42, 123, 456, 789, 1011, 1213, 1415, 1617, 1819, 2021]
 
-def main():
-    seeds = [42, 123, 456, 789, 1011, 1213, 1415, 1617, 1819, 2021]
-    drift_types = ["abrupt", "gradual", "recurring"]
-    budgets = [5, 10, 20]                       # Low / Med / High budget
-    latency_configs = [
-        (10, 1),     # Low latency   (total = 11)
-        (100, 5),    # Medium latency (total = 105)
-        (500, 20),   # High latency  (total = 520)
-    ]
+# ── Shared experiment grid ──────────────────────────────────────────────
+DRIFT_TYPES = ["abrupt", "gradual", "recurring"]
+BUDGETS = [5, 10, 20]
+LATENCY_CONFIGS = [
+    (10, 1),      # Low latency   (total = 11)
+    (100, 5),     # Medium latency (total = 105)
+    (500, 20),    # High latency  (total = 520)
+]
+DRIFT_POINT = 5000
+N_SAMPLES = 10000
+RECURRENCE_PERIOD = 1000
 
-    # Drift-triggered (ADWIN) policy fixed parameters
-    delta = 0.002
-    window_size = 500
-    min_samples = 100
-    policy_type = "drift_triggered"
+# ── Per-policy fixed parameters ─────────────────────────────────────────
+POLICY_PARAMS = {
+    "periodic": {},                                          # interval derived from budget
+    "error_threshold": {"error_threshold": 0.27, "window_size": 200},
+    "drift_triggered": {"delta": 0.002, "window_size": 500, "min_samples": 100},
+}
 
-    # Data generation parameters
-    drift_point = 5000
-    n_samples = 10000
-    recurrence_period = 1000
+POLICY_DISPLAY = {
+    "periodic":         "Periodic",
+    "error_threshold":  "Error-Threshold",
+    "drift_triggered":  "Drift-Triggered (ADWIN)",
+}
 
-    #  Prepare output
-    run_label = f"{len(seeds)}seed_{len(drift_types)}drift_{len(budgets)}budget_{len(latency_configs)}latency"
-    results_dir = Path(f"results/drift_triggered_{run_label}")
+
+def _build_policy(policy_type, budget, retrain_latency, deploy_latency):
+    """Instantiate the requested policy with the correct parameters."""
+    if policy_type == "periodic":
+        interval = N_SAMPLES // budget          # 5→2000, 10→1000, 20→500
+        return PeriodicPolicy(
+            interval=interval,
+            budget=budget,
+            retrain_latency=retrain_latency,
+            deploy_latency=deploy_latency,
+        )
+    elif policy_type == "error_threshold":
+        p = POLICY_PARAMS["error_threshold"]
+        return ErrorThresholdPolicy(
+            error_threshold=p["error_threshold"],
+            window_size=p["window_size"],
+            budget=budget,
+            retrain_latency=retrain_latency,
+            deploy_latency=deploy_latency,
+        )
+    elif policy_type == "drift_triggered":
+        p = POLICY_PARAMS["drift_triggered"]
+        return DriftTriggeredPolicy(
+            delta=p["delta"],
+            window_size=p["window_size"],
+            min_samples=p["min_samples"],
+            budget=budget,
+            retrain_latency=retrain_latency,
+            deploy_latency=deploy_latency,
+        )
+    else:
+        raise ValueError(f"Unknown policy_type: {policy_type!r}")
+
+
+def _build_config(policy_type, drift_type, budget, seed):
+    """Build the config dict passed to export helpers."""
+    config = {
+        "drift_type": drift_type,
+        "drift_point": DRIFT_POINT,
+        "recurrence_period": RECURRENCE_PERIOD,
+        "policy_type": policy_type,
+        "budget": budget,
+        "random_seed": seed,
+    }
+    if policy_type == "periodic":
+        config["policy_interval"] = N_SAMPLES // budget
+    elif policy_type == "error_threshold":
+        config.update(POLICY_PARAMS["error_threshold"])
+    elif policy_type == "drift_triggered":
+        config.update(POLICY_PARAMS["drift_triggered"])
+    return config
+
+
+def run_policy_sweep(policy_type, seeds):
+    """Execute the full-factorial sweep for a single policy."""
+    seed_label = f"{len(seeds)}seed"
+    n_drifts = len(DRIFT_TYPES)
+    n_budgets = len(BUDGETS)
+    n_latencies = len(LATENCY_CONFIGS)
+    total_runs = n_drifts * n_budgets * n_latencies * len(seeds)
+
+    # Output paths
+    run_label = f"{seed_label}_{n_drifts}drift_{n_budgets}budget_{n_latencies}latency"
+    results_dir = Path(f"results/{policy_type}_{run_label}")
     results_dir.mkdir(parents=True, exist_ok=True)
 
-    summary_csv = "results/summary_results_drift_triggered_retrain_10seed.csv"
-    Path(summary_csv).unlink(missing_ok=True)          # fresh file
+    summary_csv = f"results/summary_results_{policy_type}_retrain_{seed_label}.csv"
+    Path(summary_csv).unlink(missing_ok=True)
 
-    total_runs = len(drift_types) * len(budgets) * len(latency_configs) * len(seeds)
+    display = POLICY_DISPLAY[policy_type]
     run_count = 0
     start_time = time.time()
 
+    print(f"\n{'=' * 70}")
+    print(f"{display} POLICY – Full Experiment Sweep ({total_runs} runs)")
     print(f"{'=' * 70}")
-    print(f"DRIFT-TRIGGERED RETRAIN POLICY – Full Experiment Sweep ({total_runs} runs)")
-    print(f"{'=' * 70}")
-    print(f"  Drift types      : {drift_types}")
-    print(f"  Budgets           : {budgets}")
-    print(f"  Latency configs   : {latency_configs}")
-    print(f"  Seeds             : {len(seeds)} seeds")
-    print(f"  ADWIN delta       : {delta}")
-    print(f"  Window size       : {window_size}")
-    print(f"  Min samples       : {min_samples}")
+    print(f"  Drift types      : {DRIFT_TYPES}")
+    print(f"  Budgets          : {BUDGETS}")
+    print(f"  Latency configs  : {LATENCY_CONFIGS}")
+    print(f"  Seeds            : {len(seeds)} seeds")
+    if policy_type == "periodic":
+        print(f"  Intervals        : {[N_SAMPLES // b for b in BUDGETS]}")
+    else:
+        for k, v in POLICY_PARAMS[policy_type].items():
+            print(f"  {k:<18}: {v}")
     print(f"{'=' * 70}\n")
 
-    for drift_type in drift_types:
-        for budget in budgets:
-            for retrain_latency, deploy_latency in latency_configs:
+    for drift_type in DRIFT_TYPES:
+        for budget in BUDGETS:
+            for retrain_latency, deploy_latency in LATENCY_CONFIGS:
                 for seed in seeds:
                     run_count += 1
 
                     # 1. Generate data
                     generator = DriftGenerator(
                         drift_type=drift_type,
-                        drift_point=drift_point,
-                        recurrence_period=recurrence_period,
+                        drift_point=DRIFT_POINT,
+                        recurrence_period=RECURRENCE_PERIOD,
                         seed=seed,
                     )
-                    X, y = generator.generate(n_samples)
+                    X, y = generator.generate(N_SAMPLES)
 
                     # 2. Build components
                     model = StreamingModel()
-                    policy = DriftTriggeredPolicy(
-                        delta=delta,
-                        window_size=window_size,
-                        min_samples=min_samples,
-                        budget=budget,
-                        retrain_latency=retrain_latency,
-                        deploy_latency=deploy_latency,
-                    )
+                    policy = _build_policy(policy_type, budget, retrain_latency, deploy_latency)
                     metrics = MetricsTracker()
-                    metrics.set_drift_point(drift_point)
+                    metrics.set_drift_point(DRIFT_POINT)
                     metrics.set_budget(budget)
 
                     # 3. Run experiment
@@ -109,23 +181,13 @@ def main():
                         f"ETA {eta / 60:.1f} min"
                     )
 
-                    # 5. Export per-run results (disambiguated filenames)
+                    # 5. Export per-run results
                     run_tag = (
                         f"{drift_type}_b{budget}"
                         f"_l{retrain_latency}+{deploy_latency}"
                         f"_s{seed}"
                     )
-                    config = {
-                        "drift_type": drift_type,
-                        "drift_point": drift_point,
-                        "recurrence_period": recurrence_period,
-                        "policy_type": policy_type,
-                        "delta": delta,
-                        "window_size": window_size,
-                        "min_samples": min_samples,
-                        "budget": budget,
-                        "random_seed": seed,
-                    }
+                    config = _build_config(policy_type, drift_type, budget, seed)
 
                     export_to_json(
                         metrics, policy, config,
@@ -135,27 +197,64 @@ def main():
                         metrics, policy, config,
                         str(results_dir / f"per_sample_{run_tag}.csv"),
                     )
-                    export_summary_to_csv(
-                        metrics, policy, config,
-                        summary_csv,
-                    )
+                    export_summary_to_csv(metrics, policy, config, summary_csv)
 
-    # Summary
     elapsed = time.time() - start_time
-    print(f"\n{'=' * 70}")
-    print(f"All {total_runs} runs completed in {elapsed / 60:.1f} minutes")
+    print(f"\n{display}: {total_runs} runs completed in {elapsed / 60:.1f} minutes")
     print(f"Summary CSV → {summary_csv}")
 
-    # Generate summary plot
-    print("\nGenerating summary plot...")
+    # Generate summary dashboard
+    print(f"Generating {display} summary plot...")
     from plot_summary import plot_summary_for_policy
-
     plot_summary_for_policy(
         csv_path=summary_csv,
-        output_path="results/summary_results_plot_drift_triggered_retrain_10seed.png",
-        policy_name="Drift-Triggered (ADWIN)",
+        output_path=f"results/summary_results_plot_{policy_type}_retrain_{seed_label}.png",
+        policy_name=display,
     )
-    print(f"{'=' * 70}")
+
+    return summary_csv
+
+
+def main():
+    parser = argparse.ArgumentParser(
+        description="Run retraining-policy experiments (full-factorial sweep)."
+    )
+    parser.add_argument(
+        "--policy",
+        choices=["periodic", "error_threshold", "drift_triggered", "all"],
+        default="all",
+        help="Which policy to run (default: all).",
+    )
+    parser.add_argument(
+        "--seeds",
+        type=int,
+        choices=[3, 10],
+        default=10,
+        help="Number of seeds: 3 (Phase 1) or 10 (Phase 2, default).",
+    )
+    args = parser.parse_args()
+
+    seeds = SEEDS_3 if args.seeds == 3 else SEEDS_10
+    policies = (
+        list(POLICY_PARAMS.keys()) if args.policy == "all"
+        else [args.policy]
+    )
+
+    total_start = time.time()
+
+    print(f"{'#' * 70}")
+    print(f"  EXPERIMENT SWEEP — {len(policies)} policy(ies), "
+          f"{len(seeds)} seeds, "
+          f"{len(DRIFT_TYPES) * len(BUDGETS) * len(LATENCY_CONFIGS) * len(seeds) * len(policies)} total runs")
+    print(f"{'#' * 70}")
+
+    for policy_type in policies:
+        run_policy_sweep(policy_type, seeds)
+
+    total_elapsed = time.time() - total_start
+    print(f"\n{'#' * 70}")
+    print(f"  ALL DONE — {len(policies)} policy(ies) completed in {total_elapsed / 60:.1f} minutes")
+    print(f"{'#' * 70}")
 
 
 if __name__ == "__main__":
