@@ -6,9 +6,9 @@ standalone entry point that generates plots from any policy's summary CSV.
 
 Usage:
     python plot_summary.py                                  # all policies (incl. 10-seed)
-    python plot_summary.py --policy periodic                # single-seed periodic only
     python plot_summary.py --policy periodic_10seed         # 10-seed periodic only
     python plot_summary.py --policy error_threshold_10seed  # 10-seed error-threshold only
+    python plot_summary.py --policy drift_triggered_10seed  # 10-seed drift-triggered only
 """
 
 import matplotlib
@@ -221,8 +221,8 @@ def plot_summary_for_policy(csv_path, output_path, policy_name):
 def plot_summary():
     """Generate plots for the drift-triggered policy (backward-compatible)."""
     plot_summary_for_policy(
-        csv_path='results/summary_results_drift_triggered_retrain.csv',
-        output_path='results/summary_results_plot_drift_triggered_retrain.png',
+        csv_path='results/summary_results_drift_triggered_retrain_3seed.csv',
+        output_path='results/summary_results_plot_drift_triggered_retrain_3seed.png',
         policy_name='Drift-Triggered (ADWIN)',
     )
 
@@ -232,8 +232,8 @@ if __name__ == "__main__":
 
     policy_map = {
         'periodic': (
-            'results/summary_results_periodic_retrain.csv',
-            'results/summary_results_plot_periodic_retrain.png',
+            'results/summary_results_periodic_retrain_3seed.csv',
+            'results/summary_results_plot_periodic_retrain_3seed.png',
             'Periodic',
         ),
         'periodic_10seed': (
@@ -242,8 +242,8 @@ if __name__ == "__main__":
             'Periodic (10 seeds)',
         ),
         'error_threshold': (
-            'results/summary_results_error_threshold_retrain.csv',
-            'results/summary_results_plot_error_threshold_retrain.png',
+            'results/summary_results_error_threshold_retrain_3seed.csv',
+            'results/summary_results_plot_error_threshold_retrain_3seed.png',
             'Error-Threshold',
         ),
         'error_threshold_10seed': (
@@ -252,8 +252,8 @@ if __name__ == "__main__":
             'Error-Threshold (10 seeds)',
         ),
         'drift_triggered': (
-            'results/summary_results_drift_triggered_retrain.csv',
-            'results/summary_results_plot_drift_triggered_retrain.png',
+            'results/summary_results_drift_triggered_retrain_3seed.csv',
+            'results/summary_results_plot_drift_triggered_retrain_3seed.png',
             'Drift-Triggered (ADWIN)',
         ),
         'drift_triggered_10seed': (
