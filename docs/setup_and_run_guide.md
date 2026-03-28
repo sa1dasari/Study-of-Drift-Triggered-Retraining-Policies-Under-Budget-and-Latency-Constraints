@@ -16,7 +16,7 @@ A step-by-step guide for anyone who has freshly cloned this repository and wants
    - [Step C — Choose Budget & Latency](#step-c--choose-budget--latency)
    - [Step D — Choose Seeds](#step-d--choose-seeds)
    - [Step E — Set the Summary CSV Filename](#step-e--set-the-summary-csv-filename)
-6. [Full-Factorial Run (Reproducing All 243 Experiments)](#6-full-factorial-run-reproducing-all-243-experiments)
+6. [Full-Factorial Run (Reproducing All 1,053 Experiments)](#6-full-factorial-run-reproducing-all-1053-experiments)
 7. [Generating Summary Dashboard Plots](#7-generating-summary-dashboard-plots)
 8. [Understanding the Output Files](#8-understanding-the-output-files)
 
@@ -178,7 +178,7 @@ config = {
     "policy_interval": policy.interval,
     ...
 }
-export_summary_to_csv(metrics, policy, config, "results/summary_results_periodic_retrain.csv")
+export_summary_to_csv(metrics, policy, config, "results/summary_results_periodic_retrain_3seed.csv")
 plot_results(seeds, policy, drift_point=5000, drift_type=drift_type, policy_type="periodic")
 
 ```
@@ -209,7 +209,7 @@ config = {
     "window_size": policy.window_size,
     ...
 }
-export_summary_to_csv(metrics, policy, config, "results/summary_results_error_threshold_retrain.csv")
+export_summary_to_csv(metrics, policy, config, "results/summary_results_error_threshold_retrain_3seed.csv")
 plot_results(seeds, policy, drift_point=5000, drift_type=drift_type, policy_type="error_threshold")
 ```
 
@@ -245,7 +245,13 @@ These are set directly in the policy constructor (see Step B). The study uses th
 The seeds list controls how many runs are performed and with which random initializations:
 
 ```python
-seeds = [42, 123, 456]     # Default: 3 seeds for variance measurement
+seeds = [42, 123, 456]     # Phase 1: 3 seeds for initial exploration
+```
+
+For the extended 10-seed Phase 2 runs:
+
+```python
+seeds = [42, 123, 456, 789, 1011, 1213, 1415, 1617, 1819, 2021]  # Phase 2: 10 seeds
 ```
 
 You can use a single seed for a quick test:
@@ -256,28 +262,58 @@ seeds = [42]                # Fast: 1 run only
 
 ### Step E — Set the Summary CSV Filename
 
-Each policy should write to its own summary CSV so results don't mix. Make sure the `export_summary_to_csv` call uses the correct filename:
+Each policy should write to its own summary CSV so results don't mix. The filename should include the seed count to distinguish between experiment phases. Make sure the `export_summary_to_csv` call uses the correct filename:
 
-| Policy | Summary CSV filename |
-|---|---|
-| Periodic | `results/summary_results_periodic_retrain.csv` |
-| Error-Threshold | `results/summary_results_error_threshold_retrain.csv` |
-| Drift-Triggered | `results/summary_results_drift_triggered_retrain.csv` |
+| Policy | Phase 1 (3-seed) CSV | Phase 2 (10-seed) CSV |
+|---|---|---|
+| Periodic | `results/summary_results_periodic_retrain_3seed.csv` | `results/summary_results_periodic_retrain_10seed.csv` |
+| Error-Threshold | `results/summary_results_error_threshold_retrain_3seed.csv` | `results/summary_results_error_threshold_retrain_10seed.csv` |
+| Drift-Triggered | `results/summary_results_drift_triggered_retrain_3seed.csv` | `results/summary_results_drift_triggered_retrain_10seed.csv` |
 
 > **Important:** The summary CSV is opened in **append mode**. Each run adds one row. If you re-run the same configuration, duplicate rows will be appended. **Delete the CSV first** if you want a clean start:
 >
 > ```powershell
-> Remove-Item results/summary_results_periodic_retrain.csv   # Windows
-> # rm results/summary_results_periodic_retrain.csv          # macOS/Linux
+> Remove-Item results/summary_results_periodic_retrain_3seed.csv   # Windows
+> # rm results/summary_results_periodic_retrain_3seed.csv          # macOS/Linux
 > ```
 
 ---
 
-## 6. Full-Factorial Run (Reproducing All 243 Experiments)
+## 6. Full-Factorial Run (Reproducing All 1,053 Experiments)
 
-To reproduce the complete study (81 runs per policy, 243 total), you need to loop over all factor combinations. The procedure is described below.
+To reproduce the complete study, you need to run both experiment phases:
+- **Phase 1:** 243 runs (3 seeds × 3 drifts × 3 budgets × 3 latencies × 3 policies)
+- **Phase 2:** 810 runs (10 seeds × 3 drifts × 3 budgets × 3 latencies × 3 policies)
+- **Total:** 1,053 experiment runs
 
-### Why the original 243 experiments were NOT run all at once
+### Git Branching Strategy Used in This Study
+
+#### Phase 1 — Per-Configuration Branches (243 runs, 3 seeds)
+
+Each individual configuration was developed and tested in its own feature branch:
+- **Branch naming:** `exp/<drift>-<policy>-<Budget>budget-<Latency>Latency`
+- **Examples:**
+  - `exp/gradual-drift-triggered-Medbudget-HighLatency`
+  - `exp/abrupt-periodic-Lowbudget-LowLatency`
+  - `exp/recurring-error-threshold-Highbudget-MedLatency`
+
+Cumulative results per policy (81 runs) were merged into dedicated develop branches:
+- `develop_3seed_periodic_retrain`
+- `develop_3seed_error_threshold_retrain`
+- `develop_3seed_drift_triggered_retrain`
+
+#### Phase 2 — Per-Policy Batch Branches (810 runs, 10 seeds)
+
+The 810 runs were executed in 3 batches (270 runs per batch), one batch per policy:
+- `develop-10Seed-periodic-retrain-tests` (270 runs)
+- `develop-10Seed-error-threshold-retrain-tests` (270 runs)
+- `develop-10Seed-drift-triggered-retrain-tests` (270 runs)
+
+#### Merged Results
+
+The **`main`** and **`develop`** branches contain all results from both phases (1,053 total runs). All CSVs and dashboard plots are in the `results/` folder.
+
+### Why the original experiments were NOT run all at once
 
 If you look at the [research log](research_log.md) you will notice the experiments were executed incrementally across six weeks, not as a single batch. This was deliberate:
 
@@ -289,20 +325,23 @@ If you look at the [research log](research_log.md) you will notice the experimen
 
 4. **Incremental runs aided debugging and validation.** Running one policy at a time made it possible to inspect console output, verify that metrics were recorded correctly, and catch bugs before committing to 81 more runs.
 
-> **For reproduction purposes**, however, you now have the final calibrated parameters for all three policies. You can safely run all 243 experiments in one batch using the wrapper script provided in [Section 6.3](#63-alternatively-write-an-automation-wrapper).
+> **For reproduction purposes**, however, you now have the final calibrated parameters for all three policies. You can safely run all 1,053 experiments (or just the 810 Phase 2 runs for the strongest variance estimates) using the wrapper scripts provided below.
 
 ### 6.1 Clear existing results
 
 ```powershell
 # Windows PowerShell
-Remove-Item results/summary_results_periodic_retrain.csv -ErrorAction SilentlyContinue
-Remove-Item results/summary_results_error_threshold_retrain.csv -ErrorAction SilentlyContinue
-Remove-Item results/summary_results_drift_triggered_retrain.csv -ErrorAction SilentlyContinue
+Remove-Item results/summary_results_periodic_retrain_3seed.csv -ErrorAction SilentlyContinue
+Remove-Item results/summary_results_error_threshold_retrain_3seed.csv -ErrorAction SilentlyContinue
+Remove-Item results/summary_results_drift_triggered_retrain_3seed.csv -ErrorAction SilentlyContinue
+Remove-Item results/summary_results_periodic_retrain_10seed.csv -ErrorAction SilentlyContinue
+Remove-Item results/summary_results_error_threshold_retrain_10seed.csv -ErrorAction SilentlyContinue
+Remove-Item results/summary_results_drift_triggered_retrain_10seed.csv -ErrorAction SilentlyContinue
 ```
 
 ```bash
 # macOS / Linux
-rm -f results/summary_results_*_retrain.csv
+rm -f results/summary_results_*_retrain_*seed.csv
 ```
 
 ### 6.2 Run all configurations
@@ -335,14 +374,20 @@ Same drift × budget × latency grid. Fixed parameters: `error_threshold=0.27`, 
 
 Same drift × budget × latency grid. Fixed parameters: `delta=0.002`, `window_size=500`, `min_samples=300`.
 
-### 6.3 Alternatively: USe below automation wrapper
+### 6.3 Alternatively: Use below automation wrapper
 
-Instead of editing `main.py` 81 times, you can use the below small wrapper script. Save this as `run_all_experiments.py` in the project root and run it.It will loop through all configurations for all three policies, running each one sequentially and appending results to the appropriate summary CSV.
+Instead of editing `main.py` many times, you can use the below small wrapper script. Save this as `run_all_experiments.py` in the project root and run it. It will loop through all configurations for all three policies, running each one sequentially and appending results to the appropriate summary CSV.
+
+> **Note:** The script below reproduces the Phase 1 (3-seed, 243 runs) configuration. To reproduce Phase 2 (10-seed, 810 runs), change the `SEEDS` list to include all 10 seeds and update the CSV filenames to use `_10seed` suffixes.
 
 ```python
 """
-run_all_experiments.py — Runs the full 243-experiment matrix.
-Place this file in the project root and run: python run_all_experiments.py
+run_all_experiments.py — Runs the full experiment matrix.
+
+Phase 1 (3 seeds):  243 runs  → *_3seed.csv
+Phase 2 (10 seeds): 810 runs  → *_10seed.csv
+
+To switch between phases, change SEEDS and SEED_LABEL below.
 """
 import os
 from pathlib import Path
@@ -355,7 +400,14 @@ from src.evaluation.metrics import MetricsTracker
 from src.runner.experiment_runner import ExperimentRunner
 from src.evaluation.results_export import export_summary_to_csv
 
+# ── Phase 1 (3 seeds, 243 runs) ──
 SEEDS = [42, 123, 456]
+SEED_LABEL = "3seed"
+
+# ── Uncomment below for Phase 2 (10 seeds, 810 runs) ──
+# SEEDS = [42, 123, 456, 789, 1011, 1213, 1415, 1617, 1819, 2021]
+# SEED_LABEL = "10seed"
+
 DRIFT_TYPES = ["abrupt", "gradual", "recurring"]
 BUDGET_LATENCY = [
     # (budget, retrain_latency, deploy_latency)
@@ -382,7 +434,7 @@ def run_one(policy, policy_type, config, drift_type, seed, budget, r_lat, d_lat)
     metrics.set_budget(budget)
     runner = ExperimentRunner(model, policy, metrics)
     runner.run(X, y)
-    csv_file = f"results/summary_results_{policy_type}_retrain.csv"
+    csv_file = f"results/summary_results_{policy_type}_retrain_{SEED_LABEL}.csv"
     export_summary_to_csv(metrics, policy, config, csv_file)
 
 def main():
@@ -390,7 +442,7 @@ def main():
 
     # Delete old summary CSVs for a clean start
     for pt in ["periodic", "error_threshold", "drift_triggered"]:
-        f = Path(f"results/summary_results_{pt}_retrain.csv")
+        f = Path(f"results/summary_results_{pt}_retrain_{SEED_LABEL}.csv")
         if f.exists():
             f.unlink()
 
@@ -441,17 +493,15 @@ Run it:
 python run_all_experiments.py
 ```
 
-**Expected runtime:** ~20–40 minutes for all 243 runs (depending on hardware).
-
 ### 6.4 Generate all dashboard plots
 
-After all 243 runs are complete:
+After all runs are complete:
 
 ```bash
 python plot_summary.py
 ```
 
-> **Note:** `plot_summary.py` is currently hard-coded to read `summary_results_drift_triggered_retrain.csv`. To generate dashboards for the other two policies, edit the CSV filename on line 22 of `plot_summary.py`, or run the per-policy plotting scripts if they exist. See [Section 7](#7-generating-summary-dashboard-plots) for details.
+> **Note:** `plot_summary.py` provides a `plot_summary_for_policy()` function that accepts a CSV path and output path. You can call it for each policy and seed phase. See [Section 7](#7-generating-summary-dashboard-plots) for details.
 
 ---
 
@@ -475,25 +525,29 @@ The `plot_summary.py` script reads one of the summary CSVs and generates a 2×3 
 python plot_summary.py
 ```
 
-By default it reads `results/summary_results_drift_triggered_retrain.csv`. To generate dashboards for the other policies, edit line 22 of `plot_summary.py`:
+By default it reads the drift-triggered 10-seed CSV. To generate dashboards for other policies or phases, update the CSV path and output path:
 
 ```python
-# For periodic policy:
-df = pd.read_csv('results/summary_results_periodic_retrain.csv')
+# Phase 1 (3-seed) examples:
+df = pd.read_csv('results/summary_results_periodic_retrain_3seed.csv')
+df = pd.read_csv('results/summary_results_error_threshold_retrain_3seed.csv')
+df = pd.read_csv('results/summary_results_drift_triggered_retrain_3seed.csv')
 
-# For error-threshold policy:
-df = pd.read_csv('results/summary_results_error_threshold_retrain.csv')
+# Phase 2 (10-seed) examples:
+df = pd.read_csv('results/summary_results_periodic_retrain_10seed.csv')
+df = pd.read_csv('results/summary_results_error_threshold_retrain_10seed.csv')
+df = pd.read_csv('results/summary_results_drift_triggered_retrain_10seed.csv')
 ```
 
-Also update the figure title (line 58) and the output filename (line 227) to match.
+Also update the figure title and the output filename to match.
 
 Output files:
 
-| Policy | Dashboard PNG |
-|---|---|
-| Periodic | `results/summary_results_plot_periodic_retrain.png` |
-| Error-Threshold | `results/summary_results_plot_error_threshold_retrain.png` |
-| Drift-Triggered | `results/summary_results_plot_drift_triggered_retrain.png` |
+| Policy | Phase 1 (3-seed) Dashboard | Phase 2 (10-seed) Dashboard |
+|---|---|---|
+| Periodic | `results/summary_results_plot_periodic_retrain_3seed.png` | `results/summary_results_plot_periodic_retrain_10seed.png` |
+| Error-Threshold | `results/summary_results_plot_error_threshold_retrain_3seed.png` | `results/summary_results_plot_error_threshold_retrain_10seed.png` |
+| Drift-Triggered | `results/summary_results_plot_drift_triggered_retrain_3seed.png` | `results/summary_results_plot_drift_triggered_retrain_10seed.png` |
 
 ---
 
@@ -503,10 +557,11 @@ After running experiments, you will find these files in `results/`:
 
 | File | Created by | Description |
 |---|---|---|
-| `run_seed_{seed}.json` | `main.py` | Full config + metrics for the last seed run. Overwritten each invocation. |
-| `per_sample_metrics_seed_{seed}.csv` | `main.py` | Per-timestep accuracy, error, and latency flags. Overwritten each invocation. |
-| `summary_results_{policy}_retrain.csv` | `main.py` | One row appended per seed run. Accumulates across invocations. |
-| `experiment_results.png` | `main.py` | Timeline + rolling accuracy for the most recent run. Overwritten. |
-| `summary_results_plot_{policy}_retrain.png` | `plot_summary.py` | 2×3 dashboard for all runs of that policy. |
+| `run_{run_tag}.json` | `main.py` | Full config + structured metrics per run. Stored in policy-specific subdirectories. |
+| `per_sample_{run_tag}.csv` | `main.py` | Per-timestep accuracy, error, and latency flags. Stored in policy-specific subdirectories. |
+| `summary_results_{policy}_retrain_3seed.csv` | `main.py` | Phase 1: one row per run; 81 rows per policy (243 total). |
+| `summary_results_{policy}_retrain_10seed.csv` | `main.py` | Phase 2: one row per run; 270 rows per policy (810 total). |
+| `summary_results_plot_{policy}_retrain_3seed.png` | `plot_summary.py` | 2×3 dashboard for Phase 1 (3-seed) runs of that policy. |
+| `summary_results_plot_{policy}_retrain_10seed.png` | `plot_summary.py` | 2×3 dashboard for Phase 2 (10-seed) runs of that policy. |
 
 > **Tip:** For detailed interpretation of the CSV columns and the dashboard panels, see [results_interpretation_guide.md](results_interpretation_guide.md).

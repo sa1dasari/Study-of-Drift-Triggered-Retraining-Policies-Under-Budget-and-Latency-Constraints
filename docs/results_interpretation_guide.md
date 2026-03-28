@@ -30,18 +30,33 @@ This document explains how to read and interpret every output artifact in the `r
 
 ## 1. Results Overview
 
-The `results/` folder contains six key artifacts:
+The `results/` folder contains artifacts from two experiment phases: **Phase 1** (3-seed, 243 runs) and **Phase 2** (10-seed, 810 runs), for a **combined total of 1,053 experiment runs**.
+
+### Phase 1 — 3-Seed Results (243 runs)
 
 | File | Type | Contents |
 |---|---|---|
-| `summary_results_periodic_retrain.csv` | CSV | 81 rows — one per (drift × budget × latency × seed) run for the **periodic** policy |
-| `summary_results_error_threshold_retrain.csv` | CSV | 81 rows — same matrix for the **error-threshold** policy |
-| `summary_results_drift_triggered_retrain.csv` | CSV | 81 rows — same matrix for the **drift-triggered (ADWIN)** policy |
-| `summary_results_plot_periodic_retrain.png` | PNG | 2×3 dashboard summarising all 81 periodic runs |
-| `summary_results_plot_error_threshold_retrain.png` | PNG | 2×3 dashboard summarising all 81 error-threshold runs |
-| `summary_results_plot_drift_triggered_retrain.png` | PNG | 2×3 dashboard summarising all 81 ADWIN runs |
+| `summary_results_periodic_retrain_3seed.csv` | CSV | 81 rows — one per (drift × budget × latency × seed) run for the **periodic** policy |
+| `summary_results_error_threshold_retrain_3seed.csv` | CSV | 81 rows — same matrix for the **error-threshold** policy |
+| `summary_results_drift_triggered_retrain_3seed.csv` | CSV | 81 rows — same matrix for the **drift-triggered (ADWIN)** policy |
+| `summary_results_plot_periodic_retrain_3seed.png` | PNG | 2×3 dashboard summarising all 81 periodic runs |
+| `summary_results_plot_error_threshold_retrain_3seed.png` | PNG | 2×3 dashboard summarising all 81 error-threshold runs |
+| `summary_results_plot_drift_triggered_retrain_3seed.png` | PNG | 2×3 dashboard summarising all 81 ADWIN runs |
 
-Each CSV has **81 data rows** = 3 drift types × 3 budget levels × 3 latency levels × 3 random seeds.
+Each 3-seed CSV has **81 data rows** = 3 drift types × 3 budget levels × 3 latency levels × 3 random seeds.
+
+### Phase 2 — 10-Seed Results (810 runs)
+
+| File | Type | Contents |
+|---|---|---|
+| `summary_results_periodic_retrain_10seed.csv` | CSV | 270 rows — one per (drift × budget × latency × seed) run for the **periodic** policy |
+| `summary_results_error_threshold_retrain_10seed.csv` | CSV | 270 rows — same matrix for the **error-threshold** policy |
+| `summary_results_drift_triggered_retrain_10seed.csv` | CSV | 270 rows — same matrix for the **drift-triggered (ADWIN)** policy |
+| `summary_results_plot_periodic_retrain_10seed.png` | PNG | 2×3 dashboard summarising all 270 periodic runs |
+| `summary_results_plot_error_threshold_retrain_10seed.png` | PNG | 2×3 dashboard summarising all 270 error-threshold runs |
+| `summary_results_plot_drift_triggered_retrain_10seed.png` | PNG | 2×3 dashboard summarising all 270 ADWIN runs |
+
+Each 10-seed CSV has **270 data rows** = 3 drift types × 3 budget levels × 3 latency levels × 10 random seeds.
 
 ---
 
@@ -62,7 +77,7 @@ These columns describe the experimental setup for each run. They are your **filt
 | `budget` | int | `5`, `10`, `20` | Maximum number of full retrains allowed during the 10,000-sample stream |
 | `retrain_latency` | int | `10`, `100`, `500` | Timesteps needed to complete offline retraining |
 | `deploy_latency` | int | `1`, `5`, `20` | Timesteps needed to deploy the retrained model |
-| `random_seed` | int | `42`, `123`, `456` | Random seed controlling data generation (weight vectors + features) |
+| `random_seed` | int | `42`, `123`, `456` (3-seed) or `42`–`2021` (10-seed) | Random seed controlling data generation (weight vectors + features) |
 
 > **Tip:** The *total latency* per retrain event is `retrain_latency + deploy_latency`. The three levels used in this study are **11** (Low), **105** (Medium), and **520** (High).
 
@@ -101,7 +116,7 @@ These columns describe how the retraining budget was spent.
 
 ### 3.1 Filtering and Grouping
 
-The 81 rows in each CSV are a full-factorial design. To extract meaningful comparisons, filter or group by one or more dimensions:
+The 81 rows (3-seed) or 270 rows (10-seed) in each CSV are a full-factorial design. To extract meaningful comparisons, filter or group by one or more dimensions:
 
 | Question you want to answer | Filter / Group by |
 |---|---|
@@ -168,7 +183,7 @@ Each policy produces a 2×3 dashboard PNG with six panels. The layout is:
 **Lines:** One per drift type (Abrupt = blue circle, Gradual = red square, Recurring = purple diamond).
 
 **How to read it:**
-- Each point on a line represents the **average accuracy** across 9 runs (3 budgets × 3 seeds) for a particular drift type at a particular latency level.
+- Each point on a line represents the **average accuracy** across all runs (3 budgets × N seeds, where N = 3 for Phase 1 or 10 for Phase 2) for a particular drift type at a particular latency level.
 - An **upward slope** from left to right means accuracy *increases* with higher latency — this is counterintuitive and usually indicates that the policy retrains *less* at high latency (fewer disruptions from stale-model windows).
 - A **downward slope** means accuracy degrades with higher latency — the cost of operating on stale weights during long latency windows outweighs any other effects.
 - **Flat lines** mean latency has little impact on accuracy for that drift type.
@@ -186,9 +201,9 @@ Each policy produces a 2×3 dashboard PNG with six panels. The layout is:
 
 **X-axis:** Drift type (Abrupt, Gradual, Recurring).
 
-**Y-axis:** Mean overall accuracy across all 27 runs (3 budgets × 3 latencies × 3 seeds) for that drift type.
+**Y-axis:** Mean overall accuracy across all runs for that drift type (27 runs per drift type for 3-seed CSVs, 90 runs per drift type for 10-seed CSVs).
 
-**Error bars:** Standard deviation — shows how much accuracy varies across the 27 configurations.
+**Error bars:** Standard deviation — shows how much accuracy varies across the configurations.
 
 **How to read it:**
 - Taller bars indicate better average performance against that drift type.
@@ -211,7 +226,7 @@ Each policy produces a 2×3 dashboard PNG with six panels. The layout is:
 
 **Columns:** Latency level — Low (11), Med (105), High (520), from left to right.
 
-**Cell value:** Mean overall accuracy averaged across all 3 drift types and 3 seeds (9 runs per cell).
+**Cell value:** Mean overall accuracy averaged across all 3 drift types and N seeds (9 runs per cell for 3-seed, 30 runs per cell for 10-seed).
 
 **Colour scale:** Viridis colour-map — darker (purple) = lower accuracy, brighter (yellow/green) = higher accuracy. A colour-bar on the right shows the scale.
 
