@@ -5,8 +5,10 @@ Provides both a reusable function (plot_summary_for_policy) and a
 standalone entry point that generates plots from any policy's summary CSV.
 
 Usage:
-    python plot_summary.py                           # legacy drift-triggered
-    python plot_summary.py --policy periodic          # periodic policy
+    python plot_summary.py                                  # all policies (incl. 10-seed)
+    python plot_summary.py --policy periodic                # single-seed periodic only
+    python plot_summary.py --policy periodic_10seed         # 10-seed periodic only
+    python plot_summary.py --policy error_threshold_10seed  # 10-seed error-threshold only
 """
 
 import matplotlib
@@ -227,31 +229,55 @@ def plot_summary():
 
 if __name__ == "__main__":
     import sys
-    if '--policy' in sys.argv:
-        idx = sys.argv.index('--policy') + 1
-        policy = sys.argv[idx] if idx < len(sys.argv) else 'drift_triggered'
-    else:
-        policy = 'drift_triggered'
 
     policy_map = {
         'periodic': (
+            'results/summary_results_periodic_retrain.csv',
+            'results/summary_results_plot_periodic_retrain.png',
+            'Periodic',
+        ),
+        'periodic_10seed': (
             'results/summary_results_periodic_retrain_10seed.csv',
             'results/summary_results_plot_periodic_retrain_10seed.png',
-            'Periodic',
+            'Periodic (10 seeds)',
         ),
         'error_threshold': (
             'results/summary_results_error_threshold_retrain.csv',
             'results/summary_results_plot_error_threshold_retrain.png',
             'Error-Threshold',
         ),
+        'error_threshold_10seed': (
+            'results/summary_results_error_threshold_retrain_10seed.csv',
+            'results/summary_results_plot_error_threshold_retrain_10seed.png',
+            'Error-Threshold (10 seeds)',
+        ),
         'drift_triggered': (
             'results/summary_results_drift_triggered_retrain.csv',
             'results/summary_results_plot_drift_triggered_retrain.png',
             'Drift-Triggered (ADWIN)',
         ),
+        'drift_triggered_10seed': (
+            'results/summary_results_drift_triggered_retrain_10seed.csv',
+            'results/summary_results_plot_drift_triggered_retrain_10seed.png',
+            'Drift-Triggered (ADWIN, 10 seeds)',
+        ),
     }
 
-    csv_path, output_path, policy_name = policy_map.get(
-        policy, policy_map['drift_triggered']
-    )
-    plot_summary_for_policy(csv_path, output_path, policy_name)
+    if '--policy' in sys.argv:
+        idx = sys.argv.index('--policy') + 1
+        policies = [sys.argv[idx]] if idx < len(sys.argv) else list(policy_map.keys())
+    else:
+        policies = list(policy_map.keys())  # run ALL policies by default
+
+    for policy in policies:
+        if policy not in policy_map:
+            print(f"Unknown policy '{policy}', skipping. Available: {list(policy_map.keys())}")
+            continue
+        csv_path, output_path, policy_name = policy_map[policy]
+        print(f"\n{'=' * 60}")
+        print(f"Generating plot for: {policy_name}")
+        print(f"{'=' * 60}")
+        try:
+            plot_summary_for_policy(csv_path, output_path, policy_name)
+        except FileNotFoundError:
+            print(f"  ⚠ CSV not found: {csv_path} — skipping {policy_name}")
