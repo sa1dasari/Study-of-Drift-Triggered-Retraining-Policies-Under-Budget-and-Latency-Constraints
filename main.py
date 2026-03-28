@@ -1,145 +1,157 @@
 """
-Main entry point for the Drift-Triggered Retraining Policies experiment.
+ Main entry point for the Periodic Retraining Policy experiment.
 
-This script orchestrates an end-to-end machine learning pipeline that handles
-concept drift in streaming data. It demonstrates how different retraining policies
-can adapt a model to changing data distributions under budget and latency constraints.
+Runs all combinations for the Periodic retraining policy:
+  3 drift types × 3 budgets × 3 latency levels × 10 seeds = 270 runs
+
+Results are saved to:
+  - results/periodic_<N>seed_<D>drift_<B>budget_<L>latency/summary_results_periodic_retrain_10seed.csv
+  - results/periodic_<N>seed_<D>drift_<B>budget_<L>latency/summary_results_plot_periodic_retrain_10seed.png
 """
+
+from pathlib import Path
+import time
 
 from src.data.drift_generator import DriftGenerator
 from src.models.base_model import StreamingModel
-from src.policies.drift_triggered_policy import DriftTriggeredPolicy
+from src.policies.periodic import PeriodicPolicy
 from src.evaluation.metrics import MetricsTracker
 from src.runner.experiment_runner import ExperimentRunner
 from src.evaluation.results_export import export_to_json, export_to_csv, export_summary_to_csv
-from src.evaluation.plot_results import plot_results
+
 
 def main():
-    """
-    Main execution function that sets up and runs the entire experiment pipeline.
+    seeds = [42, 123, 456, 789, 1011, 1213, 1415, 1617, 1819, 2021]
+    drift_types = ["abrupt", "gradual", "recurring"]
+    budgets = [5, 10, 20]                       # Low / Med / High budget
+    latency_configs = [
+        (10, 1),     # Low latency   (total = 11)
+        (100, 5),    # Medium latency (total = 105)
+        (500, 20),   # High latency  (total = 520)
+    ]
 
-    Flow:
-    1. Generate synthetic streaming data with concept drift
-    2. Create a streaming model and retraining policy
-    3. Run the experiment using the ExperimentRunner
-    4. Report final model accuracy
-    """
-    # Step 1: Generate synthetic data with recurring drift
-    # To ensure reproducibility, we run multiple seeds to see how the policy performs under different random conditions.
-    seeds = [42, 123, 456]
-    drift_type = "recurring"
+    # Periodic-policy fixed parameters
+    interval = 500
+    policy_type = "periodic"
 
-    for seed in seeds:
-        generator = DriftGenerator(
-            drift_type="recurring",
-            drift_point=5000,
-            recurrence_period=1000,  # Concept switches every 1000 timesteps after drift_point
-            seed=seed
-        )
-        X, y = generator.generate(10000)
+    # Data generation parameters
+    drift_point = 5000
+    n_samples = 10000
+    recurrence_period = 1000
 
-        # Step 2: Initialize components
-        # - StreamingModel: Uses SGDClassifier for online learning
-        # - DriftTriggeredPolicy: Retrain when ADWIN detects concept drift
-        #   delta=0.002: confidence parameter for Hoeffding bound (lower = less sensitive)
-        #   window_size=500: max recent errors considered for drift detection
-        #   min_samples=300: minimum observations before detection activates
-        #   budget=20: allows up to 20 retrains during the experiment
-        # - High latency: retrain_latency=500, deploy_latency=20
-        # - MetricsTracker: Records prediction accuracy/errors over time
-        model = StreamingModel()
-        policy = DriftTriggeredPolicy(delta=0.002, window_size=500, min_samples=300, budget=20, retrain_latency=500, deploy_latency=20)
-        metrics = MetricsTracker()
+    #  Prepare output
+    run_label = f"{len(seeds)}seed_{len(drift_types)}drift_{len(budgets)}budget_{len(latency_configs)}latency"
+    results_dir = Path(f"results/periodic_{run_label}")
+    results_dir.mkdir(parents=True, exist_ok=True)
 
-        # Set metadata in metrics for post-analysis
-        metrics.set_drift_point(5000)  # Drift starts at t=5000
-        metrics.set_budget(policy.budget)
+    summary_csv = str(results_dir / "summary_results_periodic_retrain_10seed.csv")
+    Path(summary_csv).unlink(missing_ok=True)          # fresh file
 
-        # Step 3: Run the experiment
-        # The runner processes each sample sequentially, updating metrics,
-        # checking the retraining policy, and adapting the model
-        runner = ExperimentRunner(model, policy, metrics)
-        runner.run(X, y)
+    total_runs = len(drift_types) * len(budgets) * len(latency_configs) * len(seeds)
+    run_count = 0
+    start_time = time.time()
 
-        # Step 4: Generate and report comprehensive results
-        summary = metrics.get_summary()
+    print(f"{'=' * 70}")
+    print(f"PERIODIC RETRAIN POLICY – Full Experiment Sweep ({total_runs} runs)")
+    print(f"{'=' * 70}")
+    print(f"  Drift types      : {drift_types}")
+    print(f"  Budgets           : {budgets}")
+    print(f"  Latency configs   : {latency_configs}")
+    print(f"  Seeds             : {len(seeds)} seeds")
+    print(f"  Interval          : {interval}")
+    print(f"{'=' * 70}\n")
 
-        print("EXPERIMENT RESULTS")
-        print(f"\nConfiguration:")
-        print(f"  Drift Type: {drift_type} (starting at t={metrics.drift_point})")
-        print(f"  Recurrence Period: {generator.recurrence_period} timesteps")
-        print(f"  Policy: Drift-Triggered / ADWIN (delta={policy.delta}, window={policy.window_size}, min_samples={policy.min_samples})")
-        print(f"  Budget: {policy.budget} retrains")
-        print(f"  Seed: {seed}")
-        print(f"  Latency: retrain={policy.retrain_latency}s, deploy={policy.deploy_latency}s")
-        print(f"  Total Samples: {len(X)}")
+    for drift_type in drift_types:
+        for budget in budgets:
+            for retrain_latency, deploy_latency in latency_configs:
+                for seed in seeds:
+                    run_count += 1
 
-        print(f"\nPerformance Metrics:")
-        print(f"  Overall Accuracy: {summary['overall_accuracy']:.4f}")
-        pre_acc = summary.get('pre_drift_accuracy')
-        if pre_acc is not None:
-            print(f"  Pre-Drift Accuracy: {pre_acc:.4f} (t=[0, {metrics.drift_point}))")
-        post_acc = summary.get('post_drift_accuracy')
-        if post_acc is not None:
-            print(f"  Post-Drift Accuracy: {post_acc:.4f} (t=[{metrics.drift_point}, {len(X)}))")
-        if pre_acc is not None and post_acc is not None:
-            print(f"  Accuracy Drop (post - pre): {summary['accuracy_drop']:.4f}")
-        print(f"  Cumulative Error Rate: {summary['cumulative_error_rate']:.4f}")
-        print(f"  Cumulative Error: {summary['cumulative_error']:.0f}")
-        print(f"  Max Degradation: {summary['max_degradation']:.4f}")
-        print(f"  Average Degradation: {summary['average_degradation']:.4f}")
-        print(f"  Latency Cost: {summary['latency_cost']} timesteps")
-        if summary.get('errors_during_latency') is not None:
-            print(f"  Errors During Latency: {summary['errors_during_latency']:.0f}")
-        if summary.get('error_in_drift_window') is not None:
-            print(f"  Errors in Drift Window (t=[{metrics.drift_point}, {metrics.drift_point + 1000})): {int(summary['error_in_drift_window'])}")
+                    # 1. Generate data
+                    generator = DriftGenerator(
+                        drift_type=drift_type,
+                        drift_point=drift_point,
+                        recurrence_period=recurrence_period,
+                        seed=seed,
+                    )
+                    X, y = generator.generate(n_samples)
 
-        print(f"\nRetraining Events:")
-        print(f"  Total Retrains: {summary['total_retrains']}")
-        print(f"  Budget Used: {summary.get('budget_used')} / {summary.get('budget_total')}")
-        if summary.get('budget_utilization') is not None:
-            print(f"  Budget Utilization: {summary['budget_utilization']:.1%}")
-        print(f"  Retrains Before Drift: {summary.get('retrains_before_drift')}")
-        print(f"  Retrains After Drift: {summary.get('retrains_after_drift')}")
+                    # 2. Build components
+                    model = StreamingModel()
+                    policy = PeriodicPolicy(
+                        interval=interval,
+                        budget=budget,
+                        retrain_latency=retrain_latency,
+                        deploy_latency=deploy_latency,
+                    )
+                    metrics = MetricsTracker()
+                    metrics.set_drift_point(drift_point)
+                    metrics.set_budget(budget)
 
-        print(f"\nRetrain Timing:")
-        if metrics.retrain_times:
-            print(f"  Retrain Timesteps: {metrics.retrain_times}")
-            print(f"  Latency Windows (retrain + deploy):")
-            for start, end in metrics.retrain_latency_windows:
-                print(f"    [{start}, {end})")
-        else:
-            print(f"  No retrains occurred")
+                    # 3. Run experiment
+                    runner = ExperimentRunner(model, policy, metrics)
+                    runner.run(X, y)
 
-        print(f"\nData Points:")
-        print(f"  Predictions Made: {summary['predictions_made']}")
-        print(f"  Total Samples: {summary['total_samples']}")
-        print("=" * 70)
+                    # 4. Progress
+                    summary = metrics.get_summary()
+                    elapsed = time.time() - start_time
+                    eta = (elapsed / run_count) * (total_runs - run_count)
 
-        # Step 5: Export results to file formats for analysis
-        config = {
-            "drift_type": drift_type,
-            "drift_point": 5000,
-            "recurrence_period": generator.recurrence_period,
-            "policy_type": "drift_triggered",
-            "delta": policy.delta,
-            "window_size": policy.window_size,
-            "min_samples": policy.min_samples,
-            "budget": policy.budget,
-            "random_seed": seed,
-        }
+                    print(
+                        f"[{run_count:>3}/{total_runs}] "
+                        f"drift={drift_type:<10} budget={budget:<3} "
+                        f"latency=({retrain_latency}+{deploy_latency})  seed={seed:<5} | "
+                        f"acc={summary['overall_accuracy']:.4f}  "
+                        f"retrains={summary['total_retrains']:>2} | "
+                        f"ETA {eta / 60:.1f} min"
+                    )
 
-        print("\nExporting results...")
-        export_to_json(metrics, policy, config, f"results/run_seed_{seed}.json")
-        export_to_csv(metrics, policy, config, f"results/per_sample_metrics_seed_{seed}.csv")
-        export_summary_to_csv(metrics, policy, config, "results/summary_results_drift_triggered_retrain.csv")
-        print(f"Results exported for seed {seed}!")
+                    # 5. Export per-run results (disambiguated filenames)
+                    run_tag = (
+                        f"{drift_type}_b{budget}"
+                        f"_l{retrain_latency}+{deploy_latency}"
+                        f"_s{seed}"
+                    )
+                    config = {
+                        "drift_type": drift_type,
+                        "drift_point": drift_point,
+                        "recurrence_period": recurrence_period,
+                        "policy_type": policy_type,
+                        "interval": interval,
+                        "budget": budget,
+                        "random_seed": seed,
+                    }
 
-    # Generate plots after all seeds complete
-    print("\n" + "=" * 70)
-    print("Generating visualization...")
-    plot_results(seeds, policy, drift_point=5000, drift_type=drift_type, policy_type="drift_triggered")
-    print("=" * 70)
+                    export_to_json(
+                        metrics, policy, config,
+                        str(results_dir / f"run_{run_tag}.json"),
+                    )
+                    export_to_csv(
+                        metrics, policy, config,
+                        str(results_dir / f"per_sample_{run_tag}.csv"),
+                    )
+                    export_summary_to_csv(
+                        metrics, policy, config,
+                        summary_csv,
+                    )
+
+    # Summary
+    elapsed = time.time() - start_time
+    print(f"\n{'=' * 70}")
+    print(f"All {total_runs} runs completed in {elapsed / 60:.1f} minutes")
+    print(f"Summary CSV → {summary_csv}")
+
+    # Generate summary plot
+    print("\nGenerating summary plot...")
+    from plot_summary import plot_summary_for_policy
+
+    plot_summary_for_policy(
+        csv_path=summary_csv,
+        output_path=str(results_dir / "summary_results_plot_periodic_retrain_10seed.png"),
+        policy_name="Periodic",
+    )
+    print(f"{'=' * 70}")
+
 
 if __name__ == "__main__":
     main()
