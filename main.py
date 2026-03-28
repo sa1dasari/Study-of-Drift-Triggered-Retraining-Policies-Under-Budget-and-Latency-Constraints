@@ -1,12 +1,12 @@
 """
- Main entry point for the Error Threshold Retraining Policy experiment.
+Main entry point for the Drift-Triggered Retraining Policy experiment.
 
-Runs all combinations for the Error Threshold retraining policy:
+Runs all combinations for the Drift-Triggered (ADWIN) retraining policy:
   3 drift types × 3 budgets × 3 latency levels × 10 seeds = 270 runs
 
 Results are saved to:
-  - results/error_threshold_<N>seed_<D>drift_<B>budget_<L>latency/summary_results_error_threshold_retrain_10seed.csv
-  - results/error_threshold_<N>seed_<D>drift_<B>budget_<L>latency/summary_results_plot_error_threshold_retrain_10seed.png
+  - results/summary_results_drift_triggered_retrain_10seed.csv
+  - results/summary_results_plot_drift_triggered_retrain_10seed.png
 """
 
 from pathlib import Path
@@ -14,7 +14,7 @@ import time
 
 from src.data.drift_generator import DriftGenerator
 from src.models.base_model import StreamingModel
-from src.policies.error_threshold_policy import ErrorThresholdPolicy
+from src.policies.drift_triggered_policy import DriftTriggeredPolicy
 from src.evaluation.metrics import MetricsTracker
 from src.runner.experiment_runner import ExperimentRunner
 from src.evaluation.results_export import export_to_json, export_to_csv, export_summary_to_csv
@@ -30,10 +30,11 @@ def main():
         (500, 20),   # High latency  (total = 520)
     ]
 
-    # Error-threshold policy fixed parameters
-    error_threshold = 0.4
-    window_size = 100
-    policy_type = "error_threshold"
+    # Drift-triggered (ADWIN) policy fixed parameters
+    delta = 0.002
+    window_size = 500
+    min_samples = 100
+    policy_type = "drift_triggered"
 
     # Data generation parameters
     drift_point = 5000
@@ -42,10 +43,10 @@ def main():
 
     #  Prepare output
     run_label = f"{len(seeds)}seed_{len(drift_types)}drift_{len(budgets)}budget_{len(latency_configs)}latency"
-    results_dir = Path(f"results/error_threshold_{run_label}")
+    results_dir = Path(f"results/drift_triggered_{run_label}")
     results_dir.mkdir(parents=True, exist_ok=True)
 
-    summary_csv = str(results_dir / "summary_results_error_threshold_retrain_10seed.csv")
+    summary_csv = "results/summary_results_drift_triggered_retrain_10seed.csv"
     Path(summary_csv).unlink(missing_ok=True)          # fresh file
 
     total_runs = len(drift_types) * len(budgets) * len(latency_configs) * len(seeds)
@@ -53,14 +54,15 @@ def main():
     start_time = time.time()
 
     print(f"{'=' * 70}")
-    print(f"ERROR THRESHOLD RETRAIN POLICY – Full Experiment Sweep ({total_runs} runs)")
+    print(f"DRIFT-TRIGGERED RETRAIN POLICY – Full Experiment Sweep ({total_runs} runs)")
     print(f"{'=' * 70}")
     print(f"  Drift types      : {drift_types}")
     print(f"  Budgets           : {budgets}")
     print(f"  Latency configs   : {latency_configs}")
     print(f"  Seeds             : {len(seeds)} seeds")
-    print(f"  Error threshold   : {error_threshold}")
+    print(f"  ADWIN delta       : {delta}")
     print(f"  Window size       : {window_size}")
+    print(f"  Min samples       : {min_samples}")
     print(f"{'=' * 70}\n")
 
     for drift_type in drift_types:
@@ -80,9 +82,10 @@ def main():
 
                     # 2. Build components
                     model = StreamingModel()
-                    policy = ErrorThresholdPolicy(
-                        error_threshold=error_threshold,
+                    policy = DriftTriggeredPolicy(
+                        delta=delta,
                         window_size=window_size,
+                        min_samples=min_samples,
                         budget=budget,
                         retrain_latency=retrain_latency,
                         deploy_latency=deploy_latency,
@@ -120,8 +123,9 @@ def main():
                         "drift_point": drift_point,
                         "recurrence_period": recurrence_period,
                         "policy_type": policy_type,
-                        "error_threshold": error_threshold,
+                        "delta": delta,
                         "window_size": window_size,
+                        "min_samples": min_samples,
                         "budget": budget,
                         "random_seed": seed,
                     }
@@ -151,8 +155,8 @@ def main():
 
     plot_summary_for_policy(
         csv_path=summary_csv,
-        output_path=str(results_dir / "summary_results_plot_error_threshold_retrain_10seed.png"),
-        policy_name="Error Threshold",
+        output_path="results/summary_results_plot_drift_triggered_retrain_10seed.png",
+        policy_name="Drift-Triggered (ADWIN)",
     )
     print(f"{'=' * 70}")
 
