@@ -14,7 +14,7 @@ The simulator processes 10,000-sample synthetic streams, applying a streaming SG
 ## Architecture
 
 ```
-main.py  (entry point – configures & launches experiment runs)
+main.py  (CLI entry point – full-factorial sweep via --policy and --seeds flags)
 │
 ├── src/data/drift_generator.py      – Synthetic data with concept drift
 │       └── DriftGenerator            Logistic-regression data with weight-vector switching

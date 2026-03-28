@@ -9,13 +9,8 @@ A step-by-step guide for anyone who has freshly cloned this repository and wants
 1. [Prerequisites](#1-prerequisites)
 2. [Clone & Install](#2-clone--install)
 3. [Project Layout at a Glance](#3-project-layout-at-a-glance)
-4. [Running a Single Experiment](#4-running-a-single-experiment)
-5. [Configuring an Experiment](#5-configuring-an-experiment)
-   - [Step A — Choose a Drift Type](#step-a--choose-a-drift-type)
-   - [Step B — Choose a Retraining Policy](#step-b--choose-a-retraining-policy)
-   - [Step C — Choose Budget & Latency](#step-c--choose-budget--latency)
-   - [Step D — Choose Seeds](#step-d--choose-seeds)
-   - [Step E — Set the Summary CSV Filename](#step-e--set-the-summary-csv-filename)
+4. [Running Experiments](#4-running-experiments)
+5. [Experiment Configuration Details](#5-experiment-configuration-details)
 6. [Full-Factorial Run (Reproducing All 1,053 Experiments)](#6-full-factorial-run-reproducing-all-1053-experiments)
 7. [Generating Summary Dashboard Plots](#7-generating-summary-dashboard-plots)
 8. [Understanding the Output Files](#8-understanding-the-output-files)
@@ -79,8 +74,8 @@ python -c "import numpy, pandas, matplotlib, sklearn; print('All dependencies OK
 ## 3. Project Layout at a Glance
 
 ```
-├── main.py                  ← You edit this to configure and launch experiments
-├── plot_summary.py          ← Run after experiments to generate dashboard PNGs
+├── main.py                  ← CLI entry point: --policy and --seeds flags drive the sweep
+├── plot_summary.py          ← Generates dashboard PNGs (called automatically by main.py)
 ├── docs/
 │   └── requirements.txt     ← Python dependencies
 ├── src/
@@ -100,49 +95,67 @@ python -c "import numpy, pandas, matplotlib, sklearn; print('All dependencies OK
 
 ---
 
-## 4. Running a Single Experiment
+## 4. Running Experiments
 
-From the project root directory (where `main.py` is located):
+`main.py` is the single entry point for all experiment runs. It accepts two CLI flags and automatically sweeps the full factorial grid (3 drift types × 3 budgets × 3 latencies × N seeds) for the selected policy(ies).
 
-```bash
-python main.py
+### CLI Reference
+
+```
+python main.py [--policy POLICY] [--seeds N]
 ```
 
-This will:
-1. Generate synthetic data for each seed.
-2. Train and evaluate the streaming model using the configured policy.
-3. Print detailed results to the console.
-4. Export results to `results/` (JSON, per-sample CSV, summary CSV).
-5. Generate a per-run plot in `results/experiment_results.png`.
+| Flag | Values | Default | Description |
+|---|---|---|---|
+| `--policy` | `periodic`, `error_threshold`, `drift_triggered`, `all` | `all` | Which retraining policy to sweep. `all` runs all three sequentially. |
+| `--seeds` | `3`, `10` | `10` | Seed set size. `3` = Phase 1 seeds `[42, 123, 456]`. `10` = Phase 2 seeds `[42, 123, 456, 789, 1011, 1213, 1415, 1617, 1819, 2021]`. |
 
-**Runtime:** A single seed takes ~5–15 seconds. The default `main.py` runs 3 seeds, so expect ~15–45 seconds total.
+### Examples
+
+```bash
+# Run ALL 3 policies with 10 seeds (810 runs — full Phase 2 reproduction)
+python main.py
+
+# Run only the periodic policy with 10 seeds (270 runs)
+python main.py --policy periodic
+
+# Run only drift-triggered (ADWIN) policy with 3 seeds (81 runs — Phase 1)
+python main.py --policy drift_triggered --seeds 3
+
+# Run all 3 policies with 3 seeds (243 runs — full Phase 1 reproduction)
+python main.py --policy all --seeds 3
+```
+
+### What happens when you run it
+
+For each selected policy, `main.py`:
+
+1. Deletes the old summary CSV for that policy (clean start — no duplicate rows).
+2. Iterates over every `(drift_type, budget, latency, seed)` combination.
+3. For each run: generates data → builds model + policy → streams 10,000 samples → exports JSON, per-sample CSV, and appends one row to the summary CSV.
+4. Prints live progress with accuracy, retrain count, and ETA.
+5. After all runs for a policy complete, calls `plot_summary.py` to generate the 2×3 dashboard PNG.
+
+### Runtime Estimates
+
+| Command | Runs | Approximate Time |
+|---|---|---|
+| `python main.py --policy periodic --seeds 3` | 81 | ~5–15 min |
+| `python main.py --policy periodic` | 270 | ~20–40 min |
+| `python main.py --seeds 3` | 243 | ~15–40 min |
+| `python main.py` | 810 | ~60–120 min |
 
 > **Important:** Always run `main.py` from the project root directory. The script uses relative imports (`from src.…`) and writes to `results/`, both of which require the working directory to be the project root.
 
 ---
 
-## 5. Configuring an Experiment
+## 5. Experiment Configuration Details
 
-All experiment configuration is done by editing `main.py`. There is no config file — the parameters are set directly in Python code. Here is how to change each factor:
+All experiment parameters are defined as constants at the top of `main.py`. **No manual editing is required** to run the standard experiment — the CLI flags select which subset to execute. The constants are documented here for reference.
 
-### Step A — Choose a Drift Type
+### Drift Types
 
-Near the top of the `main()` function, find and set the `drift_type` variable:
-
-```python
-drift_type = "recurring"   # Options: "abrupt", "gradual", "recurring"
-```
-
-Also update the `DriftGenerator` constructor to match:
-
-```python
-generator = DriftGenerator(
-    drift_type="recurring",    # ← Must match the drift_type variable above
-    drift_point=5000,
-    recurrence_period=1000,    # Only relevant for "recurring"
-    seed=seed
-)
-```
+Controlled internally by the `DRIFT_TYPES` list — all three are always included in every sweep:
 
 | Drift type | What it does |
 |---|---|
@@ -150,87 +163,19 @@ generator = DriftGenerator(
 | `"gradual"` | Linear transition from old → new concept over t ∈ [5000, 6000] |
 | `"recurring"` | Alternates between concepts every 1,000 steps after t = 5,000 |
 
-### Step B — Choose a Retraining Policy
+### Retraining Policies
 
-The current `main.py` uses the drift-triggered (ADWIN) policy. To switch policies, change the **import** and the **policy construction**.
+Selected via the `--policy` CLI flag. Each policy's fixed parameters are defined in `POLICY_PARAMS`:
 
-#### Option 1: Periodic Policy
+| Policy | Key Parameters | Notes |
+|---|---|---|
+| `periodic` | `interval = 10000 // budget` | Interval is derived automatically from the budget level |
+| `error_threshold` | `error_threshold=0.27`, `window_size=200` | Calibrated in Week 4 |
+| `drift_triggered` | `delta=0.002`, `window_size=500`, `min_samples=100` | ADWIN; calibrated in Week 5 |
 
-```python
-# Change the import
-from src.policies.periodic import PeriodicPolicy
+### Budget & Latency Levels
 
-# Change the policy construction
-policy = PeriodicPolicy(
-    interval=1000,          # Retrain every 1,000 timesteps
-    budget=10,              # Max 10 retrains allowed
-    retrain_latency=100,    # 100 timesteps to retrain offline
-    deploy_latency=5        # 5 timesteps to deploy
-)
-```
-
-Also update the `policy_type` string in the config dict and the `plot_results` call:
-
-```python
-config = {
-    ...
-    "policy_type": "periodic",
-    "policy_interval": policy.interval,
-    ...
-}
-export_summary_to_csv(metrics, policy, config, "results/summary_results_periodic_retrain_3seed.csv")
-plot_results(seeds, policy, drift_point=5000, drift_type=drift_type, policy_type="periodic")
-
-```
-
-#### Option 2: Error-Threshold Policy
-
-```python
-# Change the import
-from src.policies.error_threshold_policy import ErrorThresholdPolicy
-
-# Change the policy construction
-policy = ErrorThresholdPolicy(
-    error_threshold=0.27,   # Retrain when rolling error rate > 27%
-    window_size=200,        # Compute error rate over last 200 predictions
-    budget=10,              # Max 10 retrains allowed
-    retrain_latency=100,    # 100 timesteps to retrain offline
-    deploy_latency=5        # 5 timesteps to deploy
-)
-```
-
-Update the config dict:
-
-```python
-config = {
-    ...
-    "policy_type": "error_threshold",
-    "error_threshold": policy.error_threshold,
-    "window_size": policy.window_size,
-    ...
-}
-export_summary_to_csv(metrics, policy, config, "results/summary_results_error_threshold_retrain_3seed.csv")
-plot_results(seeds, policy, drift_point=5000, drift_type=drift_type, policy_type="error_threshold")
-```
-
-#### Option 3: Drift-Triggered (ADWIN) Policy (default)
-
-```python
-from src.policies.drift_triggered_policy import DriftTriggeredPolicy
-
-policy = DriftTriggeredPolicy(
-    delta=0.002,            # ADWIN confidence parameter (lower = less sensitive)
-    window_size=500,        # Max recent errors for drift detection
-    min_samples=300,        # Wait 300 samples before detection activates
-    budget=10,              # Max 10 retrains allowed
-    retrain_latency=100,    # 100 timesteps to retrain offline
-    deploy_latency=5        # 5 timesteps to deploy
-)
-```
-
-### Step C — Choose Budget & Latency
-
-These are set directly in the policy constructor (see Step B). The study uses these standard levels:
+Controlled internally by `BUDGETS` and `LATENCY_CONFIGS` — all combinations are swept automatically:
 
 | Level | Budget (K) | Retrain Latency | Deploy Latency | Total Latency |
 |---|---|---|---|---|
@@ -238,53 +183,66 @@ These are set directly in the policy constructor (see Step B). The study uses th
 | Medium | 10 | 100 | 5 | 105 |
 | High | 20 | 500 | 20 | 520 |
 
-> **Note for Periodic Policy:** When changing budget, also update the `interval` to match: `interval = 10000 / budget`. So K=5 → interval=2000, K=10 → interval=1000, K=20 → interval=500.
+### Seed Sets
 
-### Step D — Choose Seeds
+Selected via the `--seeds` CLI flag:
 
-The seeds list controls how many runs are performed and with which random initializations:
+| Flag value | Seeds | Phase | Runs per policy |
+|---|---|---|---|
+| `3` | `[42, 123, 456]` | Phase 1 | 81 |
+| `10` | `[42, 123, 456, 789, 1011, 1213, 1415, 1617, 1819, 2021]` | Phase 2 | 270 |
 
-```python
-seeds = [42, 123, 456]     # Phase 1: 3 seeds for initial exploration
+### Summary CSV Naming Convention
+
+`main.py` automatically names output files using the pattern:
+
 ```
-
-For the extended 10-seed Phase 2 runs:
-
-```python
-seeds = [42, 123, 456, 789, 1011, 1213, 1415, 1617, 1819, 2021]  # Phase 2: 10 seeds
+results/summary_results_{policy}_retrain_{N}seed.csv
 ```
-
-You can use a single seed for a quick test:
-
-```python
-seeds = [42]                # Fast: 1 run only
-```
-
-### Step E — Set the Summary CSV Filename
-
-Each policy should write to its own summary CSV so results don't mix. The filename should include the seed count to distinguish between experiment phases. Make sure the `export_summary_to_csv` call uses the correct filename:
 
 | Policy | Phase 1 (3-seed) CSV | Phase 2 (10-seed) CSV |
 |---|---|---|
-| Periodic | `results/summary_results_periodic_retrain_3seed.csv` | `results/summary_results_periodic_retrain_10seed.csv` |
-| Error-Threshold | `results/summary_results_error_threshold_retrain_3seed.csv` | `results/summary_results_error_threshold_retrain_10seed.csv` |
-| Drift-Triggered | `results/summary_results_drift_triggered_retrain_3seed.csv` | `results/summary_results_drift_triggered_retrain_10seed.csv` |
+| Periodic | `summary_results_periodic_retrain_3seed.csv` | `summary_results_periodic_retrain_10seed.csv` |
+| Error-Threshold | `summary_results_error_threshold_retrain_3seed.csv` | `summary_results_error_threshold_retrain_10seed.csv` |
+| Drift-Triggered | `summary_results_drift_triggered_retrain_3seed.csv` | `summary_results_drift_triggered_retrain_10seed.csv` |
 
-> **Important:** The summary CSV is opened in **append mode**. Each run adds one row. If you re-run the same configuration, duplicate rows will be appended. **Delete the CSV first** if you want a clean start:
->
-> ```powershell
-> Remove-Item results/summary_results_periodic_retrain_3seed.csv   # Windows
-> # rm results/summary_results_periodic_retrain_3seed.csv          # macOS/Linux
-> ```
+> **Note:** `main.py` deletes the target summary CSV before starting each policy sweep, ensuring a clean file with a proper header. You do not need to manually delete CSVs.
 
 ---
 
 ## 6. Full-Factorial Run (Reproducing All 1,053 Experiments)
 
-To reproduce the complete study, you need to run both experiment phases:
-- **Phase 1:** 243 runs (3 seeds × 3 drifts × 3 budgets × 3 latencies × 3 policies)
-- **Phase 2:** 810 runs (10 seeds × 3 drifts × 3 budgets × 3 latencies × 3 policies)
-- **Total:** 1,053 experiment runs
+To reproduce the complete study, run both experiment phases using `main.py`:
+
+```bash
+# Phase 1 — 243 runs (3 seeds × 3 drifts × 3 budgets × 3 latencies × 3 policies)
+python main.py --seeds 3
+
+# Phase 2 — 810 runs (10 seeds × 3 drifts × 3 budgets × 3 latencies × 3 policies)
+python main.py --seeds 10
+
+# Or both phases in sequence:
+python main.py --seeds 3 && python main.py --seeds 10
+```
+
+Or reproduce a single policy at a time:
+
+```bash
+python main.py --policy periodic --seeds 3         # 81 runs
+python main.py --policy error_threshold --seeds 3   # 81 runs
+python main.py --policy drift_triggered --seeds 3   # 81 runs
+python main.py --policy periodic --seeds 10         # 270 runs
+python main.py --policy error_threshold --seeds 10  # 270 runs
+python main.py --policy drift_triggered --seeds 10  # 270 runs
+```
+
+**Total: 243 + 810 = 1,053 experiment runs.**
+
+Each command automatically:
+- Deletes the previous summary CSV for the selected policy(ies) (clean start — no manual cleanup needed).
+- Sweeps the full `DRIFT_TYPES × BUDGETS × LATENCY_CONFIGS × seeds` grid.
+- Exports per-run JSON, per-sample CSV, and appends to the summary CSV.
+- Generates the 2×3 dashboard PNG after all runs for each policy complete.
 
 ### Git Branching Strategy Used in This Study
 
@@ -325,229 +283,39 @@ If you look at the [research log](research_log.md) you will notice the experimen
 
 4. **Incremental runs aided debugging and validation.** Running one policy at a time made it possible to inspect console output, verify that metrics were recorded correctly, and catch bugs before committing to 81 more runs.
 
-> **For reproduction purposes**, however, you now have the final calibrated parameters for all three policies. You can safely run all 1,053 experiments (or just the 810 Phase 2 runs for the strongest variance estimates) using the wrapper scripts provided below.
-
-### 6.1 Clear existing results
-
-```powershell
-# Windows PowerShell
-Remove-Item results/summary_results_periodic_retrain_3seed.csv -ErrorAction SilentlyContinue
-Remove-Item results/summary_results_error_threshold_retrain_3seed.csv -ErrorAction SilentlyContinue
-Remove-Item results/summary_results_drift_triggered_retrain_3seed.csv -ErrorAction SilentlyContinue
-Remove-Item results/summary_results_periodic_retrain_10seed.csv -ErrorAction SilentlyContinue
-Remove-Item results/summary_results_error_threshold_retrain_10seed.csv -ErrorAction SilentlyContinue
-Remove-Item results/summary_results_drift_triggered_retrain_10seed.csv -ErrorAction SilentlyContinue
-```
-
-```bash
-# macOS / Linux
-rm -f results/summary_results_*_retrain_*seed.csv
-```
-
-### 6.2 Run all configurations
-
-For each policy, you need to iterate over 3 drift types × 3 budget/latency levels and run `main.py` each time. In practice this means editing `main.py` **27 times per policy** (or writing a wrapper script).
-
-Below is the full configuration matrix. For each row, set the matching values in `main.py` and run it:
-
-**Periodic Policy — 27 invocations (× 3 seeds each = 81 rows)**
-
-| # | drift_type | interval | budget | retrain_latency | deploy_latency |
-|---|---|---|---|---|---|
-| 1 | abrupt | 2000 | 5 | 10 | 1 |
-| 2 | abrupt | 2000 | 5 | 100 | 5 |
-| 3 | abrupt | 2000 | 5 | 500 | 20 |
-| 4 | abrupt | 1000 | 10 | 10 | 1 |
-| 5 | abrupt | 1000 | 10 | 100 | 5 |
-| 6 | abrupt | 1000 | 10 | 500 | 20 |
-| 7 | abrupt | 500 | 20 | 10 | 1 |
-| 8 | abrupt | 500 | 20 | 100 | 5 |
-| 9 | abrupt | 500 | 20 | 500 | 20 |
-| 10–18 | gradual | *(same 9 budget/latency combos)* | | | |
-| 19–27 | recurring | *(same 9 budget/latency combos)* | | | |
-
-**Error-Threshold Policy — 27 invocations**
-
-Same drift × budget × latency grid. Fixed parameters: `error_threshold=0.27`, `window_size=200`.
-
-**Drift-Triggered (ADWIN) Policy — 27 invocations**
-
-Same drift × budget × latency grid. Fixed parameters: `delta=0.002`, `window_size=500`, `min_samples=300`.
-
-### 6.3 Alternatively: Use below automation wrapper
-
-Instead of editing `main.py` many times, you can use the below small wrapper script. Save this as `run_all_experiments.py` in the project root and run it. It will loop through all configurations for all three policies, running each one sequentially and appending results to the appropriate summary CSV.
-
-> **Note:** The script below reproduces the Phase 1 (3-seed, 243 runs) configuration. To reproduce Phase 2 (10-seed, 810 runs), change the `SEEDS` list to include all 10 seeds and update the CSV filenames to use `_10seed` suffixes.
-
-```python
-"""
-run_all_experiments.py — Runs the full experiment matrix.
-
-Phase 1 (3 seeds):  243 runs  → *_3seed.csv
-Phase 2 (10 seeds): 810 runs  → *_10seed.csv
-
-To switch between phases, change SEEDS and SEED_LABEL below.
-"""
-import os
-from pathlib import Path
-from src.data.drift_generator import DriftGenerator
-from src.models.base_model import StreamingModel
-from src.policies.periodic import PeriodicPolicy
-from src.policies.error_threshold_policy import ErrorThresholdPolicy
-from src.policies.drift_triggered_policy import DriftTriggeredPolicy
-from src.evaluation.metrics import MetricsTracker
-from src.runner.experiment_runner import ExperimentRunner
-from src.evaluation.results_export import export_summary_to_csv
-
-# ── Phase 1 (3 seeds, 243 runs) ──
-SEEDS = [42, 123, 456]
-SEED_LABEL = "3seed"
-
-# ── Uncomment below for Phase 2 (10 seeds, 810 runs) ──
-# SEEDS = [42, 123, 456, 789, 1011, 1213, 1415, 1617, 1819, 2021]
-# SEED_LABEL = "10seed"
-
-DRIFT_TYPES = ["abrupt", "gradual", "recurring"]
-BUDGET_LATENCY = [
-    # (budget, retrain_latency, deploy_latency)
-    (5,  10,  1),
-    (5,  100, 5),
-    (5,  500, 20),
-    (10, 10,  1),
-    (10, 100, 5),
-    (10, 500, 20),
-    (20, 10,  1),
-    (20, 100, 5),
-    (20, 500, 20),
-]
-
-def interval_for_budget(budget):
-    return 10000 // budget   # 5→2000, 10→1000, 20→500
-
-def run_one(policy, policy_type, config, drift_type, seed, budget, r_lat, d_lat):
-    gen = DriftGenerator(drift_type=drift_type, drift_point=5000, recurrence_period=1000, seed=seed)
-    X, y = gen.generate(10000)
-    model = StreamingModel()
-    metrics = MetricsTracker()
-    metrics.set_drift_point(5000)
-    metrics.set_budget(budget)
-    runner = ExperimentRunner(model, policy, metrics)
-    runner.run(X, y)
-    csv_file = f"results/summary_results_{policy_type}_retrain_{SEED_LABEL}.csv"
-    export_summary_to_csv(metrics, policy, config, csv_file)
-
-def main():
-    Path("results").mkdir(exist_ok=True)
-
-    # Delete old summary CSVs for a clean start
-    for pt in ["periodic", "error_threshold", "drift_triggered"]:
-        f = Path(f"results/summary_results_{pt}_retrain_{SEED_LABEL}.csv")
-        if f.exists():
-            f.unlink()
-
-    total = len(DRIFT_TYPES) * len(BUDGET_LATENCY) * len(SEEDS) * 3  # 3 policies
-    run_num = 0
-
-    for drift_type in DRIFT_TYPES:
-        for budget, r_lat, d_lat in BUDGET_LATENCY:
-            for seed in SEEDS:
-                # --- Periodic ---
-                run_num += 1
-                interval = interval_for_budget(budget)
-                p = PeriodicPolicy(interval=interval, budget=budget,
-                                   retrain_latency=r_lat, deploy_latency=d_lat)
-                cfg = {"drift_type": drift_type, "policy_type": "periodic",
-                       "policy_interval": interval, "budget": budget, "random_seed": seed}
-                print(f"[{run_num}/{total}] periodic | {drift_type} | K={budget} | lat={r_lat}+{d_lat} | seed={seed}")
-                run_one(p, "periodic", cfg, drift_type, seed, budget, r_lat, d_lat)
-
-                # --- Error-Threshold ---
-                run_num += 1
-                p = ErrorThresholdPolicy(error_threshold=0.27, window_size=200,
-                                         budget=budget, retrain_latency=r_lat, deploy_latency=d_lat)
-                cfg = {"drift_type": drift_type, "policy_type": "error_threshold",
-                       "error_threshold": 0.27, "window_size": 200, "budget": budget, "random_seed": seed}
-                print(f"[{run_num}/{total}] error_threshold | {drift_type} | K={budget} | lat={r_lat}+{d_lat} | seed={seed}")
-                run_one(p, "error_threshold", cfg, drift_type, seed, budget, r_lat, d_lat)
-
-                # --- Drift-Triggered (ADWIN) ---
-                run_num += 1
-                p = DriftTriggeredPolicy(delta=0.002, window_size=500, min_samples=300,
-                                         budget=budget, retrain_latency=r_lat, deploy_latency=d_lat)
-                cfg = {"drift_type": drift_type, "policy_type": "drift_triggered",
-                       "window_size": 500, "budget": budget, "random_seed": seed}
-                print(f"[{run_num}/{total}] drift_triggered | {drift_type} | K={budget} | lat={r_lat}+{d_lat} | seed={seed}")
-                run_one(p, "drift_triggered", cfg, drift_type, seed, budget, r_lat, d_lat)
-
-    print(f"\nDone! {run_num} experiments completed.")
-    print("Summary CSVs written to results/")
-
-if __name__ == "__main__":
-    main()
-```
-
-Run it:
-
-```bash
-python run_all_experiments.py
-```
-
-### 6.4 Generate all dashboard plots
-
-After all runs are complete:
-
-```bash
-python plot_summary.py
-```
-
-> **Note:** `plot_summary.py` provides a `plot_summary_for_policy()` function that accepts a CSV path and output path. You can call it for each policy and seed phase. See [Section 7](#7-generating-summary-dashboard-plots) for details.
+> **For reproduction purposes**, however, you now have the final calibrated parameters baked into `main.py`. You can safely run all 1,053 experiments (or just the 810 Phase 2 runs for the strongest variance estimates) with a single CLI command.
 
 ---
 
 ## 7. Generating Summary Dashboard Plots
 
-### Per-run timeline plot
+`main.py` automatically generates a 2×3 dashboard PNG for each policy after its sweep completes. You do **not** need to run `plot_summary.py` separately in the normal workflow.
 
-A timeline + rolling-accuracy plot is automatically generated at the end of each `main.py` run and saved to:
+### Automatic generation (via main.py)
+
+When `main.py` finishes all runs for a policy, it calls `plot_summary.py`'s `plot_summary_for_policy()` function internally. The output PNG is saved alongside the summary CSV:
 
 ```
-results/experiment_results.png
+results/summary_results_plot_{policy}_retrain_{N}seed.png
 ```
 
-This file is overwritten on each run. It shows drift regions, retrain events, and accuracy over time for the most recently executed configuration.
+### Manual / standalone generation
 
-### Cross-run summary dashboard
-
-The `plot_summary.py` script reads one of the summary CSVs and generates a 2×3 panel dashboard.
+If you want to regenerate a dashboard without re-running experiments (e.g., after tweaking plot styles), call `plot_summary.py` directly:
 
 ```bash
-python plot_summary.py
+python plot_summary.py                                  # all policies (10-seed by default)
+python plot_summary.py --policy periodic_10seed         # 10-seed periodic only
+python plot_summary.py --policy drift_triggered_3seed   # 3-seed drift-triggered only
 ```
-
-By default it reads the drift-triggered 10-seed CSV. To generate dashboards for other policies or phases, update the CSV path and output path:
-
-```python
-# Phase 1 (3-seed) examples:
-df = pd.read_csv('results/summary_results_periodic_retrain_3seed.csv')
-df = pd.read_csv('results/summary_results_error_threshold_retrain_3seed.csv')
-df = pd.read_csv('results/summary_results_drift_triggered_retrain_3seed.csv')
-
-# Phase 2 (10-seed) examples:
-df = pd.read_csv('results/summary_results_periodic_retrain_10seed.csv')
-df = pd.read_csv('results/summary_results_error_threshold_retrain_10seed.csv')
-df = pd.read_csv('results/summary_results_drift_triggered_retrain_10seed.csv')
-```
-
-Also update the figure title and the output filename to match.
 
 Output files:
 
 | Policy | Phase 1 (3-seed) Dashboard | Phase 2 (10-seed) Dashboard |
 |---|---|---|
-| Periodic | `results/summary_results_plot_periodic_retrain_3seed.png` | `results/summary_results_plot_periodic_retrain_10seed.png` |
-| Error-Threshold | `results/summary_results_plot_error_threshold_retrain_3seed.png` | `results/summary_results_plot_error_threshold_retrain_10seed.png` |
-| Drift-Triggered | `results/summary_results_plot_drift_triggered_retrain_3seed.png` | `results/summary_results_plot_drift_triggered_retrain_10seed.png` |
+| Periodic | `summary_results_plot_periodic_retrain_3seed.png` | `summary_results_plot_periodic_retrain_10seed.png` |
+| Error-Threshold | `summary_results_plot_error_threshold_retrain_3seed.png` | `summary_results_plot_error_threshold_retrain_10seed.png` |
+| Drift-Triggered | `summary_results_plot_drift_triggered_retrain_3seed.png` | `summary_results_plot_drift_triggered_retrain_10seed.png` |
 
 ---
 
