@@ -178,7 +178,7 @@ config = {
     "policy_interval": policy.interval,
     ...
 }
-export_summary_to_csv(metrics, policy, config, "results/summary_results_periodic_retrain.csv")
+export_summary_to_csv(metrics, policy, config, "results/summary_results_periodic_retrain_3seed.csv")
 plot_results(seeds, policy, drift_point=5000, drift_type=drift_type, policy_type="periodic")
 
 ```
@@ -209,7 +209,7 @@ config = {
     "window_size": policy.window_size,
     ...
 }
-export_summary_to_csv(metrics, policy, config, "results/summary_results_error_threshold_retrain.csv")
+export_summary_to_csv(metrics, policy, config, "results/summary_results_error_threshold_retrain_3seed.csv")
 plot_results(seeds, policy, drift_point=5000, drift_type=drift_type, policy_type="error_threshold")
 ```
 
@@ -479,10 +479,10 @@ By default it reads `results/summary_results_drift_triggered_retrain.csv`. To ge
 
 ```python
 # For periodic policy:
-df = pd.read_csv('results/summary_results_periodic_retrain.csv')
+df = pd.read_csv('results/summary_results_periodic_retrain_3seed.csv')
 
 # For error-threshold policy:
-df = pd.read_csv('results/summary_results_error_threshold_retrain.csv')
+df = pd.read_csv('results/summary_results_error_threshold_retrain_3seed.csv')
 ```
 
 Also update the figure title (line 58) and the output filename (line 227) to match.
