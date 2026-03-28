@@ -4,9 +4,6 @@ Main entry point for the Drift-Triggered Retraining Policy experiment.
 Runs all combinations for the Drift-Triggered (ADWIN) retraining policy:
   3 drift types × 3 budgets × 3 latency levels × 10 seeds = 270 runs
 
-Results are saved to:
-  - results/summary_results_drift_triggered_retrain_10seed.csv
-  - results/summary_results_plot_drift_triggered_retrain_10seed.png
 """
 
 from pathlib import Path

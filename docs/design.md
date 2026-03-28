@@ -100,12 +100,43 @@ Key metrics tracked per experiment run:
 Each seed produces:
 - `results/run_seed_{seed}.json` — full configuration + structured results
 - `results/per_sample_metrics_seed_{seed}.csv` — per-timestep accuracy, error, latency flags
-- `results/summary_results_{policy}_retrain.csv` — one summary row appended per run (81 rows per policy)
+- `results/summary_results_{policy}_retrain_{N}seed.csv` — one summary row appended per run
+
+Two sets of summary CSVs exist, corresponding to the two experiment phases:
+- **Phase 1 (3-seed):** `summary_results_{policy}_retrain_3seed.csv` — 81 rows per policy (243 total)
+- **Phase 2 (10-seed):** `summary_results_{policy}_retrain_10seed.csv` — 270 rows per policy (810 total)
 
 ---
 
 ## Reproducibility
 
-- **Fixed seeds**: Every configuration is run with seeds `[42, 123, 456]` to measure variance.
+- **Fixed seeds**: Phase 1 uses seeds `[42, 123, 456]` (3 seeds). Phase 2 uses seeds `[42, 123, 456, 789, 1011, 1213, 1415, 1617, 1819, 2021]` (10 seeds) for stronger variance estimation.
 - **Deterministic data**: `DriftGenerator` uses `np.random.default_rng(seed)` for full reproducibility.
 - **Identical stream**: All three policies see the same data sequence for a given `(drift_type, seed)` pair, enabling fair comparison.
+
+## Git Branching Strategy
+
+The experiments were executed across multiple Git branches to organize results:
+
+### Phase 1 — Per-Configuration Branches (243 runs, 3 seeds)
+
+Each individual configuration was developed and tested in its own feature branch:
+- **Branch naming:** `exp/<drift>-<policy>-<Budget>budget-<Latency>Latency`
+- **Example:** `exp/gradual-drift-triggered-Medbudget-HighLatency`
+
+Cumulative results per policy were merged into dedicated develop branches:
+- `develop_3seed_periodic_retrain`
+- `develop_3seed_error_threshold_retrain`
+- `develop_3seed_drift_triggered_retrain`
+
+### Phase 2 — Per-Policy Batch Branches (810 runs, 10 seeds)
+
+The 810 runs were executed in 3 batches (270 runs per batch), one batch per policy:
+- `develop-10Seed-periodic-retrain-tests`
+- `develop-10Seed-error-threshold-retrain-tests`
+- `develop-10Seed-drift-triggered-retrain-tests`
+
+### Merged Results
+
+The **`main`** and **`develop`** branches contain all results from both phases (1,053 total runs).
+

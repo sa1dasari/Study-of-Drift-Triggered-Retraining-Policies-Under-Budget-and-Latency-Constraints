@@ -39,12 +39,18 @@ This repository contains a reproducible empirical systems study comparing three 
 │       ├── results_export.py           # CSV / JSON export utilities
 │       └── plot_results.py             # Per-run timeline + rolling-accuracy plots
 └── results/
-    ├── summary_results_periodic_retrain.csv
-    ├── summary_results_error_threshold_retrain.csv
-    ├── summary_results_drift_triggered_retrain.csv
-    ├── summary_results_plot_periodic_retrain.png
-    ├── summary_results_plot_error_threshold_retrain.png
-    └── summary_results_plot_drift_triggered_retrain.png
+    ├── summary_results_periodic_retrain_3seed.csv
+    ├── summary_results_periodic_retrain_10seed.csv
+    ├── summary_results_error_threshold_retrain_3seed.csv
+    ├── summary_results_error_threshold_retrain_10seed.csv
+    ├── summary_results_drift_triggered_retrain_3seed.csv
+    ├── summary_results_drift_triggered_retrain_10seed.csv
+    ├── summary_results_plot_periodic_retrain_3seed.png
+    ├── summary_results_plot_periodic_retrain_10seed.png
+    ├── summary_results_plot_error_threshold_retrain_3seed.png
+    ├── summary_results_plot_error_threshold_retrain_10seed.png
+    ├── summary_results_plot_drift_triggered_retrain_3seed.png
+    └── summary_results_plot_drift_triggered_retrain_10seed.png
 ```
 ---
 
@@ -58,9 +64,34 @@ This repository contains a reproducible empirical systems study comparing three 
 | Policy | 3 | Periodic, Error-Threshold, Drift-Triggered (ADWIN) |
 | Budget (K) | 3 | 5 (low), 10 (medium), 20 (high) |
 | Latency | 3 | Low (11 steps), Medium (105 steps), High (520 steps) |
-| Seeds | 3 | 42, 123, 456 |
+| Seeds (Phase 1) | 3 | 42, 123, 456 |
+| Seeds (Phase 2) | 10 | 42, 123, 456, 789, 1011, 1213, 1415, 1617, 1819, 2021 |
 
-**Total: 3 × 3 × 3 × 3 = 27 configs per policy × 3 seeds = 81 runs per policy × 3 policies = 243 runs**
+### Phase 1 — Initial Runs (243 experiments, 3 seeds)
+
+**Total: 3 drift types × 3 policies × 3 budgets × 3 latencies × 3 seeds = 243 runs**
+
+Each individual configuration was developed and tested in its own feature branch:
+- Branch naming: `exp/<drift>-<policy>-<Budget>budget-<Latency>Latency`
+- Example: `exp/gradual-drift-triggered-Medbudget-HighLatency`
+
+Cumulative results for each policy (81 runs per policy) were aggregated in dedicated develop branches:
+- `develop_3seed_periodic_retrain`
+- `develop_3seed_error_threshold_retrain`
+- `develop_3seed_drift_triggered_retrain`
+
+### Phase 2 — Extended Runs (810 experiments, 10 seeds)
+
+**Total: 3 drift types × 3 policies × 3 budgets × 3 latencies × 10 seeds = 810 runs**
+
+These runs were executed in 3 batches of 270 runs each (one batch per policy), rather than per-configuration branches:
+- `develop-10Seed-periodic-retrain-tests` (270 runs)
+- `develop-10Seed-error-threshold-retrain-tests` (270 runs)
+- `develop-10Seed-drift-triggered-retrain-tests` (270 runs)
+
+### Combined Results
+
+The **`main`** and **`develop`** branches contain the merged results from both phases: **1,053 total experiment runs** (243 + 810). All result CSVs and dashboard plots are in the `results/` folder.
 
 ### Shared Parameters
 

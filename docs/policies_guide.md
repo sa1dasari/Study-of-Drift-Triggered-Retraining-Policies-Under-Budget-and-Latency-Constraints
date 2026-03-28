@@ -107,4 +107,4 @@ The minimum split size is `max(30, n // 10)` to avoid noise-driven false detecti
 | ✅ Budget-conservative | With δ = 0.002 and min_samples = 300, the policy rarely fires pre-drift, reserving budget for real drift events |
 | ⚠️ Seed sensitivity | For seeds where the baseline error pattern is noisy (e.g., seed 42, seed 123 under abrupt drift), ADWIN may never trigger, resulting in 0 retrains and 0 % budget utilization |
 | ⚠️ Recurring drift challenge | With 5 concept switches and high latency, the detector may trigger on each switch but run out of budget before the stream ends |
-| 🔑 Key finding | Under seeds 42 and 123 with abrupt drift, ADWIN did not detect drift at all (0 retrains across all budgets/latencies), while seed 456 fully utilised the budget — demonstrating high variance across seeds |
+| 🔑 Key finding | Under seeds 42 and 123 with abrupt drift, ADWIN did not detect drift at all (0 retrains across all budgets/latencies), while seed 456 fully utilised the budget — demonstrating high variance across seeds. The Phase 2 expansion to 10 seeds provides a broader picture of this seed sensitivity. |
