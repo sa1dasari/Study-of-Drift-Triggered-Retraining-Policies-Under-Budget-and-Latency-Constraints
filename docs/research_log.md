@@ -80,7 +80,7 @@
 ## WEEK 6 — Full ADWIN Runs & Cross-Policy Analysis
 
 1. Continued to run experiments for error threshold and drift trigger policies across all drift types, budgets, and latency levels.
-   - All 81 drift-triggered runs completed. Summary CSV: `summary_results_drift_triggered_retrain.csv` (81 rows).
+   - All 81 drift-triggered runs completed. Summary CSV: `summary_results_drift_triggered_retrain_3seed.csv` (81 rows).
    - All three policy summary CSVs verified: 82 lines each (1 header + 81 data rows).
 2. Analyzed the results of the experiments, comparing the performance of different policies under various conditions.
    - **ADWIN seed-sensitivity (abrupt drift):** Seeds 42 and 123 → 0 retrains across *all* 9 budget × latency configs (0 % budget utilisation). Seed 456 → fully utilised budget at low/medium latency.
@@ -89,6 +89,26 @@
    - **Accuracy comparison (abrupt, seed 456, K = 5, low latency):** Periodic = 0.806, Error-threshold = 0.802, ADWIN = 0.803 — all policies are close when detection actually fires.
    - **Accuracy comparison (abrupt, seed 42, K = 5, low latency):** Periodic = 0.750, Error-threshold = 0.753, ADWIN = 0.753 — ADWIN matches error-threshold despite 0 retrains because the model's `partial_fit` online learning provides a baseline adaptation.
 3. Generated summary dashboard plots for all three policies (2 × 3 panel each) using `plot_summary.py`.
-   - Periodic: `results/summary_results_plot_periodic_retrain.png`
-   - Error-threshold: `results/summary_results_plot_error_threshold_retrain.png`
-   - Drift-triggered: `results/summary_results_plot_drift_triggered_retrain.png`
+   - Periodic: `results/summary_results_plot_periodic_retrain_3seed.png`
+   - Error-threshold: `results/summary_results_plot_error_threshold_retrain_3seed.png`
+   - Drift-triggered: `results/summary_results_plot_drift_triggered_retrain_3seed.png`
+4. **Phase 1 complete: 243 total experiment runs (81 per policy × 3 policies).**
+
+## WEEK 7 — Extended 10-Seed Runs (Phase 2)
+
+**Motivation:** The Phase 1 results (3 seeds) revealed high seed sensitivity — especially for the ADWIN policy, where seeds 42 and 123 produced 0 retrains under abrupt drift while seed 456 fully utilized the budget. Three seeds are insufficient to provide robust variance estimates. Phase 2 expands to 10 seeds to strengthen statistical conclusions.
+
+1. Extended the seed set from 3 to 10 seeds: `[42, 123, 456, 789, 1011, 1213, 1415, 1617, 1819, 2021]`.
+2. Ran all 810 experiments (10 seeds × 3 drifts × 3 budgets × 3 latencies × 3 policies) in **3 batches of 270 runs**, one batch per policy:
+   - **Batch 1 — Periodic policy (270 runs):** Branch `develop-10Seed-periodic-retrain-tests`
+   - **Batch 2 — Error-Threshold policy (270 runs):** Branch `develop-10Seed-error-threshold-retrain-tests`
+   - **Batch 3 — Drift-Triggered ADWIN policy (270 runs):** Branch `develop-10Seed-drift-triggered-retrain-tests`
+3. Generated 10-seed summary CSVs (270 rows per policy):
+   - `results/summary_results_periodic_retrain_10seed.csv`
+   - `results/summary_results_error_threshold_retrain_10seed.csv`
+   - `results/summary_results_drift_triggered_retrain_10seed.csv`
+4. Generated 10-seed summary dashboard plots:
+   - `results/summary_results_plot_periodic_retrain_10seed.png`
+   - `results/summary_results_plot_error_threshold_retrain_10seed.png`
+   - `results/summary_results_plot_drift_triggered_retrain_10seed.png`
+5. **Phase 2 complete: 810 total experiment runs (270 per policy × 3 policies).**
