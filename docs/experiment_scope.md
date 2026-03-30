@@ -5,12 +5,14 @@
 This document specifies every factor varied across experiment runs, the exact parameter values used, and the total number of configurations executed.
 The study follows a **full-factorial design** — every combination of drift type, policy, budget, and latency is run with multiple random seeds.
 
-Experiments were conducted in **two phases** plus **baseline runs**:
+Experiments were conducted in **three phases** plus **baseline runs**:
 - **Phase 1 (3 seeds):** 243 runs — initial exploration with per-configuration Git branches.
 - **Phase 2 (10 seeds):** 810 runs — extended evaluation with per-policy batch Git branches.
 - **No-Retrain Baseline (3 seeds):** 9 runs — accuracy floor with Phase 1 seeds.
 - **No-Retrain Baseline (10 seeds):** 30 runs — accuracy floor with Phase 2 seeds.
-- **Combined total: 1,092 experiment runs.**
+- **Phase 3 — Extreme Latency (3 seeds):** 171 runs — 2 extreme latency levels (Near-Zero=3, Extreme-High=2050).
+- **Phase 3 — Extreme Latency (10 seeds):** 570 runs — same 2 extreme levels with full 10-seed set.
+- **Combined total: 1,833 experiment runs.**
 
 ---
 
@@ -59,13 +61,22 @@ The periodic interval is chosen so that the maximum possible retrains exactly eq
 
 ---
 
-## Factor 4 — Latency Levels (3)
+## Factor 4 — Latency Levels (3 original + 2 extreme)
+
+### Original Levels (Phases 1 & 2)
 
 | Level | Retrain Latency (steps) | Deploy Latency (steps) | Total Latency (steps) | Interpretation |
 |---|---|---|---|---|
 | **Low** | 10 | 1 | 11 | Near real-time — fast retraining and near-instant deployment |
 | **Medium** | 100 | 5 | 105 | Moderate — e.g., nightly batch retrain with brief staging |
 | **High** | 500 | 20 | 520 | Heavy — large model retrain with substantial deployment pipeline overhead |
+
+### Extreme Levels (Phase 3)
+
+| Level | Retrain Latency (steps) | Deploy Latency (steps) | Total Latency (steps) | Interpretation |
+|---|---|---|---|---|
+| **Near-Zero** | 2 | 1 | 3 | Removes latency as a factor entirely — isolates pure policy behaviour |
+| **Extreme-High** | 2,000 | 50 | 2,050 | Forces even K=20 periodic to execute almost no retrains post-drift |
 
 During each latency window the model continues to serve predictions on stale weights, and no new retrain can be initiated.
 
@@ -152,6 +163,22 @@ The no-retrain baseline has **no budget or latency grid** — the model uses onl
 
 - **Branch:** `develop_NoRetrain_NoBudget_NoLatency`
 
+### Phase 3 — Extreme Latency, 3 Seeds (171 runs)
+
+```
+3 drift types  ×  3 budget levels  ×  2 extreme latency levels  =  18 unique configs per policy
+18 configs  ×  3 seeds  =  54 experiment runs per active policy
+54 runs  ×  3 active policies  =  162 active runs  +  9 baseline runs  =  171 total
+```
+
+### Phase 3 — Extreme Latency, 10 Seeds (570 runs)
+
+```
+3 drift types  ×  3 budget levels  ×  2 extreme latency levels  =  18 unique configs per policy
+18 configs  ×  10 seeds  =  180 experiment runs per active policy
+180 runs  ×  3 active policies  =  540 active runs  +  30 baseline runs  =  570 total
+```
+
 ### Combined Summary
 
 | Dimension | Values | Count |
@@ -159,14 +186,15 @@ The no-retrain baseline has **no budget or latency grid** — the model uses onl
 | Drift types | abrupt, gradual, recurring | 3 |
 | Policies | periodic, error_threshold, drift_triggered, **no_retrain** | 4 |
 | Budgets (K) | 5, 10, 20 *(N/A for no_retrain)* | 3 |
-| Latency levels | Low (11), Medium (105), High (520) *(N/A for no_retrain)* | 3 |
-| Seeds (Phase 1) | 42, 123, 456 | 3 |
-| Seeds (Phase 2) | 42, 123, 456, 789, 1011, 1213, 1415, 1617, 1819, 2021 | 10 |
-| **Total unique configurations** | | **27 per retrain policy / 81 across 3 retrain policies + 3 baseline** |
+| Latency levels (Phase 1 & 2) | Low (11), Medium (105), High (520) *(N/A for no_retrain)* | 3 |
+| Latency levels (Phase 3) | Near-Zero (3), Extreme-High (2050) *(N/A for no_retrain)* | 2 |
+| Seeds (Phase 1 / Phase 3-3seed) | 42, 123, 456 | 3 |
+| Seeds (Phase 2 / Phase 3-10seed) | 42, 123, 456, 789, 1011, 1213, 1415, 1617, 1819, 2021 | 10 |
 | **Total Phase 1 runs** | | **243** |
 | **Total Phase 2 runs** | | **810** |
 | **Total No-Retrain Baseline runs** | | **39** (9 + 30) |
-| **Grand total experiment runs** | | **1,092** |
+| **Total Phase 3 runs (Extreme Latency)** | | **741** (171 + 570) |
+| **Grand total experiment runs** | | **1,833** |
 
 The **`main`** and **`develop`** branches contain all merged results from all phases.
 
@@ -199,6 +227,17 @@ The **`main`** and **`develop`** branches contain all merged results from all ph
 | Summary CSV (3-seed) | `results/summary_results_no_retrain_3seed.csv` | One row per run; 9 rows total |
 | Summary CSV (10-seed) | `results/summary_results_no_retrain_10seed.csv` | One row per run; 30 rows total |
 
+### Phase 3 — Extreme Latency (3-seed: 54 runs per policy, 10-seed: 180 runs per policy)
+
+| Artifact | Path | Description |
+|---|---|---|
+| JSON result | `results/<policy>_ExtremeLatency_{N}seed/run_<run_tag>.json` | Full config + structured metrics per run |
+| Per-sample CSV | `results/<policy>_ExtremeLatency_{N}seed/per_sample_<run_tag>.csv` | Per-timestep accuracy, error, latency flags |
+| Summary CSV (3-seed) | `results/summary_results_{policy}_retrain_ExtremeLatency_3seed.csv` | One row per run; 54 rows per active policy |
+| Summary CSV (10-seed) | `results/summary_results_{policy}_retrain_ExtremeLatency_10seed.csv` | One row per run; 180 rows per active policy |
+| Baseline CSV (3-seed) | `results/summary_results_no_retrain_ExtremeLatency_3seed.csv` | One row per run; 9 rows |
+| Baseline CSV (10-seed) | `results/summary_results_no_retrain_ExtremeLatency_10seed.csv` | One row per run; 30 rows |
+
 ### Visualisation Artifacts
 
 | File | Description |
@@ -211,6 +250,14 @@ The **`main`** and **`develop`** branches contain all merged results from all ph
 | `results/summary_results_plot_drift_triggered_retrain_10seed.png` | 2 × 3 dashboard for drift-triggered (ADWIN) policy (Phase 2, 10 seeds) |
 | `results/summary_results_plot_no_retrain_3seed.png` | 2 × 2 baseline dashboard for no-retrain policy (3 seeds) |
 | `results/summary_results_plot_no_retrain_10seed.png` | 2 × 2 baseline dashboard for no-retrain policy (10 seeds) |
+| `results/summary_results_plot_periodic_retrain_ExtremeLatency_3seed.png` | 2 × 3 dashboard for periodic policy (Phase 3, 3 seeds, extreme latency) |
+| `results/summary_results_plot_periodic_retrain_ExtremeLatency_10seed.png` | 2 × 3 dashboard for periodic policy (Phase 3, 10 seeds, extreme latency) |
+| `results/summary_results_plot_error_threshold_retrain_ExtremeLatency_3seed.png` | 2 × 3 dashboard for error-threshold policy (Phase 3, 3 seeds, extreme latency) |
+| `results/summary_results_plot_error_threshold_retrain_ExtremeLatency_10seed.png` | 2 × 3 dashboard for error-threshold policy (Phase 3, 10 seeds, extreme latency) |
+| `results/summary_results_plot_drift_triggered_retrain_ExtremeLatency_3seed.png` | 2 × 3 dashboard for drift-triggered (ADWIN) policy (Phase 3, 3 seeds, extreme latency) |
+| `results/summary_results_plot_drift_triggered_retrain_ExtremeLatency_10seed.png` | 2 × 3 dashboard for drift-triggered (ADWIN) policy (Phase 3, 10 seeds, extreme latency) |
+| `results/summary_results_plot_no_retrain_ExtremeLatency_3seed.png` | 2 × 2 baseline dashboard for no-retrain policy (Phase 3, 3 seeds, extreme latency) |
+| `results/summary_results_plot_no_retrain_ExtremeLatency_10seed.png` | 2 × 2 baseline dashboard for no-retrain policy (Phase 3, 10 seeds, extreme latency) |
 
 Each retraining-policy dashboard contains six panels:
 1. **Line plot** — Accuracy vs. total latency, grouped by drift type
@@ -226,3 +273,31 @@ The no-retrain baseline dashboard contains four panels:
 3. **Bar chart** — Accuracy drop by drift type (± std)
 4. **Box plot** — Accuracy distribution across seeds per drift type
 
+---
+
+## Git Branching Strategy
+
+### Phase 1 — Per-Configuration Branches (243 runs, 3 seeds)
+
+Each individual configuration was developed and tested in its own feature branch:
+- **Naming:** `exp/<drift>-<policy>-<Budget>budget-<Latency>Latency`
+- **Example:** `exp/gradual-drift-triggered-Medbudget-HighLatency`
+
+Cumulative results per policy were merged into dedicated develop branches:
+- `develop_3seed_periodic_retrain`
+- `develop_3seed_error_threshold_retrain`
+- `develop_3seed_drift_triggered_retrain`
+
+### Phase 2 — Per-Policy Batch Branches (810 runs, 10 seeds)
+
+- `develop-10Seed-periodic-retrain-tests` (270 runs)
+- `develop-10Seed-error-threshold-retrain-tests` (270 runs)
+- `develop-10Seed-drift-triggered-retrain-tests` (270 runs)
+
+### No-Retrain Baseline (39 runs)
+
+- `develop_NoRetrain_NoBudget_NoLatency` (9 runs with 3 seeds + 30 runs with 10 seeds)
+
+### Merged Results
+
+The **`main`** and **`develop`** branches contain all results from all phases (1,833 total runs).
