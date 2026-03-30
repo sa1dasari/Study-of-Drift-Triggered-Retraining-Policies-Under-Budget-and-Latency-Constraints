@@ -59,7 +59,7 @@ t < 5000                               →  w = w₁
 
 ---
 
-## Data Generation Parameters (Shared Across All Experiments)
+## Data Generation Parameters
 
 | Parameter | Value | Description |
 |---|---|---|
@@ -67,6 +67,4 @@ t < 5000                               →  w = w₁
 | `n_samples` | 10,000 | Total stream length |
 | `drift_point` | 5,000 | Timestep where drift begins |
 | `recurrence_period` | 1,000 | Concept switch period for recurring drift |
-| `seeds` (Phase 1) | [42, 123, 456] | 3 random seeds for initial exploration |
-| `seeds` (Phase 2) | [42, 123, 456, 789, 1011, 1213, 1415, 1617, 1819, 2021] | 10 random seeds for extended variance estimation |
 | Label model | `Bernoulli(σ(X · w))` | Logistic probability from linear model |

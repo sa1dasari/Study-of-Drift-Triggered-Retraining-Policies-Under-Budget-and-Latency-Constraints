@@ -25,7 +25,7 @@
    - Confirmed `ExperimentRunner` streaming loop: predict → evaluate → buffer → maybe retrain → partial_fit.
 2. Run abrupt drift with periodic retraining with various budgets and latency levels.
    - 27 runs (3 budgets × 3 latencies × 3 seeds).
-   - Observation: periodic policy achieves 100 % budget utilisation at low/medium latency but only ~50 % at high latency with K = 20 because the 520-step latency window exceeds the 500-step interval, halving usable retrains from 20 to ~10.
+   - Observation: periodic policy achieves 100 % budget utilization at low/medium latency but only ~50 % at high latency with K = 20 because the 520-step latency window exceeds the 500-step interval, halving usable retrains from 20 to ~10.
 3. Run gradual drift with periodic retraining with various budgets and latency levels.
    - 27 runs.
    - Observation: accuracy drop under gradual drift is comparable to abrupt drift (≈ −0.03 to −0.05) because the 1,000-step transition still fully shifts the concept within two periodic intervals.
@@ -60,7 +60,7 @@
    - Critical finding (abrupt drift): for seeds 42 and 123 with K = 5, **all 5 retrains fired before t = 5000**, leaving 0 retrains for the actual drift. This means the model ran entirely on stale-or-incremental weights post-drift.
    - For seed 456, all retrains fired post-drift (0 before, 5 after) — the error threshold was not exceeded by pre-drift noise for this seed, showcasing high seed sensitivity.
 3. Analyzed the results of the experiments, comparing the performance of the error threshold policy under various conditions.
-   - Budget utilisation: 100 % for low/medium latency at all budget levels. At high latency with K = 5, seed 456 achieved only 80 % (4 out of 5 retrains) because the 520-step latency window blocked the final trigger.
+   - Budget utilization: 100 % for low/medium latency at all budget levels. At high latency with K = 5, seed 456 achieved only 80 % (4 out of 5 retrains) because the 520-step latency window blocked the final trigger.
    - Post-drift accuracy: comparable across policies (~0.73–0.79 depending on seed), suggesting that the error-threshold policy did not dramatically improve post-drift performance when budget was wasted pre-drift.
 
 ---
@@ -83,16 +83,6 @@
    - All 81 drift-triggered runs completed. Summary CSV: `summary_results_drift_triggered_retrain_3seed.csv` (81 rows).
    - All three policy summary CSVs verified: 82 lines each (1 header + 81 data rows).
 2. Analyzed the results of the experiments, comparing the performance of different policies under various conditions.
-   - **ADWIN seed-sensitivity (abrupt drift):** Seeds 42 and 123 → 0 retrains across *all* 9 budget × latency configs (0 % budget utilisation). Seed 456 → fully utilised budget at low/medium latency.
-   - **ADWIN recurring drift:** more consistent detection across seeds because the repeated concept switches provide multiple opportunities for the Hoeffding bound to be exceeded.
-   - **Cross-policy observation:** Periodic policy has the most stable budget utilisation (100 % unless high-latency blocks it). Error-threshold is intermediate (variable, but generally uses full budget). ADWIN is the most variable (0 %–100 % depending on seed).
-   - **Accuracy comparison (abrupt, seed 456, K = 5, low latency):** Periodic = 0.806, Error-threshold = 0.802, ADWIN = 0.803 — all policies are close when detection actually fires.
-   - **Accuracy comparison (abrupt, seed 42, K = 5, low latency):** Periodic = 0.750, Error-threshold = 0.753, ADWIN = 0.753 — ADWIN matches error-threshold despite 0 retrains because the model's `partial_fit` online learning provides a baseline adaptation.
-3. Generated summary dashboard plots for all three policies (2 × 3 panel each) using `plot_summary.py`.
-   - Periodic: `results/summary_results_plot_periodic_retrain_3seed.png`
-   - Error-threshold: `results/summary_results_plot_error_threshold_retrain_3seed.png`
-   - Drift-triggered: `results/summary_results_plot_drift_triggered_retrain_3seed.png`
-4. **Phase 1 complete: 243 total experiment runs (81 per policy × 3 policies).**
 
 ---
 
@@ -105,21 +95,14 @@
    - **Batch 1 — Periodic policy (270 runs):** Branch `develop-10Seed-periodic-retrain-tests`
    - **Batch 2 — Error-Threshold policy (270 runs):** Branch `develop-10Seed-error-threshold-retrain-tests`
    - **Batch 3 — Drift-Triggered ADWIN policy (270 runs):** Branch `develop-10Seed-drift-triggered-retrain-tests`
-3. Generated 10-seed summary CSVs (270 rows per policy):
-   - `results/summary_results_periodic_retrain_10seed.csv`
-   - `results/summary_results_error_threshold_retrain_10seed.csv`
-   - `results/summary_results_drift_triggered_retrain_10seed.csv`
-4. Generated 10-seed summary dashboard plots:
-   - `results/summary_results_plot_periodic_retrain_10seed.png`
-   - `results/summary_results_plot_error_threshold_retrain_10seed.png`
-   - `results/summary_results_plot_drift_triggered_retrain_10seed.png`
-5. **Phase 2 complete: 810 total experiment runs (270 per policy × 3 policies).**
+3. Implemented `NeverRetrainPolicy` in `src/policies/never_retrain_policy.py` — inherits from `RetrainPolicy` with budget=0, latency=0, `should_retrain()` always returns `False`.
+4. Added `_run_no_retrain_sweep()` to `main.py` — a dedicated sweep function with a simplified grid (3 drift types × N seeds, no budget/latency loops).
+5. Added `plot_summary_for_no_retrain()` to `plot_summary.py` — a 2×2 baseline-specific dashboard (mean accuracy, pre/post drift, accuracy drop, box plot).
+6. Ran baseline with **3 seeds** (9 runs) and **10 seeds** (30 runs)
 
 ---
 
-## WEEK 8 — No-Retrain Baseline (Accuracy Floor)
+## WEEK 8 — Extreme Latency Experiments (Phase 3)
 
-1. Implemented `NeverRetrainPolicy` in `src/policies/never_retrain_policy.py` — inherits from `RetrainPolicy` with budget=0, latency=0, `should_retrain()` always returns `False`.
-2. Added `_run_no_retrain_sweep()` to `main.py` — a dedicated sweep function with a simplified grid (3 drift types × N seeds, no budget/latency loops).
-3. Added `plot_summary_for_no_retrain()` to `plot_summary.py` — a 2×2 baseline-specific dashboard (mean accuracy, pre/post drift, accuracy drop, box plot).
-4. Ran baseline with **3 seeds** (9 runs) and **10 seeds** (30 runs)
+1. Added two extreme latency levels that bracket the original range to stress-test policy behavior at the boundary conditions:
+2. Ran full sweeps for all 4 policies with both seed sets
