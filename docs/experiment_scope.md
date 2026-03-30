@@ -5,10 +5,12 @@
 This document specifies every factor varied across experiment runs, the exact parameter values used, and the total number of configurations executed.
 The study follows a **full-factorial design** — every combination of drift type, policy, budget, and latency is run with multiple random seeds.
 
-Experiments were conducted in **two phases**:
+Experiments were conducted in **two phases** plus **baseline runs**:
 - **Phase 1 (3 seeds):** 243 runs — initial exploration with per-configuration Git branches.
 - **Phase 2 (10 seeds):** 810 runs — extended evaluation with per-policy batch Git branches.
-- **Combined total: 1,053 experiment runs.**
+- **No-Retrain Baseline (3 seeds):** 9 runs — accuracy floor with Phase 1 seeds.
+- **No-Retrain Baseline (10 seeds):** 30 runs — accuracy floor with Phase 2 seeds.
+- **Combined total: 1,092 experiment runs.**
 
 ---
 
@@ -31,6 +33,9 @@ All drift types share the same pre-drift concept (`w₁`) for `t ∈ [0, 5000)`,
 | **Periodic** | `interval` ∈ {500, 1000, 2000} (derived from budget) | Retrain every `interval` timesteps on a fixed schedule |
 | **Error-Threshold** | `error_threshold = 0.27`, `window_size = 200` | Retrain when rolling error rate over last 200 predictions exceeds 27 % |
 | **Drift-Triggered (ADWIN)** | `delta = 0.002`, `window_size = 500`, `min_samples = 300` | Retrain when ADWIN detects a statistically significant shift in error distribution |
+| **No-Retrain (Baseline)** | None — budget = 0, latency = 0 | Never retrains; model adapts only via `partial_fit` (incremental learning) |
+
+> The **No-Retrain baseline** has no budget or latency grid — it is a single-configuration policy run across 3 drift types × N seeds. It provides the accuracy floor that makes all other policies' numbers interpretable.
 
 ### Periodic Interval Selection
 
@@ -127,22 +132,43 @@ The 810 runs were executed in **3 batches of 270 runs** (one batch per policy), 
 - `develop-10Seed-error-threshold-retrain-tests` (270 runs)
 - `develop-10Seed-drift-triggered-retrain-tests` (270 runs)
 
+### No-Retrain Baseline — 3 Seeds (9 runs)
+
+```
+3 drift types  ×  3 seeds  =  9 experiment runs
+Budget  = 0  (always)
+Latency = 0  (always)
+```
+
+### No-Retrain Baseline — 10 Seeds (30 runs)
+
+```
+3 drift types  ×  10 seeds  =  30 experiment runs
+Budget  = 0  (always)
+Latency = 0  (always)
+```
+
+The no-retrain baseline has **no budget or latency grid** — the model uses only `partial_fit` (incremental learning) and is never retrained from scratch. This provides the **accuracy floor** that makes all other policies' accuracy numbers interpretable.
+
+- **Branch:** `develop_NoRetrain_NoBudget_NoLatency`
+
 ### Combined Summary
 
 | Dimension | Values | Count |
 |---|---|---|
 | Drift types | abrupt, gradual, recurring | 3 |
-| Policies | periodic, error_threshold, drift_triggered | 3 |
-| Budgets (K) | 5, 10, 20 | 3 |
-| Latency levels | Low (11), Medium (105), High (520) | 3 |
+| Policies | periodic, error_threshold, drift_triggered, **no_retrain** | 4 |
+| Budgets (K) | 5, 10, 20 *(N/A for no_retrain)* | 3 |
+| Latency levels | Low (11), Medium (105), High (520) *(N/A for no_retrain)* | 3 |
 | Seeds (Phase 1) | 42, 123, 456 | 3 |
 | Seeds (Phase 2) | 42, 123, 456, 789, 1011, 1213, 1415, 1617, 1819, 2021 | 10 |
-| **Total unique configurations** | | **27 per policy / 81 across all** |
+| **Total unique configurations** | | **27 per retrain policy / 81 across 3 retrain policies + 3 baseline** |
 | **Total Phase 1 runs** | | **243** |
 | **Total Phase 2 runs** | | **810** |
-| **Grand total experiment runs** | | **1,053** |
+| **Total No-Retrain Baseline runs** | | **39** (9 + 30) |
+| **Grand total experiment runs** | | **1,092** |
 
-The **`main`** and **`develop`** branches contain all merged results from both phases.
+The **`main`** and **`develop`** branches contain all merged results from all phases.
 
 ---
 
@@ -164,6 +190,15 @@ The **`main`** and **`develop`** branches contain all merged results from both p
 | Per-sample CSV | `results/<policy_dir>/per_sample_<run_tag>.csv` | Per-timestep accuracy, error, latency flags |
 | Summary CSV row | `results/summary_results_{policy}_retrain_10seed.csv` | One row appended per run; 270 rows total per policy |
 
+### No-Retrain Baseline — 3-seed (9 runs) and 10-seed (30 runs)
+
+| Artifact | Path | Description |
+|---|---|---|
+| JSON result | `results/no_retrain_{N}seed_3drift/run_<drift>_s<seed>.json` | Full config + structured metrics per run |
+| Per-sample CSV | `results/no_retrain_{N}seed_3drift/per_sample_<drift>_s<seed>.csv` | Per-timestep accuracy and error (no latency flags) |
+| Summary CSV (3-seed) | `results/summary_results_no_retrain_3seed.csv` | One row per run; 9 rows total |
+| Summary CSV (10-seed) | `results/summary_results_no_retrain_10seed.csv` | One row per run; 30 rows total |
+
 ### Visualisation Artifacts
 
 | File | Description |
@@ -174,11 +209,20 @@ The **`main`** and **`develop`** branches contain all merged results from both p
 | `results/summary_results_plot_error_threshold_retrain_10seed.png` | 2 × 3 dashboard for error-threshold policy (Phase 2, 10 seeds) |
 | `results/summary_results_plot_drift_triggered_retrain_3seed.png` | 2 × 3 dashboard for drift-triggered (ADWIN) policy (Phase 1, 3 seeds) |
 | `results/summary_results_plot_drift_triggered_retrain_10seed.png` | 2 × 3 dashboard for drift-triggered (ADWIN) policy (Phase 2, 10 seeds) |
+| `results/summary_results_plot_no_retrain_3seed.png` | 2 × 2 baseline dashboard for no-retrain policy (3 seeds) |
+| `results/summary_results_plot_no_retrain_10seed.png` | 2 × 2 baseline dashboard for no-retrain policy (10 seeds) |
 
-Each dashboard contains six panels:
+Each retraining-policy dashboard contains six panels:
 1. **Line plot** — Accuracy vs. total latency, grouped by drift type
 2. **Bar chart** — Mean accuracy (± std) by drift type
 3. **Heatmap** — Accuracy across Budget × Latency
 4. **Grouped bar** — Budget utilization by budget level and latency
 5. **Grouped bar** — Average retrains after drift by drift type and latency
 6. **Grouped bar** — Average retrains after drift by drift type and budget
+
+The no-retrain baseline dashboard contains four panels:
+1. **Bar chart** — Mean overall accuracy by drift type (± std)
+2. **Grouped bar** — Pre-drift vs post-drift accuracy by drift type
+3. **Bar chart** — Accuracy drop by drift type (± std)
+4. **Box plot** — Accuracy distribution across seeds per drift type
+

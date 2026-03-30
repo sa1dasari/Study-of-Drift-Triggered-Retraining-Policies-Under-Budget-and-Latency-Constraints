@@ -9,6 +9,7 @@ Usage:
     python plot_summary.py --policy periodic_10seed         # 10-seed periodic only
     python plot_summary.py --policy error_threshold_10seed  # 10-seed error-threshold only
     python plot_summary.py --policy drift_triggered_10seed  # 10-seed drift-triggered only
+    python plot_summary.py --policy no_retrain_10seed       # 10-seed no-retrain baseline
 """
 
 import warnings
@@ -235,6 +236,110 @@ def plot_summary_for_policy(csv_path, output_path, policy_name):
         print(f"  Avg Retrains After Drift: {df_d['retrains_after_drift'].mean():.1f}")
 
 
+def plot_summary_for_no_retrain(csv_path, output_path, policy_name):
+    """Generate a 2×2 baseline-specific summary plot (no budget/latency axes).
+
+    Args:
+        csv_path (str):    Path to the no-retrain summary CSV (one row per run).
+        output_path (str): Path where the PNG will be saved.
+        policy_name (str): Human-readable policy name for plot titles.
+    """
+    df = pd.read_csv(csv_path)
+
+    print(f"Loaded {len(df)} baseline runs from {csv_path}")
+    print(f"  Drift types : {sorted(df['drift_type'].unique())}")
+    print(f"  Seeds       : {len(df)} total rows (0 retrains expected)")
+
+    colors_drift = {'abrupt': '#3498db', 'gradual': '#e74c3c', 'recurring': '#9b59b6'}
+    drift_types = sorted(df['drift_type'].unique())
+
+    fig, axes = plt.subplots(2, 2, figsize=(14, 10))
+    fig.suptitle(f'{policy_name}: Baseline Floor (partial_fit only, 0 retrains)',
+                 fontsize=14, fontweight='bold')
+
+    # ── Plot 1: Mean Overall Accuracy by Drift Type ─────────────────────
+    ax1 = axes[0, 0]
+    stats = df.groupby('drift_type')['overall_accuracy'].agg(['mean', 'std'])
+    bar_colors = [colors_drift.get(dt, 'gray') for dt in stats.index]
+    bars = ax1.bar(stats.index.str.capitalize(), stats['mean'],
+                   yerr=stats['std'], color=bar_colors, alpha=0.85, capsize=6)
+    for bar, (_, row) in zip(bars, stats.iterrows()):
+        ax1.text(bar.get_x() + bar.get_width() / 2,
+                 bar.get_height() + row['std'] + 0.005,
+                 f"{row['mean']:.4f}", ha='center', va='bottom', fontsize=10)
+    ax1.set_ylabel('Overall Accuracy', fontsize=10)
+    ax1.set_title('Mean Overall Accuracy by Drift Type', fontsize=11)
+    ax1.grid(axis='y', alpha=0.3)
+
+    # ── Plot 2: Pre- vs Post-Drift Accuracy ─────────────────────────────
+    ax2 = axes[0, 1]
+    pre = df.groupby('drift_type')['pre_drift_accuracy'].mean()
+    post = df.groupby('drift_type')['post_drift_accuracy'].mean()
+    x = np.arange(len(drift_types))
+    width = 0.35
+    bars_pre = ax2.bar(x - width / 2, [pre[dt] for dt in drift_types], width,
+                       label='Pre-Drift', color='#2ecc71', alpha=0.85)
+    bars_post = ax2.bar(x + width / 2, [post[dt] for dt in drift_types], width,
+                        label='Post-Drift', color='#e74c3c', alpha=0.85)
+    for bar in list(bars_pre) + list(bars_post):
+        ax2.text(bar.get_x() + bar.get_width() / 2, bar.get_height() + 0.005,
+                 f"{bar.get_height():.4f}", ha='center', va='bottom', fontsize=9)
+    ax2.set_xticks(x)
+    ax2.set_xticklabels([dt.capitalize() for dt in drift_types])
+    ax2.set_ylabel('Accuracy', fontsize=10)
+    ax2.set_title('Pre-Drift vs Post-Drift Accuracy', fontsize=11)
+    ax2.legend(fontsize=9)
+    ax2.grid(axis='y', alpha=0.3)
+
+    # ── Plot 3: Accuracy Drop (post − pre) ──────────────────────────────
+    ax3 = axes[1, 0]
+    drop = df.groupby('drift_type')['accuracy_drop'].agg(['mean', 'std'])
+    bar_colors_drop = [colors_drift.get(dt, 'gray') for dt in drop.index]
+    bars = ax3.bar(drop.index.str.capitalize(), drop['mean'],
+                   yerr=drop['std'], color=bar_colors_drop, alpha=0.85, capsize=6)
+    for bar, (_, row) in zip(bars, drop.iterrows()):
+        offset = row['std'] + 0.005 if row['mean'] >= 0 else -(row['std'] + 0.005)
+        va = 'bottom' if row['mean'] >= 0 else 'top'
+        ax3.text(bar.get_x() + bar.get_width() / 2,
+                 bar.get_height() + offset,
+                 f"{row['mean']:.4f}", ha='center', va=va, fontsize=10)
+    ax3.axhline(y=0, color='gray', linestyle='--', alpha=0.5)
+    ax3.set_ylabel('Accuracy Drop (post − pre)', fontsize=10)
+    ax3.set_title('Accuracy Drop by Drift Type', fontsize=11)
+    ax3.grid(axis='y', alpha=0.3)
+
+    # ── Plot 4: Box Plot – Overall Accuracy Distribution per Drift Type ─
+    ax4 = axes[1, 1]
+    box_data = [df[df['drift_type'] == dt]['overall_accuracy'].values for dt in drift_types]
+    bp = ax4.boxplot(box_data, labels=[dt.capitalize() for dt in drift_types],
+                     patch_artist=True, widths=0.5)
+    for patch, dt in zip(bp['boxes'], drift_types):
+        patch.set_facecolor(colors_drift.get(dt, 'gray'))
+        patch.set_alpha(0.7)
+    ax4.set_ylabel('Overall Accuracy', fontsize=10)
+    ax4.set_title('Accuracy Distribution Across Seeds', fontsize=11)
+    ax4.grid(axis='y', alpha=0.3)
+
+    # ── Save ────────────────────────────────────────────────────────────
+    plt.tight_layout(rect=[0, 0, 1, 0.96])
+    plt.savefig(output_path, dpi=150, bbox_inches='tight')
+    plt.close()
+    print(f"Graph saved: {output_path}")
+
+    # ── Console summary ─────────────────────────────────────────────────
+    print(f"\n{'=' * 60}")
+    print(f"BASELINE SUMMARY – {policy_name}")
+    print(f"{'=' * 60}")
+    for dt in drift_types:
+        df_d = df[df['drift_type'] == dt]
+        print(f"\n{dt.upper()} DRIFT:")
+        print(f"  Overall Accuracy   : {df_d['overall_accuracy'].mean():.4f} ± {df_d['overall_accuracy'].std():.4f}")
+        print(f"  Pre-Drift Accuracy : {df_d['pre_drift_accuracy'].mean():.4f}")
+        print(f"  Post-Drift Accuracy: {df_d['post_drift_accuracy'].mean():.4f}")
+        print(f"  Accuracy Drop      : {df_d['accuracy_drop'].mean():.4f}")
+        print(f"  Total Retrains     : {df_d['total_retrains'].mean():.0f}")
+
+
 # ─────────────────────────────────────────────────────────────────────────────
 # Legacy wrapper – keeps `python plot_summary.py` working for drift-triggered
 # ─────────────────────────────────────────────────────────────────────────────
@@ -281,7 +386,20 @@ if __name__ == "__main__":
             'results/summary_results_plot_drift_triggered_retrain_10seed.png',
             'Drift-Triggered (ADWIN, 10 seeds)',
         ),
+        'no_retrain': (
+            'results/summary_results_no_retrain_3seed.csv',
+            'results/summary_results_plot_no_retrain_3seed.png',
+            'No-Retrain Baseline',
+        ),
+        'no_retrain_10seed': (
+            'results/summary_results_no_retrain_10seed.csv',
+            'results/summary_results_plot_no_retrain_10seed.png',
+            'No-Retrain Baseline (10 seeds)',
+        ),
     }
+
+    # Policies that use the no-retrain-specific plotter
+    _NO_RETRAIN_KEYS = {'no_retrain', 'no_retrain_10seed'}
 
     if '--policy' in sys.argv:
         idx = sys.argv.index('--policy') + 1
@@ -298,6 +416,9 @@ if __name__ == "__main__":
         print(f"Generating plot for: {policy_name}")
         print(f"{'=' * 60}")
         try:
-            plot_summary_for_policy(csv_path, output_path, policy_name)
+            if policy in _NO_RETRAIN_KEYS:
+                plot_summary_for_no_retrain(csv_path, output_path, policy_name)
+            else:
+                plot_summary_for_policy(csv_path, output_path, policy_name)
         except FileNotFoundError:
             print(f"  ⚠ CSV not found: {csv_path} — skipping {policy_name}")
