@@ -1,9 +1,10 @@
 """
 Main entry point for the Drift-Triggered Retraining Policy experiment.
 
-Runs full-factorial sweeps for one or all retraining policies:
+Runs full-factorial sweeps for one or all retraining policies using
+two **extreme** latency levels (Near-Zero=3, Extreme-High=2050):
   Periodic / Error-Threshold / Drift-Triggered:
-      3 drift types × 3 budgets × 3 latency levels × N seeds
+      3 drift types × 3 budgets × 2 latency levels × N seeds
   No-Retrain (baseline):
       3 drift types × N seeds  (30 runs @10 seeds) — no budget/latency grid
 
@@ -38,9 +39,8 @@ SEEDS_10 = [42, 123, 456, 789, 1011, 1213, 1415, 1617, 1819, 2021]
 DRIFT_TYPES = ["abrupt", "gradual", "recurring"]
 BUDGETS = [5, 10, 20]
 LATENCY_CONFIGS = [
-    (10, 1),      # Low latency   (total = 11)
-    (100, 5),     # Medium latency (total = 105)
-    (500, 20),    # High latency  (total = 520)
+    (2, 1),       # Near-Zero latency    (total = 3)    — isolates pure policy behavior
+    (2000, 50),   # Extreme-High latency (total = 2050) — forces minimal post-drift retrains
 ]
 DRIFT_POINT = 5000
 N_SAMPLES = 10000
@@ -129,11 +129,11 @@ def run_policy_sweep(policy_type, seeds):
     total_runs = n_drifts * n_budgets * n_latencies * len(seeds)
 
     # Output paths
-    run_label = f"{seed_label}_{n_drifts}drift_{n_budgets}budget_{n_latencies}latency"
+    run_label = f"ExtremeLatency_{seed_label}"
     results_dir = Path(f"results/{policy_type}_{run_label}")
     results_dir.mkdir(parents=True, exist_ok=True)
 
-    summary_csv = f"results/summary_results_{policy_type}_retrain_{seed_label}.csv"
+    summary_csv = f"results/summary_results_{policy_type}_retrain_ExtremeLatency_{seed_label}.csv"
     Path(summary_csv).unlink(missing_ok=True)
 
     display = POLICY_DISPLAY[policy_type]
@@ -221,7 +221,7 @@ def run_policy_sweep(policy_type, seeds):
     from plot_summary import plot_summary_for_policy
     plot_summary_for_policy(
         csv_path=summary_csv,
-        output_path=f"results/summary_results_plot_{policy_type}_retrain_{seed_label}.png",
+        output_path=f"results/summary_results_plot_{policy_type}_retrain_ExtremeLatency_{seed_label}.png",
         policy_name=display,
     )
 
@@ -239,11 +239,11 @@ def _run_no_retrain_sweep(seeds):
     total_runs = len(DRIFT_TYPES) * len(seeds)
 
     # Output paths
-    run_label = f"{seed_label}_{len(DRIFT_TYPES)}drift"
+    run_label = f"ExtremeLatency_{seed_label}"
     results_dir = Path(f"results/{policy_type}_{run_label}")
     results_dir.mkdir(parents=True, exist_ok=True)
 
-    summary_csv = f"results/summary_results_{policy_type}_{seed_label}.csv"
+    summary_csv = f"results/summary_results_{policy_type}_ExtremeLatency_{seed_label}.csv"
     Path(summary_csv).unlink(missing_ok=True)
 
     display = POLICY_DISPLAY[policy_type]
@@ -320,7 +320,7 @@ def _run_no_retrain_sweep(seeds):
     from plot_summary import plot_summary_for_no_retrain
     plot_summary_for_no_retrain(
         csv_path=summary_csv,
-        output_path=f"results/summary_results_plot_{policy_type}_{seed_label}.png",
+        output_path=f"results/summary_results_plot_{policy_type}_ExtremeLatency_{seed_label}.png",
         policy_name=display,
     )
 
