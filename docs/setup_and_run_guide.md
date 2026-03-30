@@ -84,7 +84,8 @@ python -c "import numpy, pandas, matplotlib, sklearn; print('All dependencies OK
 │   ├── policies/
 │   │   ├── periodic.py                     ← PeriodicPolicy
 │   │   ├── error_threshold_policy.py       ← ErrorThresholdPolicy
-│   │   └── drift_triggered_policy.py       ← DriftTriggeredPolicy (ADWIN)
+│   │   ├── drift_triggered_policy.py       ← DriftTriggeredPolicy (ADWIN)
+│   │   └── never_retrain_policy.py         ← NeverRetrainPolicy (baseline)
 │   ├── runner/experiment_runner.py         ← Streaming event loop
 │   └── evaluation/
 │       ├── metrics.py                      ← MetricsTracker
@@ -107,13 +108,13 @@ python main.py [--policy POLICY] [--seeds N]
 
 | Flag | Values | Default | Description |
 |---|---|---|---|
-| `--policy` | `periodic`, `error_threshold`, `drift_triggered`, `all` | `all` | Which retraining policy to sweep. `all` runs all three sequentially. |
+| `--policy` | `periodic`, `error_threshold`, `drift_triggered`, `no_retrain`, `all` | `all` | Which retraining policy to sweep. `all` runs all four sequentially. |
 | `--seeds` | `3`, `10` | `10` | Seed set size. `3` = Phase 1 seeds `[42, 123, 456]`. `10` = Phase 2 seeds `[42, 123, 456, 789, 1011, 1213, 1415, 1617, 1819, 2021]`. |
 
 ### Examples
 
 ```bash
-# Run ALL 3 policies with 10 seeds (810 runs — full Phase 2 reproduction)
+# Run ALL 4 policies with 10 seeds (840 runs — full reproduction)
 python main.py
 
 # Run only the periodic policy with 10 seeds (270 runs)
@@ -122,7 +123,10 @@ python main.py --policy periodic
 # Run only drift-triggered (ADWIN) policy with 3 seeds (81 runs — Phase 1)
 python main.py --policy drift_triggered --seeds 3
 
-# Run all 3 policies with 3 seeds (243 runs — full Phase 1 reproduction)
+# Run only the no-retrain baseline with 10 seeds (30 runs)
+python main.py --policy no_retrain --seeds 10
+
+# Run all 4 policies with 3 seeds (252 runs — Phase 1 + baseline)
 python main.py --policy all --seeds 3
 ```
 
@@ -131,19 +135,17 @@ python main.py --policy all --seeds 3
 For each selected policy, `main.py`:
 
 1. Deletes the old summary CSV for that policy (clean start — no duplicate rows).
-2. Iterates over every `(drift_type, budget, latency, seed)` combination.
+2. Iterates over every `(drift_type, budget, latency, seed)` combination (or just `(drift_type, seed)` for no-retrain).
 3. For each run: generates data → builds model + policy → streams 10,000 samples → exports JSON, per-sample CSV, and appends one row to the summary CSV.
 4. Prints live progress with accuracy, retrain count, and ETA.
-5. After all runs for a policy complete, calls `plot_summary.py` to generate the 2×3 dashboard PNG.
+5. After all runs for a policy complete, calls `plot_summary.py` to generate the dashboard PNG (2×3 for active policies, 2×2 for no-retrain baseline).
 
-### Runtime Estimates
+### Commands to run specific policies or seed sets:
 
-| Command | Runs | Approximate Time |
 |---|---|---|
-| `python main.py --policy periodic --seeds 3` | 81 | ~5–15 min |
-| `python main.py --policy periodic` | 270 | ~20–40 min |
-| `python main.py --seeds 3` | 243 | ~15–40 min |
-| `python main.py` | 810 | ~60–120 min |
+| `python main.py --policy <policy-name> --seeds <3 or 10>`
+| `python main.py --policy <policy-name>` 
+| `python main.py`
 
 > **Important:** Always run `main.py` from the project root directory. The script uses relative imports (`from src.…`) and writes to `results/`, both of which require the working directory to be the project root.
 
@@ -172,6 +174,7 @@ Selected via the `--policy` CLI flag. Each policy's fixed parameters are defined
 | `periodic` | `interval = 10000 // budget` | Interval is derived automatically from the budget level |
 | `error_threshold` | `error_threshold=0.27`, `window_size=200` | Calibrated in Week 4 |
 | `drift_triggered` | `delta=0.002`, `window_size=500`, `min_samples=100` | ADWIN; calibrated in Week 5 |
+| `no_retrain` | None | Baseline — budget = 0, latency = 0, no full retrains |
 
 ### Budget & Latency Levels
 
@@ -187,10 +190,10 @@ Controlled internally by `BUDGETS` and `LATENCY_CONFIGS` — all combinations ar
 
 Selected via the `--seeds` CLI flag:
 
-| Flag value | Seeds | Phase | Runs per policy |
-|---|---|---|---|
-| `3` | `[42, 123, 456]` | Phase 1 | 81 |
-| `10` | `[42, 123, 456, 789, 1011, 1213, 1415, 1617, 1819, 2021]` | Phase 2 | 270 |
+| Flag value | Seeds | Phase | Runs per active policy | No-Retrain baseline runs |
+|---|---|---|---|---|
+| `3` | `[42, 123, 456]` | Phase 1 | 81 | 9 |
+| `10` | `[42, 123, 456, 789, 1011, 1213, 1415, 1617, 1819, 2021]` | Phase 2 | 270 | 30 |
 
 ### Summary CSV Naming Convention
 
@@ -205,20 +208,21 @@ results/summary_results_{policy}_retrain_{N}seed.csv
 | Periodic | `summary_results_periodic_retrain_3seed.csv` | `summary_results_periodic_retrain_10seed.csv` |
 | Error-Threshold | `summary_results_error_threshold_retrain_3seed.csv` | `summary_results_error_threshold_retrain_10seed.csv` |
 | Drift-Triggered | `summary_results_drift_triggered_retrain_3seed.csv` | `summary_results_drift_triggered_retrain_10seed.csv` |
+| No-Retrain | `summary_results_no_retrain_3seed.csv` | `summary_results_no_retrain_10seed.csv` |
 
 > **Note:** `main.py` deletes the target summary CSV before starting each policy sweep, ensuring a clean file with a proper header. You do not need to manually delete CSVs.
 
 ---
 
-## 6. Full-Factorial Run (Reproducing All 1,053 Experiments)
+## 6. Full-Factorial Run (Reproducing All 1,092 Experiments)
 
-To reproduce the complete study, run both experiment phases using `main.py`:
+To reproduce the complete study, run both experiment phases plus the baseline using `main.py`:
 
 ```bash
-# Phase 1 — 243 runs (3 seeds × 3 drifts × 3 budgets × 3 latencies × 3 policies)
+# Phase 1 — 252 runs (3 seeds × 3 drifts × 3 budgets × 3 latencies × 3 policies + 9 baseline)
 python main.py --seeds 3
 
-# Phase 2 — 810 runs (10 seeds × 3 drifts × 3 budgets × 3 latencies × 3 policies)
+# Phase 2 — 840 runs (10 seeds × 3 drifts × 3 budgets × 3 latencies × 3 policies + 30 baseline)
 python main.py --seeds 10
 
 # Or both phases in sequence:
@@ -231,18 +235,20 @@ Or reproduce a single policy at a time:
 python main.py --policy periodic --seeds 3         # 81 runs
 python main.py --policy error_threshold --seeds 3   # 81 runs
 python main.py --policy drift_triggered --seeds 3   # 81 runs
+python main.py --policy no_retrain --seeds 3         # 9 runs (baseline)
+python main.py --policy no_retrain --seeds 10        # 30 runs (baseline)
 python main.py --policy periodic --seeds 10         # 270 runs
 python main.py --policy error_threshold --seeds 10  # 270 runs
 python main.py --policy drift_triggered --seeds 10  # 270 runs
 ```
 
-**Total: 243 + 810 = 1,053 experiment runs.**
+**Total: 243 + 810 + 9 + 30 = 1,092 experiment runs.**
 
 Each command automatically:
 - Deletes the previous summary CSV for the selected policy(ies) (clean start — no manual cleanup needed).
-- Sweeps the full `DRIFT_TYPES × BUDGETS × LATENCY_CONFIGS × seeds` grid.
+- Sweeps the full `DRIFT_TYPES × BUDGETS × LATENCY_CONFIGS × seeds` grid (or `DRIFT_TYPES × seeds` for no-retrain).
 - Exports per-run JSON, per-sample CSV, and appends to the summary CSV.
-- Generates the 2×3 dashboard PNG after all runs for each policy complete.
+- Generates the dashboard PNG after all runs for each policy complete.
 
 ### Git Branching Strategy Used in This Study
 
@@ -267,9 +273,14 @@ The 810 runs were executed in 3 batches (270 runs per batch), one batch per poli
 - `develop-10Seed-error-threshold-retrain-tests` (270 runs)
 - `develop-10Seed-drift-triggered-retrain-tests` (270 runs)
 
+#### No-Retrain Baseline (39 runs, 3 + 10 seeds)
+
+The baseline sweep (3 drift types × N seeds, no budget/latency grid) was executed in:
+- `develop_NoRetrain_NoBudget_NoLatency` (9 runs with 3 seeds + 30 runs with 10 seeds)
+
 #### Merged Results
 
-The **`main`** and **`develop`** branches contain all results from both phases (1,053 total runs). All CSVs and dashboard plots are in the `results/` folder.
+The **`main`** and **`develop`** branches contain all results from all phases (1,092 total runs). All CSVs and dashboard plots are in the `results/` folder.
 
 ### Why the original experiments were NOT run all at once
 
@@ -283,20 +294,25 @@ If you look at the [research log](research_log.md) you will notice the experimen
 
 4. **Incremental runs aided debugging and validation.** Running one policy at a time made it possible to inspect console output, verify that metrics were recorded correctly, and catch bugs before committing to 81 more runs.
 
-> **For reproduction purposes**, however, you now have the final calibrated parameters baked into `main.py`. You can safely run all 1,053 experiments (or just the 810 Phase 2 runs for the strongest variance estimates) with a single CLI command.
+> **For reproduction purposes**, however, you now have the final calibrated parameters baked into `main.py`. You can safely run all 1,092 experiments (or just the 810 Phase 2 runs + 30 baseline runs for the strongest variance estimates) with a single CLI command.
 
 ---
 
 ## 7. Generating Summary Dashboard Plots
 
-`main.py` automatically generates a 2×3 dashboard PNG for each policy after its sweep completes. You do **not** need to run `plot_summary.py` separately in the normal workflow.
+`main.py` automatically generates a dashboard PNG for each policy after its sweep completes. You do **not** need to run `plot_summary.py` separately in the normal workflow.
 
 ### Automatic generation (via main.py)
 
-When `main.py` finishes all runs for a policy, it calls `plot_summary.py`'s `plot_summary_for_policy()` function internally. The output PNG is saved alongside the summary CSV:
+When `main.py` finishes all runs for a policy, it calls the appropriate plotting function internally:
+- **Active policies** (periodic, error-threshold, drift-triggered): `plot_summary_for_policy()` → 2×3 dashboard
+- **No-retrain baseline**: `plot_summary_for_no_retrain()` → 2×2 baseline dashboard
+
+The output PNG is saved alongside the summary CSV:
 
 ```
-results/summary_results_plot_{policy}_retrain_{N}seed.png
+results/summary_results_plot_{policy}_retrain_{N}seed.png    # active policies
+results/summary_results_plot_no_retrain_{N}seed.png          # baseline
 ```
 
 ### Manual / standalone generation
@@ -307,6 +323,7 @@ If you want to regenerate a dashboard without re-running experiments (e.g., afte
 python plot_summary.py                                  # all policies (10-seed by default)
 python plot_summary.py --policy periodic_10seed         # 10-seed periodic only
 python plot_summary.py --policy drift_triggered_3seed   # 3-seed drift-triggered only
+python plot_summary.py --policy no_retrain_10seed       # 10-seed no-retrain baseline only
 ```
 
 Output files:
@@ -316,6 +333,7 @@ Output files:
 | Periodic | `summary_results_plot_periodic_retrain_3seed.png` | `summary_results_plot_periodic_retrain_10seed.png` |
 | Error-Threshold | `summary_results_plot_error_threshold_retrain_3seed.png` | `summary_results_plot_error_threshold_retrain_10seed.png` |
 | Drift-Triggered | `summary_results_plot_drift_triggered_retrain_3seed.png` | `summary_results_plot_drift_triggered_retrain_10seed.png` |
+| No-Retrain | `summary_results_plot_no_retrain_3seed.png` | `summary_results_plot_no_retrain_10seed.png` |
 
 ---
 
@@ -327,9 +345,13 @@ After running experiments, you will find these files in `results/`:
 |---|---|---|
 | `run_{run_tag}.json` | `main.py` | Full config + structured metrics per run. Stored in policy-specific subdirectories. |
 | `per_sample_{run_tag}.csv` | `main.py` | Per-timestep accuracy, error, and latency flags. Stored in policy-specific subdirectories. |
-| `summary_results_{policy}_retrain_3seed.csv` | `main.py` | Phase 1: one row per run; 81 rows per policy (243 total). |
-| `summary_results_{policy}_retrain_10seed.csv` | `main.py` | Phase 2: one row per run; 270 rows per policy (810 total). |
+| `summary_results_{policy}_retrain_3seed.csv` | `main.py` | Phase 1: one row per run; 81 rows per active policy (243 total). |
+| `summary_results_{policy}_retrain_10seed.csv` | `main.py` | Phase 2: one row per run; 270 rows per active policy (810 total). |
+| `summary_results_no_retrain_3seed.csv` | `main.py` | No-retrain baseline: one row per run; 9 rows (3 drift types × 3 seeds). |
+| `summary_results_no_retrain_10seed.csv` | `main.py` | No-retrain baseline: one row per run; 30 rows (3 drift types × 10 seeds). |
 | `summary_results_plot_{policy}_retrain_3seed.png` | `plot_summary.py` | 2×3 dashboard for Phase 1 (3-seed) runs of that policy. |
 | `summary_results_plot_{policy}_retrain_10seed.png` | `plot_summary.py` | 2×3 dashboard for Phase 2 (10-seed) runs of that policy. |
+| `summary_results_plot_no_retrain_3seed.png` | `plot_summary.py` | 2×2 baseline dashboard for no-retrain policy (3 seeds). |
+| `summary_results_plot_no_retrain_10seed.png` | `plot_summary.py` | 2×2 baseline dashboard for no-retrain policy (10 seeds). |
 
 > **Tip:** For detailed interpretation of the CSV columns and the dashboard panels, see [results_interpretation_guide.md](results_interpretation_guide.md).

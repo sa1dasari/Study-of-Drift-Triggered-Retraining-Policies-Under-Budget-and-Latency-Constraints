@@ -26,7 +26,8 @@ main.py  (CLI entry point – full-factorial sweep via --policy and --seeds flag
 │       ├── base_policy.py            RetrainPolicy (abstract; budget + latency logic)
 │       ├── periodic.py               PeriodicPolicy (fixed-interval retraining)
 │       ├── error_threshold_policy.py ErrorThresholdPolicy (rolling error rate trigger)
-│       └── drift_triggered_policy.py DriftTriggeredPolicy (ADWIN-based drift detection)
+│       ├── drift_triggered_policy.py DriftTriggeredPolicy (ADWIN-based drift detection)
+│       └── never_retrain_policy.py   NeverRetrainPolicy (baseline — partial_fit only, 0 retrains)
 │
 ├── src/runner/experiment_runner.py  – Streaming event loop
 │       └── ExperimentRunner          Processes samples sequentially; predict → evaluate → retrain? → partial_fit
@@ -105,6 +106,8 @@ Each seed produces:
 Two sets of summary CSVs exist, corresponding to the two experiment phases:
 - **Phase 1 (3-seed):** `summary_results_{policy}_retrain_3seed.csv` — 81 rows per policy (243 total)
 - **Phase 2 (10-seed):** `summary_results_{policy}_retrain_10seed.csv` — 270 rows per policy (810 total)
+- **No-Retrain baseline (3-seed):** `summary_results_no_retrain_3seed.csv` — 9 rows (3 drift types × 3 seeds)
+- **No-Retrain baseline (10-seed):** `summary_results_no_retrain_10seed.csv` — 30 rows (3 drift types × 10 seeds)
 
 ---
 
@@ -136,7 +139,13 @@ The 810 runs were executed in 3 batches (270 runs per batch), one batch per poli
 - `develop-10Seed-error-threshold-retrain-tests`
 - `develop-10Seed-drift-triggered-retrain-tests`
 
+### No-Retrain Baseline (39 runs, 3 + 10 seeds)
+
+The baseline sweep (3 drift types × N seeds, no budget/latency grid) was executed in its own branch:
+- `develop_NoRetrain_NoBudget_NoLatency`
+- 3-seed run: 9 runs; 10-seed run: 30 runs.
+
 ### Merged Results
 
-The **`main`** and **`develop`** branches contain all results from both phases (1,053 total runs).
+The **`main`** and **`develop`** branches contain all results from all phases (1,092 total runs).
 

@@ -31,7 +31,8 @@ This repository contains a reproducible empirical systems study comparing three 
 │   │   ├── base_policy.py              # Abstract policy (budget + latency guard)
 │   │   ├── periodic.py                 # Fixed-interval retraining
 │   │   ├── error_threshold_policy.py   # Rolling error-rate trigger
-│   │   └── drift_triggered_policy.py   # ADWIN-based drift detection
+│   │   ├── drift_triggered_policy.py   # ADWIN-based drift detection
+│   │   └── never_retrain_policy.py     # No-retrain baseline (partial_fit only)
 │   ├── runner/
 │   │   └── experiment_runner.py        # Streaming event loop
 │   └── evaluation/
@@ -45,12 +46,16 @@ This repository contains a reproducible empirical systems study comparing three 
     ├── summary_results_error_threshold_retrain_10seed.csv
     ├── summary_results_drift_triggered_retrain_3seed.csv
     ├── summary_results_drift_triggered_retrain_10seed.csv
+    ├── summary_results_no_retrain_3seed.csv
+    ├── summary_results_no_retrain_10seed.csv
     ├── summary_results_plot_periodic_retrain_3seed.png
     ├── summary_results_plot_periodic_retrain_10seed.png
     ├── summary_results_plot_error_threshold_retrain_3seed.png
     ├── summary_results_plot_error_threshold_retrain_10seed.png
     ├── summary_results_plot_drift_triggered_retrain_3seed.png
-    └── summary_results_plot_drift_triggered_retrain_10seed.png
+    ├── summary_results_plot_drift_triggered_retrain_10seed.png
+    ├── summary_results_plot_no_retrain_3seed.png
+    └── summary_results_plot_no_retrain_10seed.png
 ```
 ---
 
@@ -61,9 +66,9 @@ This repository contains a reproducible empirical systems study comparing three 
 | Factor | Levels | Values |
 |---|---|---|
 | Drift type | 3 | Abrupt, Gradual, Recurring |
-| Policy | 3 | Periodic, Error-Threshold, Drift-Triggered (ADWIN) |
-| Budget (K) | 3 | 5 (low), 10 (medium), 20 (high) |
-| Latency | 3 | Low (11 steps), Medium (105 steps), High (520 steps) |
+| Policy | 4 | Periodic, Error-Threshold, Drift-Triggered (ADWIN), **No-Retrain (baseline)** |
+| Budget (K) | 3 | 5 (low), 10 (medium), 20 (high) — *N/A for No-Retrain* |
+| Latency | 3 | Low (11 steps), Medium (105 steps), High (520 steps) — *N/A for No-Retrain* |
 | Seeds (Phase 1) | 3 | 42, 123, 456 |
 | Seeds (Phase 2) | 10 | 42, 123, 456, 789, 1011, 1213, 1415, 1617, 1819, 2021 |
 
@@ -89,9 +94,25 @@ These runs were executed in 3 batches of 270 runs each (one batch per policy), r
 - `develop-10Seed-error-threshold-retrain-tests` (270 runs)
 - `develop-10Seed-drift-triggered-retrain-tests` (270 runs)
 
+### No-Retrain Baseline (39 experiments, 3 + 10 seeds)
+
+**Total: 3 drift types × 3 seeds = 9 runs (Phase 1) + 3 drift types × 10 seeds = 30 runs (Phase 2) = 39 runs** — no budget/latency grid (always 0).
+
+The model relies solely on incremental `partial_fit` with zero full retrains. This provides the **accuracy floor** against which all other policies are compared.
+
+- **Branch:** `develop_NoRetrain_NoBudget_NoLatency`
+
+**10-seed results:**
+
+| Drift Type | Overall Accuracy (mean ± std) | Pre-Drift | Post-Drift | Accuracy Drop |
+|---|---|---|---|---|
+| Abrupt | 0.7777 ± 0.0321 | 0.7774 | 0.7779 | +0.0005 |
+| Gradual | 0.7753 ± 0.0310 | 0.7774 | 0.7731 | −0.0044 |
+| Recurring | 0.7736 ± 0.0289 | 0.7774 | 0.7697 | −0.0077 |
+
 ### Combined Results
 
-The **`main`** and **`develop`** branches contain the merged results from both phases: **1,053 total experiment runs** (243 + 810). All result CSVs and dashboard plots are in the `results/` folder.
+The **`main`** and **`develop`** branches contain the merged results from all phases: **1,092 total experiment runs** (243 + 810 + 39). All result CSVs and dashboard plots are in the `results/` folder.
 
 ### Shared Parameters
 

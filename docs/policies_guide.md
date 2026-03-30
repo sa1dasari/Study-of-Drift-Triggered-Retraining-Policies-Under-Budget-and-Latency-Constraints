@@ -3,7 +3,8 @@
 ## Overview
 
 Three retraining policies are compared to answer the core research question: *How do different model-refresh strategies trade off accuracy, cost, and latency under concept drift?*
-Every policy inherits from `RetrainPolicy`, which enforces a shared **budget constraint** (maximum `K` retrains per stream) and a **latency guard** (no new retrain may start while a prior retrain + deploy window is still active).
+The three active policies inherit from `RetrainPolicy`, which enforces a shared **budget constraint** (maximum `K` retrains per stream) and a **latency guard** (no new retrain may start while a prior retrain + deploy window is still active).
+A fourth policy — the **no-retrain baseline** — never retrains and provides the accuracy floor.
 
 ---
 
@@ -108,3 +109,50 @@ The minimum split size is `max(30, n // 10)` to avoid noise-driven false detecti
 | ⚠️ Seed sensitivity | For seeds where the baseline error pattern is noisy (e.g., seed 42, seed 123 under abrupt drift), ADWIN may never trigger, resulting in 0 retrains and 0 % budget utilization |
 | ⚠️ Recurring drift challenge | With 5 concept switches and high latency, the detector may trigger on each switch but run out of budget before the stream ends |
 | 🔑 Key finding | Under seeds 42 and 123 with abrupt drift, ADWIN did not detect drift at all (0 retrains across all budgets/latencies), while seed 456 fully utilised the budget — demonstrating high variance across seeds. The Phase 2 expansion to 10 seeds provides a broader picture of this seed sensitivity. |
+
+---
+
+## 4. No-Retrain Baseline (`NeverRetrainPolicy`)
+
+**Strategy:** Never retrain the model from scratch. The model adapts only via `partial_fit` (incremental online learning) on each incoming sample.
+
+### Trigger Condition
+
+```python
+should_retrain = False  # always
+```
+
+### Parameters
+
+| Parameter | Value | Notes |
+|---|---|---|
+| `budget` | 0 | No retrains allowed |
+| `retrain_latency` | 0 | N/A |
+| `deploy_latency` | 0 | N/A |
+
+### Purpose
+
+The no-retrain baseline provides the **accuracy floor** for the entire study. Every accuracy number produced by the three active policies becomes interpretable relative to this baseline:
+- If a policy's accuracy is **close to** the baseline, retraining is not adding significant value for that configuration.
+- If a policy's accuracy is **well above** the baseline, the retraining strategy is demonstrably useful.
+
+### Run Configuration
+
+```
+3 drift types × 3 seeds  =  9 runs
+3 drift types × 10 seeds = 30 runs 
+Total: 39 runs
+No budget/latency grid — budget and latency are always 0.
+Branch: develop_NoRetrain_NoBudget_NoLatency
+```
+
+### Strengths & Weaknesses
+
+| Aspect | Detail |
+|---|---|
+| ✅ Zero cost | No retraining budget consumed, no latency windows, no disruption |
+| ✅ Interpretability | Provides a clean floor for comparing all active policies |
+| ⚠️ No adaptation | The model cannot reset weights in response to concept drift — it can only incrementally adjust via `partial_fit` |
+| ⚠️ Drift vulnerability | Post-drift accuracy degrades slightly for gradual and recurring drift, though `partial_fit` provides surprisingly effective adaptation |
+| 🔑 Key finding | The baseline accuracy (~0.775) is remarkably close to the active policies (~0.762–0.766), suggesting that `partial_fit` alone handles drift reasonably well for this data-generating process. The marginal benefit of full retraining is small in absolute terms. |
+
