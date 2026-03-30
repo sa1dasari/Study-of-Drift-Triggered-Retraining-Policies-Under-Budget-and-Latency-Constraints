@@ -231,7 +231,7 @@ Each policy produces a 2×3 dashboard PNG with six panels. The layout is:
 
 ### 4.3 Panel 3 — Accuracy Heatmap: Budget × Latency
 
-**Chart type:** 2D heatmap (colour-coded matrix)
+**Chart type:** 2D heatmap (color-coded matrix)
 
 **Rows:** Budget level — Low (5), Med (10), High (20), from top to bottom.
 
@@ -239,10 +239,10 @@ Each policy produces a 2×3 dashboard PNG with six panels. The layout is:
 
 **Cell value:** Mean overall accuracy averaged across all 3 drift types and N seeds (9 runs per cell for 3-seed, 30 runs per cell for 10-seed).
 
-**Colour scale:** Viridis colour-map — darker (purple) = lower accuracy, brighter (yellow/green) = higher accuracy. A colour-bar on the right shows the scale.
+**Color scale:** Viridis color-map — darker (purple) = lower accuracy, brighter (yellow/green) = higher accuracy. A colour-bar on the right shows the scale.
 
 **How to read it:**
-- Each cell is labelled with its exact accuracy value (3 decimal places).
+- Each cell is labeled with its exact accuracy value (3 decimal places).
 - Look for colour gradients **across rows** (budget effect) and **across columns** (latency effect).
 - A **uniform heatmap** (all cells similar colour/value) means neither budget nor latency significantly affects overall accuracy — the policy is robust.
 - A **gradient from left to right** means latency is the dominant factor.
