@@ -23,9 +23,11 @@ import numpy as np
 # ── Known label mappings ────────────────────────────────────────────────
 # Extend these dicts when new budget or latency levels are added.
 _LATENCY_LABELS = {
-    11:  'Low (11)',
-    105: 'Med (105)',
-    520: 'High (520)',
+    3:    'Near-Zero (3)',
+    11:   'Low (11)',
+    105:  'Med (105)',
+    520:  'High (520)',
+    2050: 'Extreme-High (2050)',
 }
 
 _BUDGET_LABELS = {
