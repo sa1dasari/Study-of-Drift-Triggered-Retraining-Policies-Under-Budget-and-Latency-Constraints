@@ -67,14 +67,27 @@ See [setup_and_run_guide.md](docs/setup_and_run_guide.md) for full instructions.
 
 ---
 
+## Git Branching Strategy
+
+| Phase | Branch(es) | Runs |
+|---|---|---|
+| Phase 1 (3 seeds) | `exp/<drift>-<policy>-<Budget>budget-<Latency>Latency` → `develop_3seed_<policy>_retrain` | 243 |
+| Phase 2 (10 seeds) | `develop-10Seed-<policy>-retrain-tests` | 810 |
+| Baseline | `develop_NoRetrain_NoBudget_NoLatency` | 39 |
+| Phase 3 — Extreme Latency | `develop_ExtremeLatencyLevels` | 741 |
+
+All results are merged into the **`main`** and **`develop`** branches. See [experiment_scope.md](docs/experiment_scope.md) for full details.
+
+---
+
 ## Documentation
 
-| Document | Purpose |
-|---|---|
-| [setup_and_run_guide.md](docs/setup_and_run_guide.md) | **Start here** — setup, running experiments |
-| [design.md](docs/design.md) | System architecture and component details |
-| [drift_guide.md](docs/drift_guide.md) | Concept drift types and simulation mechanics |
+| Document | Purpose                                                                      |
+|---|------------------------------------------------------------------------------|
+| [setup_and_run_guide.md](docs/setup_and_run_guide.md) | Setup, running experiments                                                   |
+| [design.md](docs/design.md) | System architecture and component details                                    |
+| [drift_guide.md](docs/drift_guide.md) | Concept drift types and simulation mechanics                                 |
 | [experiment_scope.md](docs/experiment_scope.md) | Full experiment scope — all 3 phases, run counts, branches, output artifacts |
-| [policies_guide.md](docs/policies_guide.md) | Policy algorithms, parameters, and trade-offs |
-| [research_log.md](docs/research_log.md) | Week-by-week experiment log |
-| [results_interpretation_guide.md](docs/results_interpretation_guide.md) | How to read the CSV and PNG files |
+| [policies_guide.md](docs/policies_guide.md) | Policy algorithms, parameters, and trade-offs                                |
+| [research_log.md](docs/research_log.md) | Week-by-week experiment log                                                  |
+| [results_interpretation_guide.md](docs/results_interpretation_guide.md) | How to read the CSV and PNG files                                            |
