@@ -294,6 +294,10 @@ Cumulative results per policy were merged into dedicated develop branches:
 - `develop-10Seed-error-threshold-retrain-tests` (270 runs)
 - `develop-10Seed-drift-triggered-retrain-tests` (270 runs)
 
+### Phase 3 — Extreme Latency (741 runs, 3 + 10 seeds)
+
+- `develop_ExtremeLatencyLevels` (171 runs with 3 seeds + 570 runs with 10 seeds)
+
 ### No-Retrain Baseline (39 runs)
 
 - `develop_NoRetrain_NoBudget_NoLatency` (9 runs with 3 seeds + 30 runs with 10 seeds)
