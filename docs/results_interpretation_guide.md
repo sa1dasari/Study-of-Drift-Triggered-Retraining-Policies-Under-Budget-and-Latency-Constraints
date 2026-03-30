@@ -1,6 +1,6 @@
 # Results Interpretation Guide
 
-This document explains how to read and interpret every output artifact in the `results/` folder — the three summary CSV files and the three 2×3 dashboard PNG plots (one per retraining policy).
+This document explains how to read and interpret every output artifact in the `results/` folder — the summary CSV files and dashboard PNG plots for each retraining policy and the no-retrain baseline.
 
 ---
 
@@ -30,7 +30,7 @@ This document explains how to read and interpret every output artifact in the `r
 
 ## 1. Results Overview
 
-The `results/` folder contains artifacts from two experiment phases: **Phase 1** (3-seed, 243 runs) and **Phase 2** (10-seed, 810 runs), for a **combined total of 1,053 experiment runs**.
+The `results/` folder contains artifacts from two experiment phases plus baseline runs: **Phase 1** (3-seed, 243 runs), **Phase 2** (10-seed, 810 runs), and the **No-Retrain Baseline** (3-seed 9 runs + 10-seed 30 runs = 39 runs), for a **combined total of 1,092 experiment runs**.
 
 ### Phase 1 — 3-Seed Results (243 runs)
 
@@ -58,6 +58,17 @@ Each 3-seed CSV has **81 data rows** = 3 drift types × 3 budget levels × 3 lat
 
 Each 10-seed CSV has **270 data rows** = 3 drift types × 3 budget levels × 3 latency levels × 10 random seeds.
 
+### No-Retrain Baseline — Results (39 runs)
+
+| File | Type | Contents |
+|---|---|---|
+| `summary_results_no_retrain_3seed.csv` | CSV | 9 rows — one per (drift × seed) run for the **no-retrain baseline** (3 seeds) |
+| `summary_results_no_retrain_10seed.csv` | CSV | 30 rows — one per (drift × seed) run for the **no-retrain baseline** (10 seeds) |
+| `summary_results_plot_no_retrain_3seed.png` | PNG | 2×2 baseline dashboard summarising all 9 runs (3 seeds) |
+| `summary_results_plot_no_retrain_10seed.png` | PNG | 2×2 baseline dashboard summarising all 30 runs (10 seeds) |
+
+The no-retrain 3-seed CSV has **9 data rows** = 3 drift types × 3 seeds. The 10-seed CSV has **30 data rows** = 3 drift types × 10 seeds. Budget and latency columns are always 0.
+
 ---
 
 ## 2. Summary CSV Files — Column-by-Column Reference
@@ -70,7 +81,7 @@ These columns describe the experimental setup for each run. They are your **filt
 |---|---|---|---|
 | `drift_type` | string | `abrupt`, `gradual`, `recurring` | Type of concept drift injected into the data stream |
 | `drift_point` | int | Always `5000` | Timestep at which drift begins |
-| `policy_type` | string | `periodic`, `error_threshold`, `drift_triggered` | Which retraining policy was used |
+| `policy_type` | string | `periodic`, `error_threshold`, `drift_triggered`, `no_retrain` | Which retraining policy was used |
 | `policy_interval` | int | `500`, `1000`, `2000` | *Periodic only* — timesteps between scheduled retrains. Empty for other policies. |
 | `error_threshold` | float | `0.27` | *Error-threshold & ADWIN only* — rolling error-rate trigger threshold (for error-threshold) or empty (for ADWIN). |
 | `window_size` | int | `200` or `500` | Sliding window size for error-rate calculation (error-threshold: 200) or ADWIN detection (drift-triggered: 500). Empty for periodic. |

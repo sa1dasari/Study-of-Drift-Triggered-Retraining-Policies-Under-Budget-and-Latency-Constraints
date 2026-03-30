@@ -94,9 +94,11 @@
    - Drift-triggered: `results/summary_results_plot_drift_triggered_retrain_3seed.png`
 4. **Phase 1 complete: 243 total experiment runs (81 per policy × 3 policies).**
 
+---
+
 ## WEEK 7 — Extended 10-Seed Runs (Phase 2)
 
-**Motivation:** The Phase 1 results (3 seeds) revealed high seed sensitivity — especially for the ADWIN policy, where seeds 42 and 123 produced 0 retrains under abrupt drift while seed 456 fully utilized the budget. Three seeds are insufficient to provide robust variance estimates. Phase 2 expands to 10 seeds to strengthen statistical conclusions.
+---
 
 1. Extended the seed set from 3 to 10 seeds: `[42, 123, 456, 789, 1011, 1213, 1415, 1617, 1819, 2021]`.
 2. Ran all 810 experiments (10 seeds × 3 drifts × 3 budgets × 3 latencies × 3 policies) in **3 batches of 270 runs**, one batch per policy:
@@ -112,3 +114,12 @@
    - `results/summary_results_plot_error_threshold_retrain_10seed.png`
    - `results/summary_results_plot_drift_triggered_retrain_10seed.png`
 5. **Phase 2 complete: 810 total experiment runs (270 per policy × 3 policies).**
+
+---
+
+## WEEK 8 — No-Retrain Baseline (Accuracy Floor)
+
+1. Implemented `NeverRetrainPolicy` in `src/policies/never_retrain_policy.py` — inherits from `RetrainPolicy` with budget=0, latency=0, `should_retrain()` always returns `False`.
+2. Added `_run_no_retrain_sweep()` to `main.py` — a dedicated sweep function with a simplified grid (3 drift types × N seeds, no budget/latency loops).
+3. Added `plot_summary_for_no_retrain()` to `plot_summary.py` — a 2×2 baseline-specific dashboard (mean accuracy, pre/post drift, accuracy drop, box plot).
+4. Ran baseline with **3 seeds** (9 runs) and **10 seeds** (30 runs)

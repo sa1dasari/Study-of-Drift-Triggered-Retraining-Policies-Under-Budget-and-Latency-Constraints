@@ -118,7 +118,7 @@ def _build_config(policy_type, drift_type, budget, seed):
 
 def run_policy_sweep(policy_type, seeds):
     """Execute the full-factorial sweep for a single policy."""
-    # Delegate to the specialised no-retrain sweep when appropriate
+    # Delegate to the specialized no-retrain sweep when appropriate
     if policy_type == "no_retrain":
         return _run_no_retrain_sweep(seeds)
 
