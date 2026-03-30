@@ -332,7 +332,10 @@ class MetricsTracker:
         if self.total_budget is not None:
             summary['budget_used'] = self.get_retrain_count()
             summary['budget_total'] = self.total_budget
-            summary['budget_utilization'] = self.get_retrain_count() / self.total_budget
+            summary['budget_utilization'] = (
+                self.get_retrain_count() / self.total_budget
+                if self.total_budget > 0 else 0.0
+            )
 
         summary['cumulative_error_rate'] = self.get_cumulative_error() / self.sample_count if self.sample_count > 0 else 0.0
         summary['cumulative_error'] = self.get_cumulative_error()
