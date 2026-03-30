@@ -1,0 +1,10 @@
+drift_type,drift_point,policy_type,error_threshold,window_size,budget,retrain_latency,deploy_latency,overall_accuracy,pre_drift_accuracy,post_drift_accuracy,accuracy_drop,total_retrains,budget_utilization,retrains_before_drift,retrains_after_drift,random_seed
+abrupt,5000,no_retrain,,,0,0,0,0.7529,0.7732,0.7326,-0.04059999999999997,0,0.0,0,0,42
+abrupt,5000,no_retrain,,,0,0,0,0.7395,0.714,0.765,0.051000000000000045,0,0.0,0,0,123
+abrupt,5000,no_retrain,,,0,0,0,0.8062,0.8202,0.7922,-0.028000000000000025,0,0.0,0,0,456
+gradual,5000,no_retrain,,,0,0,0,0.7503,0.7732,0.7274,-0.04579999999999995,0,0.0,0,0,42
+gradual,5000,no_retrain,,,0,0,0,0.7361,0.714,0.7582,0.04420000000000002,0,0.0,0,0,123
+gradual,5000,no_retrain,,,0,0,0,0.8036,0.8202,0.787,-0.03320000000000001,0,0.0,0,0,456
+recurring,5000,no_retrain,,,0,0,0,0.76,0.7732,0.7468,-0.02639999999999998,0,0.0,0,0,42
+recurring,5000,no_retrain,,,0,0,0,0.7259,0.714,0.7378,0.023800000000000043,0,0.0,0,0,123
+recurring,5000,no_retrain,,,0,0,0,0.8071,0.8202,0.794,-0.0262,0,0.0,0,0,456
