@@ -1,0 +1,41 @@
+================================================================================
+  Calibration Protocol -- Summary of Results
+================================================================================
+  Date       : April 2026
+  Budget     : 10
+  Latency    : retrain=10, deploy=1
+  Drift type : abrupt
+
+  Selection criteria:
+    1. <= 1 false alarm pre-drift
+    2. Shortest detection delay post-drift
+    3. Tie-break: highest post-drift accuracy
+
+================================================================================
+  Fraud Detection -- Calibration Results
+================================================================================
+
+  Error-Threshold Policy -- Best Configuration:
+    error_threshold = 0.3
+    window_size     = 100
+    false_alarms    = 0
+    detection_delay = 6700
+    post_drift_acc  = 0.94948
+    total_retrains  = 7
+
+  Drift-Triggered (ADWIN) Policy -- Best Configuration:
+    delta           = 0.0005
+    window_size     = 1000
+    min_samples     = 200
+    false_alarms    = 3
+    detection_delay = 6700
+    post_drift_acc  = 0.95076
+    total_retrains  = 10
+
+================================================================================
+  FINAL RECOMMENDED VALUES FOR main.py / main_fraud_detection.py
+================================================================================
+
+  Fraud Detection Dataset (main_fraud_detection.py):
+    POLICY_PARAMS["error_threshold"] = {"error_threshold": 0.3, "window_size": 100}
+    POLICY_PARAMS["drift_triggered"] = {"delta": 0.0005, "window_size": 1000, "min_samples": 200}

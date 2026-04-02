@@ -106,3 +106,10 @@
 
 1. Added two extreme latency levels that bracket the original range to stress-test policy behavior at the boundary conditions:
 2. Ran full sweeps for all 4 policies with both seed sets
+3. Pulled actual CIS Fraud Detection CSV files and ran full calibration sweep on fraud dataset
+   - **Error-Threshold sweep** (15 runs): swept `error_threshold ∈ {0.20, 0.25, 0.30, 0.35, 0.40}` × `window_size ∈ {100, 200, 500}`.
+   - **ADWIN sweep** (54 runs): swept `delta ∈ {0.05, 0.01, 0.005, 0.002, 0.001, 0.0005}` × `window_size ∈ {300, 500, 1000}` × `min_samples ∈ {50, 100, 200}`.
+4. Built and ran `diagnose_drift.py` to verify whether genuine drift exists at the split point before interpreting ADWIN's failure.
+5. Documented the fraud rate shift (−0.35 percentage points post-drift) and the semisynthetic approach as more appropriate for guaranteeing detectable distributional shift in the abrupt condition.
+6. Observed **non-uniform drift across temporal windows**: offset=0 has the strongest feature-level shift (44% of features at p<0.001) but moderate accuracy drop (+0.020), while offset=20,000 has weaker feature-level shift (25%) but the largest accuracy drop (+0.054). This decoupling is characteristic of real-world financial data — broad feature shifts don't necessarily degrade the classification boundary, while concentrated shifts in decision-relevant features do.
+7. Designated **offset=0 as primary experimental condition** — strongest feature-level drift signal, sensible accuracy drops, natural start-of-dataset midpoint split.

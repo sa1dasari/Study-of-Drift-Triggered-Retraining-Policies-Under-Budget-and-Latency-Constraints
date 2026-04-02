@@ -50,10 +50,12 @@ LATENCY_CONFIGS = [
 N_SAMPLES_DEFAULT = 50_000
 
 # Per-policy fixed parameters
+# NOTE: Values calibrated on the CIS Fraud Detection dataset (590,540 rows, 428 features, 3.5% fraud rate).
+#       See docs/calibration_protocol.md for full sweep results and rationale.
 POLICY_PARAMS = {
     "periodic": {},
-    "error_threshold": {"error_threshold": 0.27, "window_size": 200},
-    "drift_triggered": {"delta": 0.002, "window_size": 500, "min_samples": 100},
+    "error_threshold": {"error_threshold": 0.30, "window_size": 100},
+    "drift_triggered": {"delta": 0.0005, "window_size": 1000, "min_samples": 200},
     "no_retrain": {},
 }
 

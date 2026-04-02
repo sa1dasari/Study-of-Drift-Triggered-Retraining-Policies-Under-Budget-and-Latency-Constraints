@@ -41,16 +41,19 @@ A reproducible empirical study comparing three model retraining policies — per
 ## Repository Structure
 
 ```
-├── main.py                  # CLI entry point (--policy, --seeds)
+├── main.py                  # experiment entry point
+├── main_fraud_detection.py  # Fraud detection experiment entry point
+├── calibrate.py             # Hyperparameter calibration sweeps for CIS Fraud Detection dataset
+├── diagnose_drift.py        # Verifies drift exists at the split point for CIS Fraud Detection dataset 
 ├── plot_summary.py          # Dashboard PNG generator
 ├── docs/                    # All documentation
 ├── src/
-│   ├── data/                # DriftGenerator
+│   ├── data/                # DriftGenerator, FraudDataLoader
 │   ├── models/              # StreamingModel (SGDClassifier wrapper)
 │   ├── policies/            # Periodic, ErrorThreshold, DriftTriggered, NeverRetrain
 │   ├── runner/              # ExperimentRunner (streaming event loop)
 │   └── evaluation/          # MetricsTracker, CSV/JSON export, plots
-└── results/                 # Summary CSVs and dashboard PNGs
+└── results/                 # Summary CSVs, dashboard PNGs, calibration outputs
 ```
 
 ---
@@ -89,5 +92,6 @@ All results are merged into the **`main`** and **`develop`** branches. See [expe
 | [drift_guide.md](docs/drift_guide.md) | Concept drift types and simulation mechanics                                 |
 | [experiment_scope.md](docs/experiment_scope.md) | Full experiment scope — all 3 phases, run counts, branches, output artifacts |
 | [policies_guide.md](docs/policies_guide.md) | Policy algorithms, parameters, and trade-offs                                |
+| [calibration_protocol.md](docs/calibration_protocol.md) | Calibration sweeps, drift diagnosis, and per-dataset parameter selection |
 | [research_log.md](docs/research_log.md) | Week-by-week experiment log                                                  |
 | [results_interpretation_guide.md](docs/results_interpretation_guide.md) | How to read the CSV and PNG files                                            |

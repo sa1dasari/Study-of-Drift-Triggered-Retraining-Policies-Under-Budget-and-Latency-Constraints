@@ -1,0 +1,164 @@
+================================================================================
+  DRIFT DIAGNOSIS — CIS Fraud Detection Dataset
+================================================================================
+  Stream length : 50,000
+  Drift point   : 25,000 (midpoint)
+  Window offsets: [0, 10000, 20000]
+  Model         : SGDClassifier(loss='log_loss')
+
+  Question: Does meaningful distributional drift exist at the
+  chosen split point (t = n_samples/2)?
+
+  Method: Train on 80% of pre-drift, evaluate on:
+    (a) Held-out 20% of pre-drift  → same-distribution baseline
+    (b) Full post-drift half        → cross-distribution test
+  If (b) is significantly worse than (a), drift exists.
+
+--------------------------------------------------------------------------------
+  Window offset = 0
+--------------------------------------------------------------------------------
+  Fraud rate (pre-drift) : 0.0284  (709 / 25,000)
+  Fraud rate (post-drift): 0.0259  (648 / 25,000)
+  Fraud rate shift       : -0.0024  (lower post-drift)
+
+  Same-distribution (pre-drift held-out, n=5,000):
+    Accuracy : 0.7944
+    F1       : 0.1288
+    AUC      : 0.7247
+
+  Cross-distribution (post-drift, n=25,000):
+    Accuracy : 0.7743
+    F1       : 0.0990
+    AUC      : 0.7159
+
+  Performance delta (pre - post):
+    Accuracy drop : +0.0201  (DRIFT SIGNAL)
+    F1 drop       : +0.0298  (DRIFT SIGNAL)
+    AUC drop      : +0.0088  (WEAK/NO SIGNAL)
+
+  Feature-level KS tests (428 features):
+    Significant at p < 0.001 : 190 / 428  (44.4%)
+    Significant at p < 0.01  : 211 / 428  (49.3%)
+    Significant at p < 0.05  : 242 / 428  (56.5%)
+    Top 10 most-shifted features:
+      Feature 351: KS=0.1615  p=2.18e-285
+      Feature 353: KS=0.1597  p=4.91e-279
+      Feature 352: KS=0.1581  p=2.60e-273
+      Feature  68: KS=0.1463  p=4.93e-234
+      Feature  69: KS=0.1455  p=1.79e-231
+      Feature 110: KS=0.1440  p=1.19e-226
+      Feature 111: KS=0.1440  p=1.59e-226
+      Feature  61: KS=0.1418  p=1.23e-219
+      Feature  62: KS=0.1351  p=1.68e-199
+      Feature 400: KS=0.1338  p=9.87e-196
+
+--------------------------------------------------------------------------------
+  Window offset = 10,000
+--------------------------------------------------------------------------------
+  Fraud rate (pre-drift) : 0.0295  (738 / 25,000)
+  Fraud rate (post-drift): 0.0256  (639 / 25,000)
+  Fraud rate shift       : -0.0040  (lower post-drift)
+
+  Same-distribution (pre-drift held-out, n=5,000):
+    Accuracy : 0.8120
+    F1       : 0.1408
+    AUC      : 0.7642
+
+  Cross-distribution (post-drift, n=25,000):
+    Accuracy : 0.7964
+    F1       : 0.1206
+    AUC      : 0.7437
+
+  Performance delta (pre - post):
+    Accuracy drop : +0.0156  (WEAK/NO SIGNAL)
+    F1 drop       : +0.0202  (DRIFT SIGNAL)
+    AUC drop      : +0.0205  (DRIFT SIGNAL)
+
+  Feature-level KS tests (428 features):
+    Significant at p < 0.001 : 168 / 428  (39.3%)
+    Significant at p < 0.01  : 187 / 428  (43.7%)
+    Significant at p < 0.05  : 196 / 428  (45.8%)
+    Top 10 most-shifted features:
+      Feature 419: KS=0.1258  p=5.29e-173
+      Feature 209: KS=0.1177  p=2.19e-151
+      Feature 199: KS=0.1177  p=2.78e-151
+      Feature 194: KS=0.1163  p=8.34e-148
+      Feature 214: KS=0.1138  p=2.26e-141
+      Feature 201: KS=0.1133  p=2.79e-140
+      Feature 351: KS=0.1091  p=5.52e-130
+      Feature 353: KS=0.1084  p=1.83e-128
+      Feature 352: KS=0.1079  p=3.09e-127
+      Feature  21: KS=0.1028  p=1.83e-115
+
+--------------------------------------------------------------------------------
+  Window offset = 20,000
+--------------------------------------------------------------------------------
+  Fraud rate (pre-drift) : 0.0284  (711 / 25,000)
+  Fraud rate (post-drift): 0.0242  (606 / 25,000)
+  Fraud rate shift       : -0.0042  (lower post-drift)
+
+  Same-distribution (pre-drift held-out, n=5,000):
+    Accuracy : 0.5646
+    F1       : 0.1023
+    AUC      : 0.7720
+
+  Cross-distribution (post-drift, n=25,000):
+    Accuracy : 0.5108
+    F1       : 0.0733
+    AUC      : 0.7310
+
+  Performance delta (pre - post):
+    Accuracy drop : +0.0538  (DRIFT SIGNAL)
+    F1 drop       : +0.0289  (DRIFT SIGNAL)
+    AUC drop      : +0.0410  (DRIFT SIGNAL)
+
+  Feature-level KS tests (428 features):
+    Significant at p < 0.001 : 108 / 428  (25.2%)
+    Significant at p < 0.01  : 129 / 428  (30.1%)
+    Significant at p < 0.05  : 153 / 428  (35.7%)
+    Top 10 most-shifted features:
+      Feature 419: KS=0.1294  p=4.69e-183
+      Feature 209: KS=0.0980  p=4.91e-105
+      Feature  15: KS=0.0974  p=1.14e-103
+      Feature 194: KS=0.0961  p=6.92e-101
+      Feature 201: KS=0.0807  p=2.71e-71
+      Feature 199: KS=0.0769  p=9.03e-65
+      Feature   1: KS=0.0733  p=8.08e-59
+      Feature 424: KS=0.0662  p=3.95e-48
+      Feature  19: KS=0.0657  p=2.21e-47
+      Feature 214: KS=0.0652  p=1.07e-46
+
+================================================================================
+  OVERALL VERDICT
+================================================================================
+
+  Summary across all window offsets:
+  Offset     Acc(pre)   Acc(post)  Acc Drop   F1(pre)    F1(post)   F1 Drop    KS sig    
+  ---------- ---------- ---------- ---------- ---------- ---------- ---------- ----------
+  0          0.7944     0.7743     +0.0201    0.1288     0.0990     +0.0298    190/428
+  10000      0.8120     0.7964     +0.0156    0.1408     0.1206     +0.0202    168/428
+  20000      0.5646     0.5108     +0.0538    0.1023     0.0733     +0.0289    108/428
+
+  Average accuracy drop : +0.0298
+  Average F1 drop       : +0.0263
+  Average fraud rate shift: -0.0035
+  Average KS-sig fraction : 36.3% of features shifted at p<0.001
+
+  VERDICT: STRONG DRIFT
+  Meaningful distributional drift exists at the midpoint split. The model trained on pre-drift data performs significantly worse on post-drift data, confirming genuine temporal shift.
+
+================================================================================
+  IMPLICATIONS FOR EXPERIMENT DESIGN
+================================================================================
+
+  1. If STRONG DRIFT: calibration results are valid; ADWIN's failure
+     is a legitimate finding about its unsuitability for imbalanced data.
+
+  2. If WEAK DRIFT: the organic temporal shift may be too subtle for
+     statistical detectors. Consider using semi-synthetic drift injection
+     (build_drift_stream with two distinct temporal pools) even for the
+     abrupt condition, to guarantee a detectable distributional shift.
+
+  3. If NO DRIFT: the abrupt condition on this dataset is not
+     meaningful. Only gradual/recurring (which use two distinct temporal
+     pools) will produce useful results.
