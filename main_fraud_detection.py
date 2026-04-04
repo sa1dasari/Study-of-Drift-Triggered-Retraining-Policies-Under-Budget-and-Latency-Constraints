@@ -4,19 +4,25 @@ Main entry point for the Real-World Fraud Detection retraining-policy experiment
 Runs the same full-factorial sweep as main.py but on real CIS Fraud Detection
 data instead of synthetic data.  Drift is constructed from temporal segments:
 
-    abrupt    – stream 50k rows as-is (purely organic)
-    gradual   – blend two consecutive 50k time pools across a transition window
-    recurring – alternate between two 50k time pools after drift point
+    abrupt    – stream 50k rows as-is (purely organic drift at midpoint)
+    gradual   – blend two 75k temporal pools across a 5k transition window
+    recurring – alternate between two 75k temporal pools after drift point
+                every 5,000 rows (five concept switches)
 
-Seeds are window offsets (0, 10000, 20000) — each slides the data window to
+Seeds are window offsets (0, 50000, 100000) — each slides the data window to
 a different temporal region, providing variance across runs.
 
+Full matrix per active policy:
+    3 drift types × 3 budgets × 3 latencies × 3 seeds = 81 runs
+    no_retrain baseline: 3 drift types × 3 seeds = 9 runs
+
 Usage:
-    python main_fraud_detection.py                            # all 4 policies (252 runs)
+    python main_fraud_detection.py                            # all 4 policies
     python main_fraud_detection.py --policy periodic          # periodic only
     python main_fraud_detection.py --policy drift_triggered   # drift-triggered only
     python main_fraud_detection.py --policy error_threshold   # error-threshold only
     python main_fraud_detection.py --policy no_retrain        # baseline only
+    python main_fraud_detection.py --sanity                   # single sanity-check run
     python main_fraud_detection.py --n_samples 100000         # larger stream
 """
 
@@ -36,7 +42,7 @@ from src.runner.experiment_runner import ExperimentRunner
 from src.evaluation.results_export import export_to_json, export_to_csv, export_summary_to_csv
 
 # Seed sets (window offsets into the time-sorted data)
-WINDOW_OFFSETS = [0, 10_000, 20_000]
+WINDOW_OFFSETS = [0, 50_000, 100_000]
 
 # Experiment grid
 DRIFT_TYPES = ["abrupt", "gradual", "recurring"]
@@ -48,6 +54,16 @@ LATENCY_CONFIGS = [
 ]
 
 N_SAMPLES_DEFAULT = 50_000
+
+# Pool size for gradual/recurring (pre and post pools drawn from separate
+# temporal regions).  Each pool is 75 k rows; combined with the offset the
+# required data window is offset + 2 × POOL_SIZE rows.
+POOL_SIZE = 75_000
+
+# Fixed recurrence period (also used as the gradual transition window width).
+# 5,000 rows → five concept switches in the 25 k post-drift window, matching
+# the synthetic experiment design with recurrence_period = n_samples // 10.
+RECURRENCE_PERIOD = 5_000
 
 # Per-policy fixed parameters
 # NOTE: Values calibrated on the CIS Fraud Detection dataset (590,540 rows, 428 features, 3.5% fraud rate).
@@ -110,7 +126,7 @@ def _build_config(policy_type, drift_type, budget, seed, n_samples, drift_point)
     config = {
         "drift_type": drift_type,
         "drift_point": drift_point,
-        "recurrence_period": n_samples // 10,
+        "recurrence_period": RECURRENCE_PERIOD,
         "policy_type": policy_type,
         "budget": budget,
         "random_seed": seed,
@@ -132,30 +148,38 @@ def _get_stream(loader, drift_type, n_samples, offset, drift_point,
     Build the (X, y) stream for one run.
 
     For abrupt:    single pool of n_samples rows (organic drift).
-    For gradual/recurring: two consecutive pools of n_samples rows each,
-                           combined via build_drift_stream().
+    For gradual:   pre-pool [offset, offset+POOL_SIZE), post-pool
+                   [offset+POOL_SIZE, offset+2*POOL_SIZE). Stream of
+                   n_samples rows with a transition window of
+                   recurrence_period rows.
+    For recurring: same two pools; after drift_point alternate every
+                   recurrence_period rows between post-pool and pre-pool.
     """
-    X_pre, y_pre = loader.get_pool(start_offset=offset, n_samples=n_samples)
-
     if drift_type == "abrupt":
+        # Single contiguous window — organic drift only
+        X_pre, y_pre = loader.get_pool(start_offset=offset, n_samples=n_samples)
         return build_drift_stream(
             X_pre, y_pre, X_pre, y_pre,  # post-pool ignored for abrupt
             drift_type=drift_type,
             drift_point=drift_point,
             recurrence_period=recurrence_period,
+            n_samples=n_samples,
             seed=seed,
         )
 
-    # Gradual / Recurring: need a second pool from the next time window
+    # Gradual / Recurring: two temporally-separated 75 k pools
+    X_pre, y_pre = loader.get_pool(
+        start_offset=offset, n_samples=POOL_SIZE,
+    )
     X_post, y_post = loader.get_pool(
-        start_offset=offset + n_samples,
-        n_samples=n_samples,
+        start_offset=offset + POOL_SIZE, n_samples=POOL_SIZE,
     )
     return build_drift_stream(
         X_pre, y_pre, X_post, y_post,
         drift_type=drift_type,
         drift_point=drift_point,
         recurrence_period=recurrence_period,
+        n_samples=n_samples,
         seed=seed,
     )
 
@@ -170,7 +194,7 @@ def run_policy_sweep(policy_type, loader, n_samples):
         return _run_no_retrain_sweep(loader, n_samples)
 
     drift_point = n_samples // 2
-    recurrence_period = n_samples // 10
+    recurrence_period = RECURRENCE_PERIOD
     seed_label = f"{len(WINDOW_OFFSETS)}seed"
 
     n_drifts = len(DRIFT_TYPES)
@@ -300,7 +324,7 @@ def _run_no_retrain_sweep(loader, n_samples):
     """Execute the no-retrain baseline: 3 drift types × 3 window offsets."""
     policy_type = "no_retrain"
     drift_point = n_samples // 2
-    recurrence_period = n_samples // 10
+    recurrence_period = RECURRENCE_PERIOD
     seed_label = f"{len(WINDOW_OFFSETS)}seed"
     total_runs = len(DRIFT_TYPES) * len(WINDOW_OFFSETS)
 
@@ -411,6 +435,226 @@ def _run_no_retrain_sweep(loader, n_samples):
 # CLI
 # ─────────────────────────────────────────────────────────────────────────
 
+def _run_one_sanity(loader, n_samples, label, policy_type, budget,
+                    retrain_latency, deploy_latency):
+    """
+    Run a single sanity-check configuration and return the summary dict.
+
+    Returns:
+        (summary_dict, fraud_rate)
+    """
+    drift_point = n_samples // 2
+    recurrence_period = RECURRENCE_PERIOD
+    offset = 40_000
+
+    # 1. Build stream (abrupt, offset=40000)
+    X, y = _get_stream(
+        loader, "abrupt", n_samples, offset,
+        drift_point, recurrence_period, seed=offset,
+    )
+
+    # 2. Build components
+    model = StreamingModel()
+    policy = _build_policy(policy_type, budget, retrain_latency,
+                           deploy_latency, n_samples)
+    metrics = MetricsTracker()
+    metrics.set_drift_point(drift_point)
+    metrics.set_budget(budget)
+
+    # 3. Run
+    runner = ExperimentRunner(model, policy, metrics)
+    runner.run(X, y)
+
+    # 4. Results
+    summary = metrics.get_summary()
+    fraud_rate = float(y.mean())
+
+    print(f"\n  {'─' * 56}")
+    print(f"  {label}")
+    print(f"  {'─' * 56}")
+    if policy_type == "no_retrain":
+        print(f"    Policy           : No-Retrain (partial_fit only)")
+    else:
+        interval = n_samples // budget
+        print(f"    Policy           : Periodic K={budget}, "
+              f"interval={interval:,}")
+        print(f"    Latency          : ({retrain_latency}+{deploy_latency}) "
+              f"= {retrain_latency + deploy_latency} total")
+    print(f"    Overall accuracy : {summary['overall_accuracy']:.4f}")
+    print(f"    Pre-drift acc    : {summary['pre_drift_accuracy']:.4f}")
+    print(f"    Post-drift acc   : {summary['post_drift_accuracy']:.4f}")
+    print(f"    Accuracy drop    : {summary['accuracy_drop']:+.4f}  "
+          f"({'degradation' if summary['accuracy_drop'] < 0 else 'improvement'})")
+    print(f"    Overall F1       : {summary['overall_f1']:.4f}")
+    print(f"    Pre-drift F1     : {summary.get('pre_drift_f1', 0):.4f}")
+    print(f"    Post-drift F1    : {summary.get('post_drift_f1', 0):.4f}")
+    if summary.get('f1_drop') is not None:
+        print(f"    F1 drop          : {summary['f1_drop']:+.4f}  "
+              f"({'degradation' if summary['f1_drop'] < 0 else 'improvement'})")
+    auc_val = summary.get('overall_auc')
+    print(f"    Overall AUC      : {auc_val:.4f}" if auc_val is not None else
+          f"    Overall AUC      : N/A")
+    pre_auc = summary.get('pre_drift_auc')
+    post_auc = summary.get('post_drift_auc')
+    print(f"    Pre-drift AUC    : {pre_auc:.4f}" if pre_auc is not None else
+          f"    Pre-drift AUC    : N/A")
+    print(f"    Post-drift AUC   : {post_auc:.4f}" if post_auc is not None else
+          f"    Post-drift AUC   : N/A")
+    if summary.get('auc_drop') is not None:
+        print(f"    AUC drop         : {summary['auc_drop']:+.4f}  "
+              f"({'degradation' if summary['auc_drop'] < 0 else 'improvement'})")
+    print(f"    Total retrains   : {summary['total_retrains']}")
+    if summary.get('retrains_before_drift') is not None:
+        print(f"    Retrains pre/post: "
+              f"{summary['retrains_before_drift']}/{summary['retrains_after_drift']}")
+    if summary.get('budget_utilization') is not None and budget > 0:
+        print(f"    Budget util      : {summary['budget_utilization']:.0%}")
+    print(f"    Fraud rate       : {fraud_rate:.4f}")
+
+    return summary, fraud_rate
+
+
+def run_sanity_check(loader, n_samples):
+    """
+    Run three sanity-check configurations before the full sweep.
+
+    1. No-retrain baseline   — reveals the raw drift signal floor.
+    2. Periodic K=10, low latency  — aggressive adaptation (the original check).
+    3. Periodic K=5, high latency  — constrained; should show larger drop if
+       drift is real but absorbed by the aggressive policy.
+
+    All three use abrupt drift, offset=40000, same stream.
+    """
+    drift_point = n_samples // 2
+
+    print(f"\n{'=' * 70}")
+    print(f"  SANITY CHECK — Abrupt Drift, Offset=40000, Three Configurations")
+    print(f"{'=' * 70}")
+    print(f"  Stream length    : {n_samples:,}")
+    print(f"  Drift point      : {drift_point:,}")
+    print(f"{'=' * 70}")
+
+    # ── Config A: no-retrain baseline ────────────────────────────────────
+    sum_nr, fraud_rate = _run_one_sanity(
+        loader, n_samples,
+        label="A) No-Retrain Baseline (partial_fit only, 0 retrains)",
+        policy_type="no_retrain", budget=0,
+        retrain_latency=0, deploy_latency=0,
+    )
+
+    # ── Config B: periodic K=10, low latency (original sanity) ───────────
+    sum_pk10, _ = _run_one_sanity(
+        loader, n_samples,
+        label="B) Periodic K=10, Low Latency (10+1)",
+        policy_type="periodic", budget=10,
+        retrain_latency=10, deploy_latency=1,
+    )
+
+    # ── Config C: periodic K=5, high latency ─────────────────────────────
+    sum_pk5, _ = _run_one_sanity(
+        loader, n_samples,
+        label="C) Periodic K=5, High Latency (500+20)",
+        policy_type="periodic", budget=5,
+        retrain_latency=500, deploy_latency=20,
+    )
+
+    # ── Comparative interpretation ───────────────────────────────────────
+    majority_acc = max(fraud_rate, 1 - fraud_rate)
+    drop_nr  = sum_nr['accuracy_drop']
+    drop_k10 = sum_pk10['accuracy_drop']
+    drop_k5  = sum_pk5['accuracy_drop']
+    acc_nr   = sum_nr['overall_accuracy']
+
+    f1_drop_nr  = sum_nr.get('f1_drop', 0) or 0
+    f1_drop_k10 = sum_pk10.get('f1_drop', 0) or 0
+    f1_drop_k5  = sum_pk5.get('f1_drop', 0) or 0
+
+    auc_drop_nr  = sum_nr.get('auc_drop')
+    auc_drop_k10 = sum_pk10.get('auc_drop')
+    auc_drop_k5  = sum_pk5.get('auc_drop')
+
+    print(f"\n{'=' * 70}")
+    print(f"  COMPARATIVE INTERPRETATION")
+    print(f"{'=' * 70}")
+    print(f"  Majority-class baseline : {majority_acc:.4f}")
+    print(f"  No-retrain accuracy     : {acc_nr:.4f}")
+    print(f"  No-retrain F1           : {sum_nr['overall_f1']:.4f}")
+    auc_nr = sum_nr.get('overall_auc')
+    print(f"  No-retrain AUC          : {auc_nr:.4f}" if auc_nr else
+          f"  No-retrain AUC          : N/A")
+    print()
+    print(f"  Accuracy drops (post-pre):")
+    print(f"    A) No-retrain         : {drop_nr:+.4f}")
+    print(f"    B) Periodic K=10 low  : {drop_k10:+.4f}")
+    print(f"    C) Periodic K=5 high  : {drop_k5:+.4f}")
+    print()
+    print(f"  F1 drops (post-pre):   << key metric for imbalanced data >>")
+    print(f"    A) No-retrain         : {f1_drop_nr:+.4f}")
+    print(f"    B) Periodic K=10 low  : {f1_drop_k10:+.4f}")
+    print(f"    C) Periodic K=5 high  : {f1_drop_k5:+.4f}")
+    print()
+    print(f"  AUC drops (post-pre):")
+    for label, val in [("A) No-retrain", auc_drop_nr),
+                       ("B) Periodic K=10 low", auc_drop_k10),
+                       ("C) Periodic K=5 high", auc_drop_k5)]:
+        if val is not None:
+            print(f"    {label:<22}: {val:+.4f}")
+        else:
+            print(f"    {label:<22}: N/A")
+    print()
+
+    # Check: majority-class prediction?
+    if acc_nr >= majority_acc - 0.005:
+        print("  X  PROBLEM: No-retrain accuracy is at majority-class level.")
+        print("     Balanced sample weights may not be working.\n")
+        return
+
+    # ── Primary interpretation: F1 (key metric for imbalanced data) ──────
+    # Accuracy is dominated by the majority class on this dataset (97% legit)
+    # and cannot distinguish policies. F1 on the fraud class is the signal.
+    print("  ── F1-based interpretation (primary for imbalanced data) ──")
+    print()
+
+    if f1_drop_nr < -0.001 or f1_drop_k5 < -0.001:
+        # At least one config shows F1 degradation post-drift
+        if f1_drop_k5 < f1_drop_nr - 0.002:
+            print(f"  OK F1 degrades post-drift and constrained policy is worse:")
+            print(f"     No-retrain F1 drop    : {f1_drop_nr:+.4f}")
+            print(f"     K=10 low-lat F1 drop  : {f1_drop_k10:+.4f}")
+            print(f"     K=5 high-lat F1 drop  : {f1_drop_k5:+.4f}")
+            print(f"     Constrained policy (K=5) shows {abs(f1_drop_k5)/max(abs(f1_drop_nr),1e-6):.1f}× more")
+            print(f"     F1 degradation than baseline — budget/latency effects are visible.")
+        else:
+            print(f"  ~  F1 degrades post-drift but policy ordering is weak:")
+            print(f"     No-retrain F1 drop    : {f1_drop_nr:+.4f}")
+            print(f"     K=10 low-lat F1 drop  : {f1_drop_k10:+.4f}")
+            print(f"     K=5 high-lat F1 drop  : {f1_drop_k5:+.4f}")
+
+        # Also check AUC gradient
+        if auc_drop_nr is not None and auc_drop_k5 is not None:
+            if auc_drop_k5 < auc_drop_nr - 0.005:
+                print(f"     AUC confirms: constrained policy loses {auc_drop_nr - auc_drop_k5:+.4f}")
+                print(f"     more AUC than baseline post-drift.")
+
+        print()
+        print("     Accuracy still improves post-drift because it is dominated by the")
+        print("     majority class (97% legit). This is expected — F1 and AUC are the")
+        print("     informative metrics on imbalanced data.")
+        print()
+        print("     Pipeline is working correctly. Safe to launch full sweep.")
+        print("     Gradual/recurring conditions (pool separation) will amplify the signal.\n")
+    elif f1_drop_nr > 0.005:
+        print(f"  !  F1 improves post-drift ({f1_drop_nr:+.4f}).")
+        print("     Drift at this window makes fraud prediction easier, not harder.")
+        print("     Consider trying a different window offset.\n")
+    else:
+        print(f"  ~  F1 is nearly flat post-drift ({f1_drop_nr:+.4f}).")
+        print("     Organic abrupt drift is subtle at this window. Constructed")
+        print("     gradual/recurring streams (75k pool separation) will produce")
+        print("     stronger signals. Safe to launch full sweep — abrupt will be")
+        print("     the weakest condition.\n")
+
+
 def main():
     parser = argparse.ArgumentParser(
         description="Run retraining-policy experiments on CIS Fraud Detection data."
@@ -431,30 +675,45 @@ def main():
             "Gradual/recurring use an additional pool of the same size."
         ),
     )
+    parser.add_argument(
+        "--sanity",
+        action="store_true",
+        help=(
+            "Run a single sanity-check (periodic, K=10, low latency, "
+            "abrupt drift, offset=0) and print detailed metrics. "
+            "Use this before launching the full sweep."
+        ),
+    )
     args = parser.parse_args()
 
     n_samples = args.n_samples
-
-    policies = (
-        list(POLICY_PARAMS.keys()) if args.policy == "all"
-        else [args.policy]
-    )
 
     # Pre-load the dataset once (cached in the loader)
     loader = FraudDataLoader(DATA_DIR)
 
     # Validate that the dataset is large enough for the largest window
     max_offset = max(WINDOW_OFFSETS)
-    # Gradual/recurring need 2 pools, so worst case = offset + 2 * n_samples
-    required_rows = max_offset + 2 * n_samples
+    # Gradual/recurring need 2 pools of POOL_SIZE each
+    required_rows = max_offset + 2 * POOL_SIZE
     if loader.total_rows < required_rows:
         print(
             f"WARNING: Dataset has {loader.total_rows:,} rows but the "
             f"experiment requires up to {required_rows:,} rows "
-            f"(offset={max_offset} + 2×{n_samples:,}). "
+            f"(offset={max_offset} + 2×{POOL_SIZE:,}). "
             f"Reduce --n_samples or remove larger window offsets."
         )
         return
+
+    # ── Sanity check mode ────────────────────────────────────────────────
+    if args.sanity:
+        run_sanity_check(loader, n_samples)
+        return
+
+    # ── Full sweep mode ──────────────────────────────────────────────────
+    policies = (
+        list(POLICY_PARAMS.keys()) if args.policy == "all"
+        else [args.policy]
+    )
 
     # Compute total runs
     total_runs = 0

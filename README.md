@@ -35,25 +35,24 @@ A reproducible empirical study comparing three model retraining policies — per
 | Stream length | 10,000 samples |
 | Drift point | t = 5,000 |
 | Learner | SGDClassifier (log_loss) with per-sample partial_fit |
-
 ---
 
 ## Repository Structure
 
 ```
 ├── main.py                  # experiment entry point
-├── main_fraud_detection.py  # Fraud detection experiment entry point
-├── calibrate.py             # Hyperparameter calibration sweeps for CIS Fraud Detection dataset
-├── diagnose_drift.py        # Verifies drift exists at the split point for CIS Fraud Detection dataset 
-├── plot_summary.py          # Dashboard PNG generator
-├── docs/                    # All documentation
+├── main_fraud_detection.py  # fraud detection experiment (investigated, disregarded)
+├── calibrate.py             # hyperparameter calibration sweeps
+├── diagnose_drift.py        # drift verification for CIS Fraud Detection
+├── plot_summary.py          # dashboard PNG generator
+├── docs/                    # all documentation
 ├── src/
-│   ├── data/                # DriftGenerator, FraudDataLoader
+│   ├── data/                # DriftGenerator, FraudDataLoader, RealDriftGenerator
 │   ├── models/              # StreamingModel (SGDClassifier wrapper)
 │   ├── policies/            # Periodic, ErrorThreshold, DriftTriggered, NeverRetrain
 │   ├── runner/              # ExperimentRunner (streaming event loop)
 │   └── evaluation/          # MetricsTracker, CSV/JSON export, plots
-└── results/                 # Summary CSVs, dashboard PNGs, calibration outputs
+└── results/                 # summary CSVs, dashboard PNGs, calibration outputs
 ```
 
 ---

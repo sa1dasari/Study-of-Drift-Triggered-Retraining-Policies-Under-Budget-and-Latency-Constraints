@@ -12,7 +12,7 @@ pool slices (needed for gradual / recurring drift) are cheap.
 import numpy as np
 import pandas as pd
 from pathlib import Path
-from sklearn.preprocessing import LabelEncoder
+from sklearn.preprocessing import LabelEncoder, StandardScaler
 
 
 # Columns to drop entirely (IDs, target, time axis, high-cardinality text)
@@ -158,8 +158,9 @@ class FraudDataLoader:
         # Fill any remaining NaN (e.g. object cols that slipped through)
         df = df.fillna(-1)
 
-        # 8. Convert to numpy
-        self._X_full = df.values.astype(np.float64)
+        # 8. Scale features (critical for SGDClassifier convergence)
+        scaler = StandardScaler()
+        self._X_full = scaler.fit_transform(df.values.astype(np.float64))
         self._y_full = y
         self._n_total = len(y)
 

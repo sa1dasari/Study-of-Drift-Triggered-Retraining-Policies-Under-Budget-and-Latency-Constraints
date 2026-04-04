@@ -83,8 +83,10 @@ class ExperimentRunner:
             if self.model.is_initialized:
                 # Predict on current sample
                 y_pred = self.model.predict(x_t)
-                # Update metrics with true label, prediction, and timestamp
-                self.metrics.update(y_t, y_pred, t=t)
+                # Get probability of positive class for AUC computation
+                y_prob = self.model.predict_proba(x_t)
+                # Update metrics with true label, prediction, probability, and timestamp
+                self.metrics.update(y_t, y_pred, t=t, y_prob=y_prob)
 
             # Step 4: Add current sample to sliding window
             # window_X grows until next retrain, window_y tracks corresponding labels

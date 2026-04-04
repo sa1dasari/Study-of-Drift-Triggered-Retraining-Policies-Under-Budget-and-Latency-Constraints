@@ -302,6 +302,21 @@ Cumulative results per policy were merged into dedicated develop branches:
 
 - `develop_NoRetrain_NoBudget_NoLatency` (9 runs with 3 seeds + 30 runs with 10 seeds)
 
+### CIS Fraud Detection Experiment (Investigated, Disregarded)
+- `develop_CIS-Fraud-Detection` (calibration and sanity checks on the fraud dataset; not included in main experiment matrix)
+
 ### Merged Results
 
 The **`main`** and **`develop`** branches contain all results from all phases (1,833 total runs).
+
+---
+
+## CIS Fraud Detection — Investigated, Disregarded
+
+The IEEE-CIS Fraud Detection dataset (590,540 rows, 428 features, 3.5% fraud rate)
+was calibrated and sanity-checked but not included in the experiment matrix. Feature-level
+drift was confirmed (190/428 features at p<0.001), but streaming sanity checks at three
+temporal offsets (0, 20,000, 40,000) showed that only 1 of 3 offsets produced any F1
+degradation post-drift — insufficient for a consistent 3-seed factorial design. See
+[calibration_protocol.md](calibration_protocol.md) for full results.
+

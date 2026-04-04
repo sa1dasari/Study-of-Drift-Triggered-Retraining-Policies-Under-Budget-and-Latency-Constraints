@@ -10,6 +10,10 @@ CIS Fraud Detection data, applying one of three drift strategies:
 
 Labels and features are never synthesized or permuted — only the temporal
 ordering of which pool segment gets streamed is controlled.
+
+The pools may be larger than the desired output stream (e.g. 75 k pools
+producing a 50 k stream).  Pass ``n_samples`` to control the output length;
+when omitted it defaults to ``len(X_pre)`` for backward compatibility.
 """
 
 import numpy as np
@@ -21,6 +25,7 @@ def build_drift_stream(
     drift_type,
     drift_point,
     recurrence_period,
+    n_samples=None,
     seed=42,
 ):
     """
@@ -35,43 +40,48 @@ def build_drift_stream(
         drift_point (int):   Row index where drift begins in the output stream.
         recurrence_period (int): Rows per segment for recurring alternation,
                                  and width of the gradual transition window.
+        n_samples (int|None): Length of the output stream.  Defaults to
+                              ``len(X_pre)`` when *None*.
         seed (int):          RNG seed for probabilistic sampling in gradual mode.
 
     Returns:
         (X_stream, y_stream): numpy arrays with shape (n_samples, n_features)
                               and (n_samples,) respectively.
     """
+    if n_samples is None:
+        n_samples = len(X_pre)
+
     if drift_type == "abrupt":
-        return _build_abrupt(X_pre, y_pre)
+        return _build_abrupt(X_pre, y_pre, n_samples)
     elif drift_type == "gradual":
         return _build_gradual(
             X_pre, y_pre, X_post, y_post,
-            drift_point, recurrence_period, seed,
+            drift_point, recurrence_period, n_samples, seed,
         )
     elif drift_type == "recurring":
         return _build_recurring(
             X_pre, y_pre, X_post, y_post,
-            drift_point, recurrence_period,
+            drift_point, recurrence_period, n_samples,
         )
     else:
         raise ValueError(f"Unknown drift_type: {drift_type!r}")
 
 
 # Abrupt: purely organic
-def _build_abrupt(X_pre, y_pre):
+def _build_abrupt(X_pre, y_pre, n_samples):
     """
-    Return the pre-drift pool verbatim.
+    Return the first *n_samples* rows of the pre-drift pool verbatim.
 
     No manipulation — whatever organic distributional shift exists in the
     time-ordered real data IS the drift signal.
     """
-    return X_pre.copy(), y_pre.copy()
+    return X_pre[:n_samples].copy(), y_pre[:n_samples].copy()
 
 
 # Gradual: probabilistic blending
 
 def _build_gradual(X_pre, y_pre, X_post, y_post,
-                   drift_point, transition_window, seed):
+                   drift_point, transition_window, n_samples, seed):
     """
     Build a stream that transitions from pre-pool to post-pool gradually.
 
@@ -83,8 +93,8 @@ def _build_gradual(X_pre, y_pre, X_post, y_post,
         [30,000, 50,000)  → rows drawn from post-pool
 
     Rows are consumed sequentially from each pool (no replacement).
+    The pools may be larger than *n_samples*; only the needed rows are used.
     """
-    n_samples = len(X_pre)
     n_features = X_pre.shape[1]
     rng = np.random.default_rng(seed)
 
@@ -125,7 +135,7 @@ def _build_gradual(X_pre, y_pre, X_post, y_post,
 # Recurring: alternating segments
 
 def _build_recurring(X_pre, y_pre, X_post, y_post,
-                     drift_point, recurrence_period):
+                     drift_point, recurrence_period, n_samples):
     """
     Build a stream that alternates between pools after the drift point.
 
@@ -138,8 +148,8 @@ def _build_recurring(X_pre, y_pre, X_post, y_post,
         [45k, 50k) → post-pool     (period 4, even → post)
 
     Rows are consumed sequentially from each pool (no replacement).
+    The pools may be larger than *n_samples*; only the needed rows are used.
     """
-    n_samples = len(X_pre)
     n_features = X_pre.shape[1]
 
     X_stream = np.empty((n_samples, n_features), dtype=X_pre.dtype)

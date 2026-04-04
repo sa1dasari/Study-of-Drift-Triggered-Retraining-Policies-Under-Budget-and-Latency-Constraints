@@ -170,7 +170,7 @@ def run_policy_sweep(policy_type, seeds):
                     X, y = generator.generate(N_SAMPLES)
 
                     # 2. Build components
-                    model = StreamingModel()
+                    model = StreamingModel(fraud_rate=0.5)  # synthetic data is ~balanced
                     policy = _build_policy(policy_type, budget, retrain_latency, deploy_latency)
                     metrics = MetricsTracker()
                     metrics.set_drift_point(DRIFT_POINT)
@@ -274,7 +274,7 @@ def _run_no_retrain_sweep(seeds):
             X, y = generator.generate(N_SAMPLES)
 
             # 2. Build components (budget=0, latency=0)
-            model = StreamingModel()
+            model = StreamingModel(fraud_rate=0.5)  # synthetic data is ~balanced
             policy = _build_policy(policy_type, budget=0, retrain_latency=0, deploy_latency=0)
             metrics = MetricsTracker()
             metrics.set_drift_point(DRIFT_POINT)

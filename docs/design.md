@@ -14,6 +14,9 @@ main.py  (CLI entry point – full-factorial sweep via --policy and --seeds flag
 ├── src/data/drift_generator.py      – Synthetic data with concept drift
 │       └── DriftGenerator            Logistic-regression data with weight-vector switching
 │
+├── src/data/fraud_data_loader.py    – CIS Fraud Detection loader (investigated, disregarded)
+│       └── FraudDataLoader           Loads, joins, encodes, scales, and caches the dataset
+│
 ├── src/models/base_model.py         – Online learning model
 │       └── StreamingModel            SGDClassifier wrapper (partial_fit + retrain)
 │
@@ -80,10 +83,12 @@ for t in 0 … N-1:
 
 | Metric | Definition |
 |---|---|
-| **Overall Accuracy** | Mean correct predictions across all 10,000 timesteps |
-| **Pre-Drift Accuracy** | Mean accuracy for `t ∈ [0, 5000)` |
-| **Post-Drift Accuracy** | Mean accuracy for `t ∈ [5000, 10000)` |
+| **Overall Accuracy** | Mean correct predictions across all timesteps |
+| **Pre-Drift Accuracy** | Mean accuracy for `t ∈ [0, drift_point)` |
+| **Post-Drift Accuracy** | Mean accuracy for `t ∈ [drift_point, n_samples)` |
 | **Accuracy Drop** | `post_drift − pre_drift` (negative = degradation) |
+| **F1 Score** | F1 on the positive class (overall, pre-drift, post-drift) |
+| **AUC** | ROC-AUC from predicted probabilities (overall, pre-drift, post-drift) |
 | **Budget Utilization** | `retrains_used / budget_total` |
 | **Retrains Before/After Drift** | Count of retrains in each half of the stream |
 

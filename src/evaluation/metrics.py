@@ -1,13 +1,18 @@
 """
 Metrics tracking module for recording model performance during streaming.
 
-This module tracks prediction accuracy, errors, retraining events, and latency
-impacts as the model processes streaming data. Enables comprehensive analysis of
-how different retraining policies (periodic, error-threshold, drift-triggered)
-adapt to concept drift under budget and latency constraints.
+This module tracks prediction accuracy, errors, F1 score, AUC, retraining
+events, and latency impacts as the model processes streaming data. Enables
+comprehensive analysis of how different retraining policies adapt to concept
+drift under budget and latency constraints.
+
+F1 and AUC are essential on imbalanced datasets (e.g. CIS Fraud Detection,
+3.5% fraud) where accuracy is dominated by the majority class and cannot
+distinguish between policies.
 """
 
 import numpy as np
+from sklearn.metrics import f1_score, roc_auc_score
 
 class MetricsTracker:
     """
@@ -18,18 +23,22 @@ class MetricsTracker:
 
     Tracked Metrics:
     1. Per-sample performance: accuracy/errors at each timestep
-    2. Retraining events: when retrains occur and latency periods
-    3. Drift impact: accuracy before/after drift point
-    4. Aggregate stats: overall accuracy, accuracy in regions of interest
-    5. Budget usage: retrains executed vs. budget available
+    2. Per-sample labels, predictions, and probabilities (for F1 / AUC)
+    3. Retraining events: when retrains occur and latency periods
+    4. Drift impact: accuracy, F1, AUC before/after drift point
+    5. Aggregate stats: overall accuracy, F1, AUC
+    6. Budget usage: retrains executed vs. budget available
 
     Attributes:
         accuracies (list): Per-sample accuracies (1 if correct, 0 if wrong)
         errors (list): Per-sample errors (complement of accuracy)
+        y_trues (list): Per-sample true labels (int 0/1)
+        y_preds (list): Per-sample predicted labels (int 0/1)
+        y_probs (list): Per-sample predicted probability of class 1
         retrain_times (list): Timesteps when retrains were triggered
         retrain_latency_windows (list): (start_t, end_t) tuples for latency periods
-        sample_count (int): Number of samples processed (including t=0 without prediction)
-        drift_point (int): Timestep where concept drift occurs (set externally if known)
+        sample_count (int): Number of samples processed
+        drift_point (int): Timestep where concept drift occurs (set externally)
     """
 
     def __init__(self):
@@ -39,27 +48,30 @@ class MetricsTracker:
         self.errors = []
         self.timestamps = []  # Track which timestep each metric corresponds to
 
+        # Raw per-sample labels / predictions / probabilities for F1 & AUC
+        self.y_trues = []
+        self.y_preds = []
+        self.y_probs = []   # P(class=1); empty if probabilities unavailable
+
         # Retraining event tracking
-        self.retrain_times = []  # Timesteps when retrain was triggered
-        self.retrain_latency_windows = []  # (start_t, end_t) tuples for latency periods
+        self.retrain_times = []
+        self.retrain_latency_windows = []
 
         # Metadata (set by experiment runner or externally)
         self.sample_count = 0
-        self.drift_point = None  # Set externally if known (e.g., 5000 for drift start)
-        self.total_budget = None  # Set externally (e.g., 5, 10, 20)
+        self.drift_point = None
+        self.total_budget = None
 
-    def update(self, y_true, y_pred, t=None):
+    def update(self, y_true, y_pred, t=None, y_prob=None):
         """
-        Record prediction accuracy for a single sample (or batch).
-
-        Compares true labels against predictions and computes accuracy as the
-        proportion of correct predictions. Both accuracies and errors lists
-        are updated, along with the timestep.
+        Record prediction results for a single sample (or batch).
 
         Args:
             y_true (np.ndarray): True labels, shape (n_samples,) with values in {0, 1}
             y_pred (np.ndarray): Predicted labels, shape (n_samples,) with values in {0, 1}
             t (int, optional): Timestep/sample index (auto-incremented if not provided)
+            y_prob (np.ndarray, optional): Predicted probability of class 1,
+                shape (n_samples,).  Required for AUC computation.
         """
         # Compute accuracy: fraction of correct predictions
         acc = np.mean(y_true == y_pred)
@@ -73,261 +85,213 @@ class MetricsTracker:
         self.timestamps.append(t)
         self.sample_count = t + 1
 
+        # Store raw values (scalar extraction for single-sample calls)
+        self.y_trues.append(int(y_true[0]))
+        self.y_preds.append(int(y_pred[0]))
+        if y_prob is not None:
+            self.y_probs.append(float(y_prob[0]))
+
     def record_retrain(self, t, retrain_latency, deploy_latency):
         """
         Record that a retraining event occurred at timestep t.
 
-        Tracks when retrains happen and the latency periods during which
-        the model is unavailable (retraining) or being deployed.
-
         Args:
             t (int): Timestep when retrain was triggered
-            retrain_latency (int): Time to complete retraining (offline training time)
+            retrain_latency (int): Time to complete retraining
             deploy_latency (int): Delay after retraining before deployment
         """
         self.retrain_times.append(t)
-
-        # Latency window: [t, t + retrain_latency + deploy_latency)
         latency_end = t + retrain_latency + deploy_latency
         self.retrain_latency_windows.append((t, latency_end))
 
     def set_drift_point(self, drift_point):
-        """
-        Set the known drift point for post-analysis segmentation.
-
-        Used to compute pre-drift and post-drift accuracy separately.
-
-        Args:
-            drift_point (int): Timestep at which concept drift occurs
-        """
+        """Set the known drift point for post-analysis segmentation."""
         self.drift_point = drift_point
 
     def set_budget(self, budget):
-        """
-        Set the retraining budget for reference.
-
-        Args:
-            budget (int): Maximum number of retrains allowed (e.g., 5, 10, 20)
-        """
+        """Set the retraining budget for reference."""
         self.total_budget = budget
 
-    def get_accuracy_before_drift(self):
-        """
-        Compute average accuracy before the drift point.
+    # ── Accuracy helpers ────────────────────────────────────────────────
 
-        Returns:
-            float: Mean accuracy for t < drift_point, or None if drift_point not set
-        """
+    def get_accuracy_before_drift(self):
         if self.drift_point is None:
             return None
-
-        pre_drift_acc = [
-            acc for acc, t in zip(self.accuracies, self.timestamps)
-            if t < self.drift_point
-        ]
-        return np.mean(pre_drift_acc) if pre_drift_acc else None
+        pre = [acc for acc, t in zip(self.accuracies, self.timestamps)
+               if t < self.drift_point]
+        return np.mean(pre) if pre else None
 
     def get_accuracy_after_drift(self):
-        """
-        Compute average accuracy after the drift point.
-
-        Returns:
-            float: Mean accuracy for t >= drift_point, or None if drift_point not set
-        """
         if self.drift_point is None:
             return None
-
-        post_drift_acc = [
-            acc for acc, t in zip(self.accuracies, self.timestamps)
-            if t >= self.drift_point
-        ]
-        return np.mean(post_drift_acc) if post_drift_acc else None
+        post = [acc for acc, t in zip(self.accuracies, self.timestamps)
+                if t >= self.drift_point]
+        return np.mean(post) if post else None
 
     def get_overall_accuracy(self):
-        """
-        Compute overall average accuracy across all predictions.
-
-        Returns:
-            float: Mean accuracy, or 0 if no predictions recorded
-        """
         if not self.accuracies:
             return 0.0
         return np.mean(self.accuracies)
 
     def get_accuracy_window(self, start_t, end_t):
+        windowed = [acc for acc, t in zip(self.accuracies, self.timestamps)
+                    if start_t <= t < end_t]
+        return np.mean(windowed) if windowed else None
+
+    # ── F1 helpers ──────────────────────────────────────────────────────
+
+    def _f1_for_mask(self, mask):
+        """Compute F1(class=1) for samples selected by *mask* (bool list)."""
+        yt = [self.y_trues[i] for i, m in enumerate(mask) if m]
+        yp = [self.y_preds[i] for i, m in enumerate(mask) if m]
+        if not yt or len(set(yt)) < 1:
+            return None
+        return float(f1_score(yt, yp, zero_division=0.0))
+
+    def get_overall_f1(self):
+        if not self.y_trues:
+            return 0.0
+        return float(f1_score(self.y_trues, self.y_preds, zero_division=0.0))
+
+    def get_f1_before_drift(self):
+        if self.drift_point is None or not self.y_trues:
+            return None
+        mask = [t < self.drift_point for t in self.timestamps]
+        return self._f1_for_mask(mask)
+
+    def get_f1_after_drift(self):
+        if self.drift_point is None or not self.y_trues:
+            return None
+        mask = [t >= self.drift_point for t in self.timestamps]
+        return self._f1_for_mask(mask)
+
+    # ── AUC helpers ─────────────────────────────────────────────────────
+
+    def _auc_for_mask(self, mask):
+        """Compute ROC-AUC for samples selected by *mask*.
+
+        Returns None when probabilities are unavailable or only one class
+        is present in the selected window (AUC is undefined).
         """
-        Compute average accuracy in a timestep window [start_t, end_t).
+        if not self.y_probs:
+            return None
+        yt = [self.y_trues[i] for i, m in enumerate(mask) if m]
+        yp = [self.y_probs[i] for i, m in enumerate(mask) if m]
+        if len(set(yt)) < 2:
+            return None  # AUC undefined with single class
+        return float(roc_auc_score(yt, yp))
 
-        Useful for analyzing performance in different regions (e.g., around drift).
+    def get_overall_auc(self):
+        if not self.y_probs or len(set(self.y_trues)) < 2:
+            return None
+        return float(roc_auc_score(self.y_trues, self.y_probs))
 
-        Args:
-            start_t (int): Start timestep (inclusive)
-            end_t (int): End timestep (exclusive)
+    def get_auc_before_drift(self):
+        if self.drift_point is None or not self.y_probs:
+            return None
+        mask = [t < self.drift_point for t in self.timestamps]
+        return self._auc_for_mask(mask)
 
-        Returns:
-            float: Mean accuracy in the window, or None if no samples in window
-        """
-        windowed_acc = [
-            acc for acc, t in zip(self.accuracies, self.timestamps)
-            if start_t <= t < end_t
-        ]
-        return np.mean(windowed_acc) if windowed_acc else None
+    def get_auc_after_drift(self):
+        if self.drift_point is None or not self.y_probs:
+            return None
+        mask = [t >= self.drift_point for t in self.timestamps]
+        return self._auc_for_mask(mask)
+
+    # ── Retrain counters ────────────────────────────────────────────────
 
     def get_retrains_before_drift(self):
-        """
-        Count how many retrains occurred before the drift point.
-
-        Returns:
-            int: Number of retrains with t < drift_point, or -1 if drift_point not set
-        """
         if self.drift_point is None:
             return -1
         return sum(1 for t in self.retrain_times if t < self.drift_point)
 
     def get_retrains_after_drift(self):
-        """
-        Count how many retrains occurred at or after the drift point.
-
-        Returns:
-            int: Number of retrains with t >= drift_point, or -1 if drift_point not set
-        """
         if self.drift_point is None:
             return -1
         return sum(1 for t in self.retrain_times if t >= self.drift_point)
 
     def get_retrain_count(self):
-        """
-        Get total number of retrains executed.
-
-        Returns:
-            int: Length of retrain_times list
-        """
         return len(self.retrain_times)
 
-    def get_cumulative_error(self):
-        """
-        Compute cumulative error (sum of all errors).
+    # ── Error / degradation helpers ─────────────────────────────────────
 
-        Returns:
-            float: Sum of all per-sample errors
-        """
+    def get_cumulative_error(self):
         return np.sum(self.errors) if self.errors else 0.0
 
     def get_max_degradation(self):
-        """
-        Compute max degradation (worst single-sample error).
-
-        Returns:
-            float: Maximum error value across all samples
-        """
         return np.max(self.errors) if self.errors else 0.0
 
     def get_average_degradation(self):
-        """
-        Compute average degradation (mean of all errors).
-
-        This represents the typical error rate across all predictions,
-        providing a measure of overall model degradation.
-
-        Returns:
-            float: Mean error value across all samples
-        """
         return np.mean(self.errors) if self.errors else 0.0
 
     def get_max_degradation_in_window(self, start_t, end_t):
-        """
-        Compute max degradation within a specific time window.
-
-        Args:
-            start_t (int): Start timestep (inclusive)
-            end_t (int): End timestep (exclusive)
-
-        Returns:
-            float: Maximum error in the window, or 0 if no samples
-        """
-        errors_in_window = [e for e, t in zip(self.errors, self.timestamps) if start_t <= t < end_t]
-        return max(errors_in_window) if errors_in_window else 0.0
+        errs = [e for e, t in zip(self.errors, self.timestamps)
+                if start_t <= t < end_t]
+        return max(errs) if errs else 0.0
 
     def get_error_count_in_window(self, start_t, end_t):
-        """
-        Count total errors within a specific time window.
-
-        Args:
-            start_t (int): Start timestep (inclusive)
-            end_t (int): End timestep (exclusive)
-
-        Returns:
-            float: Sum of errors in the window (count of wrong predictions)
-        """
-        errors_in_window = [e for e, t in zip(self.errors, self.timestamps) if start_t <= t < end_t]
-        return sum(errors_in_window) if errors_in_window else 0.0
+        errs = [e for e, t in zip(self.errors, self.timestamps)
+                if start_t <= t < end_t]
+        return sum(errs) if errs else 0.0
 
     def get_latency_cost(self):
-        """
-        Compute total latency cost as the sum of all latency window durations.
-
-        Latency cost represents the total number of timesteps during which
-        the model was unavailable due to retraining or deployment delays.
-        Higher latency cost means more time spent in degraded operation.
-
-        Returns:
-            int: Total timesteps spent in latency windows across all retrains
-        """
-        total_latency = 0
-        for start_t, end_t in self.retrain_latency_windows:
-            total_latency += (end_t - start_t)
-        return total_latency
+        total = 0
+        for s, e in self.retrain_latency_windows:
+            total += (e - s)
+        return total
 
     def get_errors_during_latency(self):
-        """
-        Compute cumulative errors during latency windows.
-
-        This measures performance degradation specifically during retraining
-        and deployment periods when the model may be using stale weights.
-
-        Returns:
-            float: Sum of errors during all latency windows
-        """
-        latency_errors = 0.0
+        lat_err = 0.0
         for acc, t in zip(self.errors, self.timestamps):
-            for start_t, end_t in self.retrain_latency_windows:
-                if start_t <= t < end_t:
-                    latency_errors += acc
+            for s, e in self.retrain_latency_windows:
+                if s <= t < e:
+                    lat_err += acc
                     break
-        return latency_errors
+        return lat_err
+
+    # ── Summary ─────────────────────────────────────────────────────────
 
     def get_summary(self):
         """
         Generate a summary dictionary of key metrics.
 
         Returns:
-            dict: Summary with keys:
-                - overall_accuracy
-                - pre_drift_accuracy (if drift_point set)
-                - post_drift_accuracy (if drift_point set)
-                - accuracy_drop (post - pre, if both set)
-                - total_retrains
-                - retrains_before_drift (if drift_point set)
-                - retrains_after_drift (if drift_point set)
-                - total_samples
-                - predictions_made (excludes t=0 warm-up)
+            dict: Summary including accuracy, F1, AUC (overall and pre/post
+                  drift), retrain counts, budget utilisation, error stats.
         """
         summary = {
             'overall_accuracy': self.get_overall_accuracy(),
+            'overall_f1': self.get_overall_f1(),
+            'overall_auc': self.get_overall_auc(),
             'total_retrains': self.get_retrain_count(),
             'total_samples': self.sample_count,
             'predictions_made': len(self.accuracies),
         }
 
         if self.drift_point is not None:
-            pre_acc = self.get_accuracy_before_drift()
+            pre_acc  = self.get_accuracy_before_drift()
             post_acc = self.get_accuracy_after_drift()
-            summary['pre_drift_accuracy'] = pre_acc
+            summary['pre_drift_accuracy']  = pre_acc
             summary['post_drift_accuracy'] = post_acc
             if pre_acc is not None and post_acc is not None:
                 summary['accuracy_drop'] = post_acc - pre_acc
+
+            pre_f1  = self.get_f1_before_drift()
+            post_f1 = self.get_f1_after_drift()
+            summary['pre_drift_f1']  = pre_f1
+            summary['post_drift_f1'] = post_f1
+            if pre_f1 is not None and post_f1 is not None:
+                summary['f1_drop'] = post_f1 - pre_f1
+
+            pre_auc  = self.get_auc_before_drift()
+            post_auc = self.get_auc_after_drift()
+            summary['pre_drift_auc']  = pre_auc
+            summary['post_drift_auc'] = post_auc
+            if pre_auc is not None and post_auc is not None:
+                summary['auc_drop'] = post_auc - pre_auc
+
             summary['retrains_before_drift'] = self.get_retrains_before_drift()
-            summary['retrains_after_drift'] = self.get_retrains_after_drift()
+            summary['retrains_after_drift']  = self.get_retrains_after_drift()
 
         if self.total_budget is not None:
             summary['budget_used'] = self.get_retrain_count()
@@ -337,12 +301,18 @@ class MetricsTracker:
                 if self.total_budget > 0 else 0.0
             )
 
-        summary['cumulative_error_rate'] = self.get_cumulative_error() / self.sample_count if self.sample_count > 0 else 0.0
+        summary['cumulative_error_rate'] = (
+            self.get_cumulative_error() / self.sample_count
+            if self.sample_count > 0 else 0.0
+        )
         summary['cumulative_error'] = self.get_cumulative_error()
         summary['max_degradation'] = self.get_max_degradation()
         summary['average_degradation'] = self.get_average_degradation()
         summary['latency_cost'] = self.get_latency_cost()
         summary['errors_during_latency'] = self.get_errors_during_latency()
-        summary['error_in_drift_window'] = self.get_error_count_in_window(self.drift_point, self.drift_point + 1000) if self.drift_point is not None else None
+        summary['error_in_drift_window'] = (
+            self.get_error_count_in_window(self.drift_point, self.drift_point + 1000)
+            if self.drift_point is not None else None
+        )
 
         return summary

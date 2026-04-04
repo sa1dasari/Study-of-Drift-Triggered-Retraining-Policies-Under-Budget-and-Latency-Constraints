@@ -110,6 +110,10 @@
    - **Error-Threshold sweep** (15 runs): swept `error_threshold ∈ {0.20, 0.25, 0.30, 0.35, 0.40}` × `window_size ∈ {100, 200, 500}`.
    - **ADWIN sweep** (54 runs): swept `delta ∈ {0.05, 0.01, 0.005, 0.002, 0.001, 0.0005}` × `window_size ∈ {300, 500, 1000}` × `min_samples ∈ {50, 100, 200}`.
 4. Built and ran `diagnose_drift.py` to verify whether genuine drift exists at the split point before interpreting ADWIN's failure.
-5. Documented the fraud rate shift (−0.35 percentage points post-drift) and the semisynthetic approach as more appropriate for guaranteeing detectable distributional shift in the abrupt condition.
-6. Observed **non-uniform drift across temporal windows**: offset=0 has the strongest feature-level shift (44% of features at p<0.001) but moderate accuracy drop (+0.020), while offset=20,000 has weaker feature-level shift (25%) but the largest accuracy drop (+0.054). This decoupling is characteristic of real-world financial data — broad feature shifts don't necessarily degrade the classification boundary, while concentrated shifts in decision-relevant features do.
-7. Designated **offset=0 as primary experimental condition** — strongest feature-level drift signal, sensible accuracy drops, natural start-of-dataset midpoint split.
+5. Added F1 and AUC as tracked metrics in `MetricsTracker` alongside accuracy — essential for the 97% majority-class dataset where accuracy cannot distinguish policies.
+6. Ran three-configuration sanity checks (no-retrain, periodic K=10 low latency, periodic K=5 high latency) at three temporal offsets:
+   - **Offset=0**: F1 flat post-drift (+0.0008); no degradation signal.
+   - **Offset=20,000**: F1 mild degradation (−0.0027); only viable offset, but weak policy ordering.
+   - **Offset=40,000**: F1 improved post-drift (+0.0288); drift makes prediction easier.
+7. **Decision: Disregarded CIS Fraud Detection from further experimentation.** Feature-level distributional shift (190/428 features significant at p<0.001) does not consistently translate to task-level degradation. Only 1 of 3 offsets showed any F1 degradation, too few to form a consistent seed set for the 81-run factorial design. All calibration, diagnosis, and sanity-check code retained in the repository as documentation.
+
