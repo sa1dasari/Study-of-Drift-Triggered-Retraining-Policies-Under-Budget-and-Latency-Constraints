@@ -410,10 +410,10 @@ def run_policy_sweep(policy_type, per_day, pool_cache):
     total_runs = n_pools * n_drifts * n_budgets * n_latencies
 
     # Output paths
-    results_dir = Path(f"results/luflow_{policy_type}_{seed_label}")
+    results_dir = Path(f"results/luflow/per_run/luflow_{policy_type}_{seed_label}")
     results_dir.mkdir(parents=True, exist_ok=True)
 
-    summary_csv = f"results/luflow_summary_{policy_type}_retrain_{seed_label}.csv"
+    summary_csv = f"results/luflow/csv/luflow_summary_{policy_type}_retrain_{seed_label}.csv"
     Path(summary_csv).unlink(missing_ok=True)
 
     display = POLICY_DISPLAY[policy_type]
@@ -506,7 +506,7 @@ def run_policy_sweep(policy_type, per_day, pool_cache):
     from plot_summary import plot_summary_for_policy
     plot_summary_for_policy(
         csv_path=summary_csv,
-        output_path=(f"results/luflow_summary_plot_"
+        output_path=(f"results/luflow/plots/luflow_summary_plot_"
                      f"{policy_type}_retrain_{seed_label}.png"),
         policy_name=f"LUFlow {display}",
     )
@@ -521,10 +521,10 @@ def _run_no_retrain_sweep(per_day, pool_cache):
     seed_label = "3seed"
     total_runs = len(POOL_CONFIGS) * len(DRIFT_TYPES)
 
-    results_dir = Path(f"results/luflow_{policy_type}_{seed_label}")
+    results_dir = Path(f"results/luflow/per_run/luflow_{policy_type}_{seed_label}")
     results_dir.mkdir(parents=True, exist_ok=True)
 
-    summary_csv = f"results/luflow_summary_{policy_type}_{seed_label}.csv"
+    summary_csv = f"results/luflow/csv/luflow_summary_{policy_type}_{seed_label}.csv"
     Path(summary_csv).unlink(missing_ok=True)
 
     display = POLICY_DISPLAY[policy_type]
@@ -595,7 +595,7 @@ def _run_no_retrain_sweep(per_day, pool_cache):
     from plot_summary import plot_summary_for_no_retrain
     plot_summary_for_no_retrain(
         csv_path=summary_csv,
-        output_path=f"results/luflow_summary_plot_{policy_type}_{seed_label}.png",
+        output_path=f"results/luflow/plots/luflow_summary_plot_{policy_type}_{seed_label}.png",
         policy_name=f"LUFlow {display}",
     )
 

@@ -2,9 +2,17 @@
 
 This document explains how to read and interpret the CSV and PNG files in the `results/` folder.
 
+Results are organized into two subdirectories:
+- **`results/synthetic/`** — Synthetic data experiments (`csv/` for summary CSVs, `plots/` for dashboard PNGs, `per_run/` for per-run details).
+- **`results/luflow/`** — LUFlow real-world data experiments (same sub-structure).
+
 ---
 
 ## 1. Summary CSV Files — Column Reference
+
+The CSV structure is the same for both synthetic (`results/synthetic/csv/`) and LUFlow (`results/luflow/csv/`) experiments. Key differences:
+- **Synthetic:** `random_seed` identifies the data generation seed; stream length = 10,000; drift point = 5,000.
+- **LUFlow:** `random_seed` is the pool-config ID (1, 2, or 3); stream length = 50,000; drift point = 25,000. Additional columns `dataset` and `pool_config` identify the LUFlow experiment.
 
 ### Configuration Columns
 
@@ -28,9 +36,9 @@ These columns describe the experimental setup for each run. Use them as **filter
 
 | Column | Type | Range | Description |
 |---|---|---|---|
-| `overall_accuracy` | float | [0, 1] | Mean accuracy across all 10,000 timesteps — the primary metric |
-| `pre_drift_accuracy` | float | [0, 1] | Mean accuracy for `t ∈ [0, 5000)` — stable period before drift |
-| `post_drift_accuracy` | float | [0, 1] | Mean accuracy for `t ∈ [5000, 10000)` — measures adaptation to drift |
+| `overall_accuracy` | float | [0, 1] | Mean accuracy across all timesteps (10,000 synthetic; 50,000 LUFlow) — the primary metric |
+| `pre_drift_accuracy` | float | [0, 1] | Mean accuracy before drift point — stable period |
+| `post_drift_accuracy` | float | [0, 1] | Mean accuracy after drift point — measures adaptation to drift |
 | `accuracy_drop` | float | typically [−0.05, +0.06] | `post_drift − pre_drift`. Negative = degradation after drift |
 
 > **How to interpret `accuracy_drop`:**
@@ -44,8 +52,8 @@ These columns describe the experimental setup for each run. Use them as **filter
 |---|---|---|---|
 | `total_retrains` | int | [0, budget] | Full retrains actually executed |
 | `budget_utilization` | float | [0, 1] | `total_retrains / budget` — fraction of budget consumed |
-| `retrains_before_drift` | int | [0, budget] | Retrains at `t < 5000` — ideally low (budget wasted on stable concept) |
-| `retrains_after_drift` | int | [0, budget] | Retrains at `t ≥ 5000` — ideally high (retraining where it matters) |
+| `retrains_before_drift` | int | [0, budget] | Retrains before the drift point — ideally low (budget wasted on stable concept) |
+| `retrains_after_drift` | int | [0, budget] | Retrains at or after the drift point — ideally high (retraining where it matters) |
 
 > `total_retrains = retrains_before_drift + retrains_after_drift`
 
@@ -108,7 +116,7 @@ The **no-retrain baseline** dashboard is a **2×2 PNG** with four panels:
 
 - **Rows:** Budget (5, 10, 20). **Columns:** Latency levels.
 - **Cell value:** Mean accuracy across all drifts and seeds.
-- Uniform colour → policy is robust to budget/latency. Gradient → one factor dominates.
+- Uniform color → policy is robust to budget/latency. Gradient → one factor dominates.
 
 ### Panel 4 — Budget Utilization (Grouped Bar)
 

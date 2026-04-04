@@ -2,17 +2,21 @@
 
 ## Overview
 
-This document describes the architecture of the streaming ML simulator used to compare retraining policies under concept drift, budget constraints, and deployment latency.
+This document describes the architecture of the streaming ML simulator used to compare retraining policies under concept drift, budget constraints, and deployment latency. Experiments are conducted on both **synthetic data** (controlled weight-vector drift) and a **real-world dataset** (LUFlow network intrusion detection), sharing the same model, policy, runner, and evaluation components.
 
 ---
 
 ## Architecture
 
 ```
-main.py  (CLI entry point – full-factorial sweep via --policy and --seeds flags)
+main.py        (CLI entry point – synthetic data full-factorial sweep)
+luflow_main.py (CLI entry point – LUFlow real-world data full-factorial sweep)
 │
 ├── src/data/drift_generator.py      – Synthetic data with concept drift
 │       └── DriftGenerator            Logistic-regression data with weight-vector switching
+│
+├── src/data/LUFlow_Network_Intrusion/
+│       └── datasets/                 28 day-CSVs (downloaded separately; ~1.5 GB+)
 │
 ├── src/models/base_model.py         – Online learning model
 │       └── StreamingModel            SGDClassifier wrapper (partial_fit + retrain)
@@ -32,6 +36,8 @@ main.py  (CLI entry point – full-factorial sweep via --policy and --seeds flag
 │       ├── results_export.py         CSV / JSON export utilities
 │       └── plot_results.py           Per-run timeline + rolling-accuracy plots
 │
+├── luflow_fitness_check.py          – LUFlow dataset suitability gate checks
+│
 └── plot_summary.py                  – Cross-run 2×3 summary dashboard
 ```
 
@@ -47,6 +53,20 @@ main.py  (CLI entry point – full-factorial sweep via --policy and --seeds flag
 | **Label model** | Bernoulli with probability `σ(X · w)` (logistic function) |
 | **Concept switch** | Two random weight vectors `w₁`, `w₂` drawn once per seed |
 | **Drift injection** | Weight vector changes at `drift_point = 5000` according to drift type |
+
+### Real-World Data — LUFlow Network Intrusion Detection
+
+| Aspect | Detail |
+|---|---|
+| **Dataset** | LUFlow (Lancaster University), 28 day-CSVs, ~21 M rows |
+| **Features** | 11 flow-level features (avg_ipt, bytes_in/out, ports, entropy, etc.) |
+| **Labels** | Binary: benign vs malicious |
+| **Pool configs** | 3 seed configurations select pre-/post-drift pools by filtering days on malicious-class percentage |
+| **Stream** | 50,000 samples per run, drift injected at t = 25,000 |
+| **Drift injection** | Abrupt (hard switch), Gradual (5,000-step blend), Recurring (alternates every 5,000 steps) |
+| **Standardisation** | `StandardScaler` applied after stream assembly |
+
+The LUFlow experiments use the same `ExperimentRunner`, policies, and metrics as the synthetic runs. Data loading and stream construction are handled by `luflow_main.py`. A three-gate fitness check (`luflow_fitness_check.py`) validated the dataset before the full sweep.
 
 ### Streaming Model (`StreamingModel`)
 
@@ -80,9 +100,9 @@ for t in 0 … N-1:
 
 | Metric | Definition |
 |---|---|
-| **Overall Accuracy** | Mean correct predictions across all 10,000 timesteps |
-| **Pre-Drift Accuracy** | Mean accuracy for `t ∈ [0, 5000)` |
-| **Post-Drift Accuracy** | Mean accuracy for `t ∈ [5000, 10000)` |
+| **Overall Accuracy** | Mean correct predictions across all timesteps (10,000 synthetic; 50,000 LUFlow) |
+| **Pre-Drift Accuracy** | Mean accuracy for `t ∈ [0, drift_point)` |
+| **Post-Drift Accuracy** | Mean accuracy for `t ∈ [drift_point, N)` |
 | **Accuracy Drop** | `post_drift − pre_drift` (negative = degradation) |
 | **Budget Utilization** | `retrains_used / budget_total` |
 | **Retrains Before/After Drift** | Count of retrains in each half of the stream |
@@ -98,6 +118,6 @@ Each run produces:
 
 ## Reproducibility
 
-- **Fixed seeds**: `DriftGenerator` uses `np.random.default_rng(seed)` for full determinism.
-- **Identical stream**: All policies see the same data sequence for a given `(drift_type, seed)` pair, enabling fair comparison.
-- **CLI-driven**: `python main.py --policy <name> --seeds <N>` reproduces any experiment subset.
+- **Fixed seeds**: `DriftGenerator` uses `np.random.default_rng(seed)` for full determinism. LUFlow stream construction uses a fixed RNG seed for the gradual-drift blending.
+- **Identical stream**: All policies see the same data sequence for a given `(drift_type, seed)` pair (synthetic) or `(drift_type, pool_config)` pair (LUFlow), enabling fair comparison.
+- **CLI-driven**: `python main.py --policy <name> --seeds <N>` reproduces any synthetic experiment subset. `python luflow_main.py --policy <name>` reproduces any LUFlow experiment subset.

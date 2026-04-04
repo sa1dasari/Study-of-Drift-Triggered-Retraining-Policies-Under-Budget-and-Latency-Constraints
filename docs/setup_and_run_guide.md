@@ -61,8 +61,10 @@ python -c "import numpy, pandas, matplotlib, sklearn; print('All dependencies OK
 ## 3. Project Layout
 
 ```
-├── main.py                  ← CLI entry point: --policy and --seeds flags drive the sweep
-├── plot_summary.py          ← Generates dashboard PNGs (called automatically by main.py)
+├── main.py                  ← CLI entry point: synthetic experiments (--policy and --seeds)
+├── luflow_main.py           ← CLI entry point: LUFlow real-world experiments (--policy)
+├── luflow_fitness_check.py  ← LUFlow dataset suitability gate checks
+├── plot_summary.py          ← Generates dashboard PNGs (called automatically by main.py / luflow_main.py)
 ├── docs/
 │   └── requirements.txt     ← Python dependencies
 ├── src/
@@ -78,14 +80,24 @@ python -c "import numpy, pandas, matplotlib, sklearn; print('All dependencies OK
 │       ├── metrics.py                      ← MetricsTracker
 │       ├── results_export.py               ← CSV / JSON exporters
 │       └── plot_results.py                 ← Per-run timeline plots
-└── results/                 ← All outputs land here (CSVs, PNGs, JSONs)
+└── results/                 ← All outputs land here
+    ├── synthetic/
+    │   ├── csv/             ← Summary CSVs (synthetic experiments)
+    │   ├── plots/           ← Dashboard PNGs (synthetic experiments)
+    │   └── per_run/         ← Per-run JSONs and per-sample CSVs
+    └── luflow/
+        ├── csv/             ← Summary CSVs (LUFlow experiments)
+        ├── plots/           ← Dashboard PNGs (LUFlow experiments)
+        └── per_run/         ← Per-run JSONs and per-sample CSVs
 ```
 
 ---
 
 ## 4. Running Experiments
 
-### CLI Reference
+### Synthetic Experiments
+
+#### CLI Reference
 
 ```
 python main.py [--policy POLICY] [--seeds N]
@@ -96,7 +108,7 @@ python main.py [--policy POLICY] [--seeds N]
 | `--policy` | `periodic`, `error_threshold`, `drift_triggered`, `no_retrain`, `all` | `all` | Which retraining policy to sweep. `all` runs all four sequentially. |
 | `--seeds` | `3`, `10` | `10` | Seed set size. `3` = `[42, 123, 456]`. `10` = `[42, 123, 456, 789, 1011, 1213, 1415, 1617, 1819, 2021]`. |
 
-### Examples
+#### Examples
 
 ```bash
 python main.py                                    # all 4 policies, 10 seeds
@@ -105,17 +117,39 @@ python main.py --policy drift_triggered --seeds 3 # drift-triggered only, 3 seed
 python main.py --policy no_retrain --seeds 10     # no-retrain baseline only
 ```
 
+### LUFlow Real-World Experiments
+
+Before running, download the 28 LUFlow day-CSVs into `src/data/LUFlow_Network_Intrusion/datasets/`. See [src/data/LUFlow_Network_Intrusion/README.md](../src/data/LUFlow_Network_Intrusion/README.md) for download instructions.
+
+#### CLI Reference
+
+```
+python luflow_main.py [--policy POLICY]
+```
+
+| Flag | Values | Default | Description |
+|---|---|---|---|
+| `--policy` | `periodic`, `error_threshold`, `drift_triggered`, `no_retrain`, `all` | `all` | Which retraining policy to sweep. |
+
+#### Examples
+
+```bash
+python luflow_main.py                             # all 4 policies (252 runs)
+python luflow_main.py --policy drift_triggered    # drift-triggered only (81 runs)
+python luflow_main.py --policy no_retrain         # baseline only (9 runs)
+```
+
 ### What happens when you run it
 
-For each selected policy, `main.py`:
+For each selected policy, `main.py` (synthetic) or `luflow_main.py` (LUFlow):
 
 1. Deletes the old summary CSV for that policy (clean start).
 2. Iterates over every `(drift_type, budget, latency, seed)` combination (or just `(drift_type, seed)` for no-retrain).
-3. For each run: generates data → builds model + policy → streams 10,000 samples → exports JSON, per-sample CSV, and appends one row to the summary CSV.
+3. For each run: generates data → builds model + policy → streams samples → exports JSON, per-sample CSV, and appends one row to the summary CSV.
 4. Prints live progress with accuracy, retrain count, and ETA.
 5. Generates a dashboard PNG after all runs complete.
 
-> **Important:** Always run `main.py` from the project root directory.
+> **Important:** Always run scripts from the project root directory. For LUFlow experiments, the dataset CSVs must be downloaded first (see above).
 
 ---
 
@@ -160,13 +194,24 @@ The latency levels in `LATENCY_CONFIGS` determine which experiment phase is run.
 
 After running experiments, you will find these files in `results/`:
 
-| File pattern | Description |
-|---|---|
-| `summary_results_{policy}_retrain_{tag}.csv` | One summary row per run for that policy |
-| `summary_results_plot_{policy}_retrain_{tag}.png` | 2×3 dashboard PNG for that policy |
-| `summary_results_no_retrain_{tag}.csv` | Baseline summary (no budget/latency grid) |
-| `summary_results_plot_no_retrain_{tag}.png` | 2×2 baseline dashboard |
+### Synthetic experiments (`results/synthetic/`)
+
+| File pattern | Location | Description |
+|---|---|---|
+| `summary_results_{policy}_retrain_{tag}.csv` | `results/synthetic/csv/` | One summary row per run for that policy |
+| `summary_results_plot_{policy}_retrain_{tag}.png` | `results/synthetic/plots/` | 2×3 dashboard PNG for that policy |
+| `summary_results_no_retrain_{tag}.csv` | `results/synthetic/csv/` | Baseline summary (no budget/latency grid) |
+| `summary_results_plot_no_retrain_{tag}.png` | `results/synthetic/plots/` | 2×2 baseline dashboard |
+
+### LUFlow experiments (`results/luflow/`)
+
+| File pattern | Location | Description |
+|---|---|---|
+| `luflow_summary_{policy}_retrain_{tag}.csv` | `results/luflow/csv/` | One summary row per run for that policy |
+| `luflow_summary_plot_{policy}_retrain_{tag}.png` | `results/luflow/plots/` | 2×3 dashboard PNG for that policy |
 
 Where `{tag}` is `3seed`, `10seed`, `ExtremeLatency_3seed`, or `ExtremeLatency_10seed`.
+
+> **Note:** Only summary CSVs and dashboard PNGs are present on the `develop` and `main` branches. Per-run artifacts (JSON results, per-sample CSVs in `per_run/`) remain in their respective experiment branches only due to their large size.
 
 > **Tip:** For detailed interpretation of the CSV columns and dashboard panels, see [results_interpretation_guide.md](results_interpretation_guide.md). For the full list of experiment phases and run counts, see [experiment_scope.md](experiment_scope.md).
