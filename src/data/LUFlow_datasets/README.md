@@ -58,8 +58,6 @@ ls src/data/LUFlow_datasets/*.csv | Measure-Object   # should show 21 files
 
 ## Citation
 
-If using LUFlow in publications, cite the original dataset authors:
-
 > Lancaster University Cyber Security & Machine Learning Group. *LUFlow: A Flow-Based Intrusion Detection Dataset.*  
 > https://github.com/LU-CSML/LUFlow
 
