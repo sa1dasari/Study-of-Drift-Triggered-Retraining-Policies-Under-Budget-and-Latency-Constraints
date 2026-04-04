@@ -106,3 +106,8 @@
 
 1. Added two extreme latency levels that bracket the original range to stress-test policy behavior at the boundary conditions:
 2. Ran full sweeps for all 4 policies with both seed sets
+3. Investigated the IEEE-CIS Fraud Detection dataset (590,540 rows, 428 features, 3.5% fraud) as a real-world validation dataset. Built `FraudDataLoader`, `RealDriftGenerator`, calibration and diagnosis tooling. 
+4. Calibrated policy hyperparameters on fraud data and confirmed feature-level drift via KS tests (190/428 features shifted at p<0.001 at the midpoint split). 
+5. Ran streaming sanity checks at three temporal offsets (0, 20,000, 40,000). Only offset=20,000 showed mild F1 degradation post-drift (−0.003); the other two showed flat or improving F1. Accuracy was uninformative at all offsets due to 97% majority class.
+6. **Discarded the dataset** — could not find 3 consistent seed offsets where drift degrades model performance, which is the minimum requirement for the factorial experiment design. Feature-level shift does not translate to task-level degradation on this data.
+

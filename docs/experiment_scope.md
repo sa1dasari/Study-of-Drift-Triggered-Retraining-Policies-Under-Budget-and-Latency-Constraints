@@ -302,6 +302,10 @@ Cumulative results per policy were merged into dedicated develop branches:
 
 - `develop_NoRetrain_NoBudget_NoLatency` (9 runs with 3 seeds + 30 runs with 10 seeds)
 
+### CIS Fraud Detection Investigation (not merged)
+
+- `develop_CIS-Fraud_detection` — Calibration, drift diagnosis, and streaming sanity checks on the IEEE-CIS Fraud Detection dataset. Discarded after sanity checks showed inconsistent post-drift degradation across temporal offsets (see [research_log.md](research_log.md), Week 8).
+
 ### Merged Results
 
 The **`main`** and **`develop`** branches contain all results from all phases (1,833 total runs).
