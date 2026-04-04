@@ -7,9 +7,9 @@ venv/
 *.egg-info/
 
 # ── Large data files (not tracked in Git) ──
-# LUFlow CSVs are 1.5 GB total — see src/data/LUFlow_datasets/README.md
-# for download instructions.
+# LUFlow CSVs are multi-GB — download via the LUFlow dataset page.
 src/data/LUFlow_datasets/*.csv
+src/data/LUFlow_Network_Intrusion/datasets/*.csv
 
 # ── IDE ──
 .idea/

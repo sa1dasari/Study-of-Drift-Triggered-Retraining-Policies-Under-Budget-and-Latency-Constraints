@@ -49,7 +49,7 @@ warnings.filterwarnings("ignore")
 #  CONSTANTS
 # ===================================================================
 
-DATA_DIR = PROJECT_ROOT / "src" / "data" / "LUFlow_datasets"
+DATA_DIR = PROJECT_ROOT / "src" / "data" / "LUFlow_Network_Intrusion" / "datasets"
 CSV_FILES = sorted(DATA_DIR.glob("*.csv"))
 
 FEATURE_COLS = [
