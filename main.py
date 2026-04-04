@@ -130,10 +130,10 @@ def run_policy_sweep(policy_type, seeds):
 
     # Output paths
     run_label = f"{seed_label}_{n_drifts}drift_{n_budgets}budget_{n_latencies}latency"
-    results_dir = Path(f"results/{policy_type}_{run_label}")
+    results_dir = Path(f"results/synthetic/per_run/{policy_type}_{run_label}")
     results_dir.mkdir(parents=True, exist_ok=True)
 
-    summary_csv = f"results/summary_results_{policy_type}_retrain_{seed_label}.csv"
+    summary_csv = f"results/synthetic/csv/summary_results_{policy_type}_retrain_{seed_label}.csv"
     Path(summary_csv).unlink(missing_ok=True)
 
     display = POLICY_DISPLAY[policy_type]
@@ -221,7 +221,7 @@ def run_policy_sweep(policy_type, seeds):
     from plot_summary import plot_summary_for_policy
     plot_summary_for_policy(
         csv_path=summary_csv,
-        output_path=f"results/summary_results_plot_{policy_type}_retrain_{seed_label}.png",
+        output_path=f"results/synthetic/plots/summary_results_plot_{policy_type}_retrain_{seed_label}.png",
         policy_name=display,
     )
 
@@ -240,10 +240,10 @@ def _run_no_retrain_sweep(seeds):
 
     # Output paths
     run_label = f"{seed_label}_{len(DRIFT_TYPES)}drift"
-    results_dir = Path(f"results/{policy_type}_{run_label}")
+    results_dir = Path(f"results/synthetic/per_run/{policy_type}_{run_label}")
     results_dir.mkdir(parents=True, exist_ok=True)
 
-    summary_csv = f"results/summary_results_{policy_type}_{seed_label}.csv"
+    summary_csv = f"results/synthetic/csv/summary_results_{policy_type}_{seed_label}.csv"
     Path(summary_csv).unlink(missing_ok=True)
 
     display = POLICY_DISPLAY[policy_type]
@@ -320,7 +320,7 @@ def _run_no_retrain_sweep(seeds):
     from plot_summary import plot_summary_for_no_retrain
     plot_summary_for_no_retrain(
         csv_path=summary_csv,
-        output_path=f"results/summary_results_plot_{policy_type}_{seed_label}.png",
+        output_path=f"results/synthetic/plots/summary_results_plot_{policy_type}_{seed_label}.png",
         policy_name=display,
     )
 

@@ -348,8 +348,8 @@ def plot_summary_for_no_retrain(csv_path, output_path, policy_name):
 def plot_summary():
     """Generate plots for the drift-triggered policy (backward-compatible)."""
     plot_summary_for_policy(
-        csv_path='results/summary_results_drift_triggered_retrain_3seed.csv',
-        output_path='results/summary_results_plot_drift_triggered_retrain_3seed.png',
+        csv_path='results/synthetic/csv/summary_results_drift_triggered_retrain_3seed.csv',
+        output_path='results/synthetic/plots/summary_results_plot_drift_triggered_retrain_3seed.png',
         policy_name='Drift-Triggered (ADWIN)',
     )
 
@@ -359,43 +359,43 @@ if __name__ == "__main__":
 
     policy_map = {
         'periodic': (
-            'results/summary_results_periodic_retrain_3seed.csv',
-            'results/summary_results_plot_periodic_retrain_3seed.png',
+            'results/synthetic/csv/summary_results_periodic_retrain_3seed.csv',
+            'results/synthetic/plots/summary_results_plot_periodic_retrain_3seed.png',
             'Periodic',
         ),
         'periodic_10seed': (
-            'results/summary_results_periodic_retrain_10seed.csv',
-            'results/summary_results_plot_periodic_retrain_10seed.png',
+            'results/synthetic/csv/summary_results_periodic_retrain_10seed.csv',
+            'results/synthetic/plots/summary_results_plot_periodic_retrain_10seed.png',
             'Periodic (10 seeds)',
         ),
         'error_threshold': (
-            'results/summary_results_error_threshold_retrain_3seed.csv',
-            'results/summary_results_plot_error_threshold_retrain_3seed.png',
+            'results/synthetic/csv/summary_results_error_threshold_retrain_3seed.csv',
+            'results/synthetic/plots/summary_results_plot_error_threshold_retrain_3seed.png',
             'Error-Threshold',
         ),
         'error_threshold_10seed': (
-            'results/summary_results_error_threshold_retrain_10seed.csv',
-            'results/summary_results_plot_error_threshold_retrain_10seed.png',
+            'results/synthetic/csv/summary_results_error_threshold_retrain_10seed.csv',
+            'results/synthetic/plots/summary_results_plot_error_threshold_retrain_10seed.png',
             'Error-Threshold (10 seeds)',
         ),
         'drift_triggered': (
-            'results/summary_results_drift_triggered_retrain_3seed.csv',
-            'results/summary_results_plot_drift_triggered_retrain_3seed.png',
+            'results/synthetic/csv/summary_results_drift_triggered_retrain_3seed.csv',
+            'results/synthetic/plots/summary_results_plot_drift_triggered_retrain_3seed.png',
             'Drift-Triggered (ADWIN)',
         ),
         'drift_triggered_10seed': (
-            'results/summary_results_drift_triggered_retrain_10seed.csv',
-            'results/summary_results_plot_drift_triggered_retrain_10seed.png',
+            'results/synthetic/csv/summary_results_drift_triggered_retrain_10seed.csv',
+            'results/synthetic/plots/summary_results_plot_drift_triggered_retrain_10seed.png',
             'Drift-Triggered (ADWIN, 10 seeds)',
         ),
         'no_retrain': (
-            'results/summary_results_no_retrain_3seed.csv',
-            'results/summary_results_plot_no_retrain_3seed.png',
+            'results/synthetic/csv/summary_results_no_retrain_3seed.csv',
+            'results/synthetic/plots/summary_results_plot_no_retrain_3seed.png',
             'No-Retrain Baseline',
         ),
         'no_retrain_10seed': (
-            'results/summary_results_no_retrain_10seed.csv',
-            'results/summary_results_plot_no_retrain_10seed.png',
+            'results/synthetic/csv/summary_results_no_retrain_10seed.csv',
+            'results/synthetic/plots/summary_results_plot_no_retrain_10seed.png',
             'No-Retrain Baseline (10 seeds)',
         ),
     }

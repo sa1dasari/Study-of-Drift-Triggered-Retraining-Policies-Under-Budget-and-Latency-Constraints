@@ -4,6 +4,8 @@
 
 A reproducible empirical study comparing three model retraining policies — periodic, error-threshold, and drift-triggered (ADWIN) — for streaming ML systems under concept drift, budget constraints, and deployment latency. A no-retrain baseline provides the accuracy floor.
 
+Experiments are conducted on both **synthetic data** (controlled weight-vector drift, 1,833 runs) and a **real-world dataset** — the **LUFlow Network Intrusion Detection dataset** (Lancaster University, 252 runs) — for a combined total of **2,085 experiment runs**.
+
 ## Core Research Question
 
 > *How do different model-refresh policies trade off accuracy, cost, and latency under concept drift?*
@@ -11,6 +13,8 @@ A reproducible empirical study comparing three model retraining policies — per
 ---
 
 ## Experiment Design
+
+### Synthetic Data
 
 | Factor | Levels |
 |---|---|
@@ -27,7 +31,7 @@ A reproducible empirical study comparing three model retraining policies — per
 | Phase 2 | 810 | Same grid × 10 seeds |
 | Baseline | 39 | No-retrain × 3 drifts × (3 + 10) seeds |
 | Phase 3 | 741 | 2 extreme latencies × 3 drifts × 3 budgets × (3 + 10) seeds + baseline |
-| **Total** | **1,833** | |
+| **Synthetic Total** | **1,833** | |
 
 | Parameter | Value |
 |---|---|
@@ -36,21 +40,54 @@ A reproducible empirical study comparing three model retraining policies — per
 | Drift point | t = 5,000 |
 | Learner | SGDClassifier (log_loss) with per-sample partial_fit |
 
+### Real-World Data — LUFlow Network Intrusion Detection
+
+| Factor | Levels |
+|---|---|
+| Drift type | Abrupt, Gradual, Recurring |
+| Policy | Periodic, Error-Threshold, Drift-Triggered (ADWIN), No-Retrain (baseline) |
+| Budget (K) | 5, 10, 20 |
+| Latency | Low (11), Medium (105), High (520) |
+| Pool configs | 3 (class-balance shift, feature drift, extreme shift) |
+
+| Phase | Runs | Description |
+|---|---|---|
+| Phase 4 | 252 | 3 pools × 3 drifts × 3 budgets × 3 latencies × 3 policies + 9 baseline |
+
+| Parameter | Value |
+|---|---|
+| Features | 11 flow-level (avg_ipt, bytes_in/out, ports, entropy, etc.) |
+| Stream length | 50,000 samples |
+| Drift point | t = 25,000 |
+| Dataset | LUFlow (Lancaster University) — 28 day-CSVs, ~21 M rows |
+
+### Grand Total: **2,085 experiment runs**
+
 ---
 
 ## Repository Structure
 
 ```
-├── main.py                  # CLI entry point (--policy, --seeds)
+├── main.py                  # CLI entry point — synthetic experiments (--policy, --seeds)
+├── luflow_main.py           # CLI entry point — LUFlow real-world experiments (--policy)
+├── luflow_fitness_check.py  # LUFlow dataset suitability gate checks
 ├── plot_summary.py          # Dashboard PNG generator
 ├── docs/                    # All documentation
 ├── src/
-│   ├── data/                # DriftGenerator
+│   ├── data/                # DriftGenerator + LUFlow dataset loader
 │   ├── models/              # StreamingModel (SGDClassifier wrapper)
 │   ├── policies/            # Periodic, ErrorThreshold, DriftTriggered, NeverRetrain
 │   ├── runner/              # ExperimentRunner (streaming event loop)
 │   └── evaluation/          # MetricsTracker, CSV/JSON export, plots
-└── results/                 # Summary CSVs and dashboard PNGs
+└── results/                 # Organised output directory
+    ├── synthetic/           #   Synthetic experiment results
+    │   ├── csv/             #     Summary CSVs
+    │   ├── plots/           #     Dashboard PNGs
+    │   └── per_run/         #     Per-run JSONs & per-sample CSVs
+    └── luflow/              #   LUFlow real-world experiment results
+        ├── csv/             #     Summary CSVs
+        ├── plots/           #     Dashboard PNGs
+        └── per_run/         #     Per-run JSONs & per-sample CSVs
 ```
 
 ---
@@ -60,7 +97,8 @@ A reproducible empirical study comparing three model retraining policies — per
 ```bash
 python -m venv .venv && .venv\Scripts\Activate.ps1   # Windows
 pip install -r docs/requirements.txt
-python main.py                                        # runs all policies, 10 seeds
+python main.py                                        # synthetic experiments (all policies, 10 seeds)
+python luflow_main.py                                 # LUFlow experiments (all policies, 252 runs)
 ```
 
 See [setup_and_run_guide.md](docs/setup_and_run_guide.md) for full instructions.
@@ -75,8 +113,9 @@ See [setup_and_run_guide.md](docs/setup_and_run_guide.md) for full instructions.
 | Phase 2 (10 seeds) | `develop-10Seed-<policy>-retrain-tests` | 810 |
 | Baseline | `develop_NoRetrain_NoBudget_NoLatency` | 39 |
 | Phase 3 — Extreme Latency | `develop_ExtremeLatencyLevels` | 741 |
+| Phase 4 — LUFlow Dataset | `develop_LUFlow_Dataset` | 252 |
 
-All results are merged into the **`main`** and **`develop`** branches. See [experiment_scope.md](docs/experiment_scope.md) for full details.
+All **summary CSVs and dashboard PNGs** are merged into the **`main`** branch. Per-run artifacts (JSON results, per-sample CSVs) remain in their respective experiment branches only. See [experiment_scope.md](docs/experiment_scope.md) for full details.
 
 ---
 
