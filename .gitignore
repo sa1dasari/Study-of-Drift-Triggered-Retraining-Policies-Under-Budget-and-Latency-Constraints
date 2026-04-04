@@ -1,0 +1,23 @@
+# ── Python ──
+__pycache__/
+*.py[cod]
+*.pyo
+.venv/
+venv/
+*.egg-info/
+
+# ── Large data files (not tracked in Git) ──
+# LUFlow CSVs are 1.5 GB total — see src/data/LUFlow_datasets/README.md
+# for download instructions.
+src/data/LUFlow_datasets/*.csv
+
+# ── IDE ──
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# ── OS ──
+.DS_Store
+Thumbs.db
+
