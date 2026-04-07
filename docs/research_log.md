@@ -113,11 +113,15 @@
 
 ---
 
-## WEEK 9 — LUFlow Real-World Dataset (Phase 4)
+## WEEK 9 — Real-World Datasets (Phase 4)
 
 1. Investigated the **LUFlow Network Intrusion Detection dataset** (Lancaster University, 28 day-CSVs, ~21 M rows, 11 flow-level features, binary: benign vs malicious) as a real-world validation dataset.
 2. Built `luflow_fitness_check.py` — a three-gate suitability check and designed three **pool-pair configurations** ("seeds") for the factorial experiment
 3. **Calibrated policy hyperparameters** on LUFlow abrupt condition nad built `luflow_main.py` — a dedicated experiment runner that mirrors the synthetic `main.py` architecture but handles LUFlow data loading, pool-based stream construction, and `StandardScaler` feature normalization. 
 4. Ran the full **Phase 4 sweep**: 3 pool configs × 3 drift types × 3 budgets × 3 latencies × 3 active policies = 243 active runs + 9 no-retrain baseline runs = **252 total runs**.
-5. Generated summary dashboards for all 4 policies on LUFlow data. Merged into `main`.
+5. Generated summary dashboards for all 4 policies on LUFlow data. Merged into `main`. 
+6. Investigated the **Kelmarsh Wind-Farm SCADA dataset** (6 Senvion MM92 turbines, 2019–2022, 10-min resolution, ~52 K rows/turbine/year) as a second real-world validation dataset. Built `kelmarsh_loader.py` (IEC 61400-26 state labels, permissive NaN fill, multi-turbine aggregation), ran diagnostics, and built `kelmarsh_fitness_check.py` + `kelmarsh_main.py` for a 252-run factorial sweep across 3 temporal seed configs. 
+7. Hit a **structural limitation**: years with enough positive signal (2021–2022) are too temporally close for multi-seed drift contrasts, while years with sufficient spread (2019 → 2022) lack positives in the early years. Exhausted six label strategies (fault windows at 6 sizes, broad faults, IEC states, single/multi-year pools, aggregated turbines) — all fail Gate 1 or compress the temporal window unacceptably.
+8. **Discarded the dataset** — Kelmarsh is unsuitable for the factorial design.
 
+---
