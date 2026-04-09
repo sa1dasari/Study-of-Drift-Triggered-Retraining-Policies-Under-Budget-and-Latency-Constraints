@@ -63,12 +63,19 @@ python -c "import numpy, pandas, matplotlib, sklearn; print('All dependencies OK
 ```
 ├── main.py                  ← CLI entry point: synthetic experiments (--policy and --seeds)
 ├── luflow_main.py           ← CLI entry point: LUFlow real-world experiments (--policy)
+├── lendingclub_main.py      ← CLI entry point: LendingClub real-world experiments (--policy)
 ├── luflow_fitness_check.py  ← LUFlow dataset suitability gate checks
-├── plot_summary.py          ← Generates dashboard PNGs (called automatically by main.py / luflow_main.py)
+├── lendingclub_fitness_check.py ← LendingClub dataset suitability gate checks
+├── plot_summary.py          ← Generates dashboard PNGs (called automatically by main.py / luflow_main.py / lendingclub_main.py)
 ├── docs/
 │   └── requirements.txt     ← Python dependencies
 ├── src/
 │   ├── data/drift_generator.py             ← Synthetic data stream with concept drift
+│   ├── data/LUFlow_Network_Intrusion/
+│   │   └── datasets/                        ← 28 day-CSVs (downloaded separately)
+│   ├── data/LendingClub_Loan_Data/
+│   │   ├── lendingclub_loader.py            ← LendingClub CSV loader & preprocessor
+│   │   └── datasets/                        ← accepted_2007_to_2018Q4.csv (downloaded separately)
 │   ├── models/base_model.py                ← SGDClassifier wrapper
 │   ├── policies/
 │   │   ├── periodic.py                     ← PeriodicPolicy
@@ -85,9 +92,13 @@ python -c "import numpy, pandas, matplotlib, sklearn; print('All dependencies OK
     │   ├── csv/             ← Summary CSVs (synthetic experiments)
     │   ├── plots/           ← Dashboard PNGs (synthetic experiments)
     │   └── per_run/         ← Per-run JSONs and per-sample CSVs
-    └── luflow/
-        ├── csv/             ← Summary CSVs (LUFlow experiments)
-        ├── plots/           ← Dashboard PNGs (LUFlow experiments)
+    ├── luflow/
+    │   ├── csv/             ← Summary CSVs (LUFlow experiments)
+    │   ├── plots/           ← Dashboard PNGs (LUFlow experiments)
+    │   └── per_run/         ← Per-run JSONs and per-sample CSVs
+    └── lendingclub/
+        ├── csv/             ← Summary CSVs (LendingClub experiments)
+        ├── plots/           ← Dashboard PNGs (LendingClub experiments)
         └── per_run/         ← Per-run JSONs and per-sample CSVs
 ```
 
@@ -139,9 +150,32 @@ python luflow_main.py --policy drift_triggered    # drift-triggered only (81 run
 python luflow_main.py --policy no_retrain         # baseline only (9 runs)
 ```
 
+### LendingClub Real-World Experiments
+
+Before running, download the LendingClub accepted-loans CSV into `src/data/LendingClub_Loan_Data/datasets/`. See [src/data/LendingClub_Loan_Data/README.md](../src/data/LendingClub_Loan_Data/README.md) for download instructions.
+
+#### CLI Reference
+
+```
+python lendingclub_main.py [--policy POLICY]
+```
+
+| Flag | Values | Default | Description |
+|---|---|---|---|
+| `--policy` | `periodic`, `error_threshold`, `drift_triggered`, `no_retrain`, `all` | `all` | Which retraining policy to sweep. |
+
+#### Examples
+
+```bash
+python lendingclub_main.py                             # all 4 policies (252 runs)
+python lendingclub_main.py --policy periodic           # periodic only (81 runs)
+python lendingclub_main.py --policy drift_triggered    # drift-triggered only (81 runs)
+python lendingclub_main.py --policy no_retrain         # baseline only (9 runs)
+```
+
 ### What happens when you run it
 
-For each selected policy, `main.py` (synthetic) or `luflow_main.py` (LUFlow):
+For each selected policy, `main.py` (synthetic), `luflow_main.py` (LUFlow), or `lendingclub_main.py` (LendingClub):
 
 1. Deletes the old summary CSV for that policy (clean start).
 2. Iterates over every `(drift_type, budget, latency, seed)` combination (or just `(drift_type, seed)` for no-retrain).
@@ -149,13 +183,13 @@ For each selected policy, `main.py` (synthetic) or `luflow_main.py` (LUFlow):
 4. Prints live progress with accuracy, retrain count, and ETA.
 5. Generates a dashboard PNG after all runs complete.
 
-> **Important:** Always run scripts from the project root directory. For LUFlow experiments, the dataset CSVs must be downloaded first (see above).
+> **Important:** Always run scripts from the project root directory. For LUFlow experiments, the dataset CSVs must be downloaded first. For LendingClub experiments, the accepted-loans CSV must be downloaded first (see instructions above).
 
 ---
 
 ## 5. Experiment Configuration
 
-All parameters are defined as constants at the top of `main.py`. The CLI flags select which subset to execute.
+All parameters are defined as constants at the top of `main.py` (synthetic), `luflow_main.py` (LUFlow), and `lendingclub_main.py` (LendingClub). The CLI flags select which subset to execute.
 
 ### Drift Types
 
@@ -173,6 +207,8 @@ All parameters are defined as constants at the top of `main.py`. The CLI flags s
 | `error_threshold` | `error_threshold=0.27`, `window_size=200` |
 | `drift_triggered` | `delta=0.002`, `window_size=500`, `min_samples=100` |
 | `no_retrain` | Baseline — budget = 0, latency = 0 |
+
+> **Real-world datasets (LUFlow & LendingClub):** Policy parameters are re-calibrated for 50,000-sample streams — `periodic` uses interval = 50,000 / K; `error_threshold` uses threshold = 0.20; `drift_triggered` uses δ = 0.005 with min_samples = 100. See `luflow_main.py` and `lendingclub_main.py` for exact values.
 
 ### Budget Levels
 
@@ -209,6 +245,13 @@ After running experiments, you will find these files in `results/`:
 |---|---|---|
 | `luflow_summary_{policy}_retrain_{tag}.csv` | `results/luflow/csv/` | One summary row per run for that policy |
 | `luflow_summary_plot_{policy}_retrain_{tag}.png` | `results/luflow/plots/` | 2×3 dashboard PNG for that policy |
+
+### LendingClub experiments (`results/lendingclub/`)
+
+| File pattern | Location | Description |
+|---|---|---|
+| `lendingclub_summary_{policy}_retrain_{tag}.csv` | `results/lendingclub/csv/` | One summary row per run for that policy |
+| `lendingclub_summary_plot_{policy}_retrain_{tag}.png` | `results/lendingclub/plots/` | 2×3 dashboard PNG for that policy |
 
 Where `{tag}` is `3seed`, `10seed`, `ExtremeLatency_3seed`, or `ExtremeLatency_10seed`.
 

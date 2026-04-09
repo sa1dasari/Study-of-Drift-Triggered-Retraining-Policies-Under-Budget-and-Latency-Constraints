@@ -2,17 +2,19 @@
 
 This document explains how to read and interpret the CSV and PNG files in the `results/` folder.
 
-Results are organized into two subdirectories:
+Results are organized into three subdirectories:
 - **`results/synthetic/`** — Synthetic data experiments (`csv/` for summary CSVs, `plots/` for dashboard PNGs, `per_run/` for per-run details).
 - **`results/luflow/`** — LUFlow real-world data experiments (same sub-structure).
+- **`results/lendingclub/`** — LendingClub real-world data experiments (same sub-structure).
 
 ---
 
 ## 1. Summary CSV Files — Column Reference
 
-The CSV structure is the same for both synthetic (`results/synthetic/csv/`) and LUFlow (`results/luflow/csv/`) experiments. Key differences:
+The CSV structure is the same for synthetic (`results/synthetic/csv/`), LUFlow (`results/luflow/csv/`), and LendingClub (`results/lendingclub/csv/`) experiments. Key differences:
 - **Synthetic:** `random_seed` identifies the data generation seed; stream length = 10,000; drift point = 5,000.
 - **LUFlow:** `random_seed` is the pool-config ID (1, 2, or 3); stream length = 50,000; drift point = 25,000. Additional columns `dataset` and `pool_config` identify the LUFlow experiment.
+- **LendingClub:** `random_seed` is the year-pair seed ID (1, 2, or 3); stream length = 50,000; drift point = 25,000. Additional columns `dataset` and `pool_config` identify the LendingClub experiment (pool_config contains the year-pair label, e.g. "2013->2016 (3-yr gap, max policy shift)").
 
 ### Configuration Columns
 
@@ -36,7 +38,7 @@ These columns describe the experimental setup for each run. Use them as **filter
 
 | Column | Type | Range | Description |
 |---|---|---|---|
-| `overall_accuracy` | float | [0, 1] | Mean accuracy across all timesteps (10,000 synthetic; 50,000 LUFlow) — the primary metric |
+| `overall_accuracy` | float | [0, 1] | Mean accuracy across all timesteps (10,000 synthetic; 50,000 LUFlow/LendingClub) — the primary metric |
 | `pre_drift_accuracy` | float | [0, 1] | Mean accuracy before drift point — stable period |
 | `post_drift_accuracy` | float | [0, 1] | Mean accuracy after drift point — measures adaptation to drift |
 | `accuracy_drop` | float | typically [−0.05, +0.06] | `post_drift − pre_drift`. Negative = degradation after drift |

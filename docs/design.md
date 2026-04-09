@@ -2,21 +2,26 @@
 
 ## Overview
 
-This document describes the architecture of the streaming ML simulator used to compare retraining policies under concept drift, budget constraints, and deployment latency. Experiments are conducted on both **synthetic data** (controlled weight-vector drift) and a **real-world dataset** (LUFlow network intrusion detection), sharing the same model, policy, runner, and evaluation components.
+This document describes the architecture of the streaming ML simulator used to compare retraining policies under concept drift, budget constraints, and deployment latency. Experiments are conducted on **synthetic data** (controlled weight-vector drift) and two **real-world datasets** — the **LUFlow network intrusion detection dataset** and the **LendingClub loan default dataset** — sharing the same model, policy, runner, and evaluation components.
 
 ---
 
 ## Architecture
 
 ```
-main.py        (CLI entry point – synthetic data full-factorial sweep)
-luflow_main.py (CLI entry point – LUFlow real-world data full-factorial sweep)
+main.py             (CLI entry point – synthetic data full-factorial sweep)
+luflow_main.py      (CLI entry point – LUFlow real-world data full-factorial sweep)
+lendingclub_main.py (CLI entry point – LendingClub real-world data full-factorial sweep)
 │
-├── src/data/drift_generator.py      – Synthetic data with concept drift
-│       └── DriftGenerator            Logistic-regression data with weight-vector switching
+├── src/data/synthetic_data_drift_generator.py      – Synthetic data with concept drift
+│       └── DriftGenerator                          Logistic-regression data with weight-vector switching
 │
 ├── src/data/LUFlow_Network_Intrusion/
 │       └── datasets/                 28 day-CSVs (downloaded separately; ~1.5 GB+)
+│
+├── src/data/LendingClub_Loan_Data/
+│       ├── lendingclub_loader.py     Loader & preprocessor for LendingClub CSV
+│       └── datasets/                 accepted_2007_to_2018Q4.csv (downloaded separately; ~1.6 GB)
 │
 ├── src/models/base_model.py         – Online learning model
 │       └── StreamingModel            SGDClassifier wrapper (partial_fit + retrain)
@@ -37,6 +42,7 @@ luflow_main.py (CLI entry point – LUFlow real-world data full-factorial sweep)
 │       └── plot_results.py           Per-run timeline + rolling-accuracy plots
 │
 ├── luflow_fitness_check.py          – LUFlow dataset suitability gate checks
+├── lendingclub_fitness_check.py     – LendingClub dataset suitability gate checks
 │
 └── plot_summary.py                  – Cross-run 2×3 summary dashboard
 ```
@@ -67,6 +73,21 @@ luflow_main.py (CLI entry point – LUFlow real-world data full-factorial sweep)
 | **Standardisation** | `StandardScaler` applied after stream assembly |
 
 The LUFlow experiments use the same `ExperimentRunner`, policies, and metrics as the synthetic runs. Data loading and stream construction are handled by `luflow_main.py`. A three-gate fitness check (`luflow_fitness_check.py`) validated the dataset before the full sweep.
+
+### Real-World Data — LendingClub Loan Default
+
+| Aspect | Detail |
+|---|---|
+| **Dataset** | LendingClub (Kaggle), accepted loans 2007–2018, ~1.35 M rows after filtering |
+| **Features** | 16 origination-time features (loan_amnt, int_rate, FICO, DTI, etc.) → 34 after one-hot encoding |
+| **Labels** | Binary: Fully Paid (0) vs Charged Off (1) |
+| **Seed configs** | 3 year-pair configurations select pre-/post-drift pools from different calendar years |
+| **Stream** | 50,000 samples per run, drift injected at t = 25,000 |
+| **Drift source** | Real-world feature-space drift from LendingClub underwriting policy changes (2012–2016) |
+| **Drift injection** | Abrupt (hard switch), Gradual (5,000-step blend), Recurring (alternates every 5,000 steps) |
+| **Standardisation** | `StandardScaler` applied after stream assembly |
+
+The LendingClub experiments use the same `ExperimentRunner`, policies, and metrics as the synthetic and LUFlow runs. Data loading and stream construction are handled by `lendingclub_main.py` via `lendingclub_loader.py`. A three-gate fitness check (`lendingclub_fitness_check.py`) validated the dataset before the full sweep.
 
 ### Streaming Model (`StreamingModel`)
 
@@ -100,7 +121,7 @@ for t in 0 … N-1:
 
 | Metric | Definition |
 |---|---|
-| **Overall Accuracy** | Mean correct predictions across all timesteps (10,000 synthetic; 50,000 LUFlow) |
+| **Overall Accuracy** | Mean correct predictions across all timesteps (10,000 synthetic; 50,000 LUFlow/LendingClub) |
 | **Pre-Drift Accuracy** | Mean accuracy for `t ∈ [0, drift_point)` |
 | **Post-Drift Accuracy** | Mean accuracy for `t ∈ [drift_point, N)` |
 | **Accuracy Drop** | `post_drift − pre_drift` (negative = degradation) |
@@ -118,6 +139,6 @@ Each run produces:
 
 ## Reproducibility
 
-- **Fixed seeds**: `DriftGenerator` uses `np.random.default_rng(seed)` for full determinism. LUFlow stream construction uses a fixed RNG seed for the gradual-drift blending.
-- **Identical stream**: All policies see the same data sequence for a given `(drift_type, seed)` pair (synthetic) or `(drift_type, pool_config)` pair (LUFlow), enabling fair comparison.
-- **CLI-driven**: `python main.py --policy <name> --seeds <N>` reproduces any synthetic experiment subset. `python luflow_main.py --policy <name>` reproduces any LUFlow experiment subset.
+- **Fixed seeds**: `DriftGenerator` uses `np.random.default_rng(seed)` for full determinism. LUFlow and LendingClub stream construction uses a fixed RNG seed for the gradual-drift blending.
+- **Identical stream**: All policies see the same data sequence for a given `(drift_type, seed)` pair (synthetic) or `(drift_type, pool_config)` pair (LUFlow/LendingClub), enabling fair comparison.
+- **CLI-driven**: `python main.py --policy <name> --seeds <N>` reproduces any synthetic experiment subset. `python luflow_main.py --policy <name>` reproduces any LUFlow experiment subset. `python lendingclub_main.py --policy <name>` reproduces any LendingClub experiment subset.
