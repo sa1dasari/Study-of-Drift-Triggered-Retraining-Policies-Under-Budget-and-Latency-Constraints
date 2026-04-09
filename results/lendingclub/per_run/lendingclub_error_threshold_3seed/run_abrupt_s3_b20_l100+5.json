@@ -1,0 +1,136 @@
+{
+  "configuration": {
+    "drift_type": "abrupt",
+    "drift_point": 25000,
+    "policy_type": "error_threshold",
+    "error_threshold": 0.2,
+    "window_size": 200,
+    "budget": 20,
+    "retrain_latency": 100,
+    "deploy_latency": 5,
+    "total_samples": 50000,
+    "random_seed": 3
+  },
+  "performance_metrics": {
+    "overall_accuracy": 0.74464,
+    "pre_drift_accuracy": 0.76004,
+    "post_drift_accuracy": 0.72924,
+    "accuracy_drop": -0.03080000000000005
+  },
+  "retraining_metrics": {
+    "total_retrains": 20,
+    "budget_used": 20,
+    "budget_total": 20,
+    "budget_utilization": 1.0,
+    "retrains_before_drift": 20,
+    "retrains_after_drift": 0,
+    "retrain_timestamps": [
+      199,
+      304,
+      409,
+      514,
+      619,
+      724,
+      829,
+      934,
+      1039,
+      1144,
+      1249,
+      1527,
+      1632,
+      1737,
+      1842,
+      1947,
+      2052,
+      2157,
+      2262,
+      2367
+    ],
+    "retrain_latency_windows": [
+      [
+        199,
+        304
+      ],
+      [
+        304,
+        409
+      ],
+      [
+        409,
+        514
+      ],
+      [
+        514,
+        619
+      ],
+      [
+        619,
+        724
+      ],
+      [
+        724,
+        829
+      ],
+      [
+        829,
+        934
+      ],
+      [
+        934,
+        1039
+      ],
+      [
+        1039,
+        1144
+      ],
+      [
+        1144,
+        1249
+      ],
+      [
+        1249,
+        1354
+      ],
+      [
+        1527,
+        1632
+      ],
+      [
+        1632,
+        1737
+      ],
+      [
+        1737,
+        1842
+      ],
+      [
+        1842,
+        1947
+      ],
+      [
+        1947,
+        2052
+      ],
+      [
+        2052,
+        2157
+      ],
+      [
+        2157,
+        2262
+      ],
+      [
+        2262,
+        2367
+      ],
+      [
+        2367,
+        2472
+      ]
+    ]
+  },
+  "data_metrics": {
+    "predictions_made": 50000,
+    "total_samples": 50000
+  }
+}

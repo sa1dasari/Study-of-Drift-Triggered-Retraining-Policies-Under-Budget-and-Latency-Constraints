@@ -20,7 +20,7 @@ import argparse
 from pathlib import Path
 import time
 
-from src.data.drift_generator import DriftGenerator
+from src.data.LUFlow_Network_Intrusion.drift_generator import DriftGenerator
 from src.models.base_model import StreamingModel
 from src.policies.periodic import PeriodicPolicy
 from src.policies.error_threshold_policy import ErrorThresholdPolicy
