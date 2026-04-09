@@ -4,7 +4,7 @@
 
 A reproducible empirical study comparing three model retraining policies — periodic, error-threshold, and drift-triggered (ADWIN) — for streaming ML systems under concept drift, budget constraints, and deployment latency. A no-retrain baseline provides the accuracy floor.
 
-Experiments are conducted on both **synthetic data** (controlled weight-vector drift, 1,833 runs) and a **real-world dataset** — the **LUFlow Network Intrusion Detection dataset** (Lancaster University, 252 runs) — for a combined total of **2,085 experiment runs**.
+Experiments are conducted on **synthetic data** (controlled weight-vector drift, 1,833 runs) and two **real-world datasets** — the **LUFlow Network Intrusion Detection dataset** (Lancaster University, 252 runs) and the **LendingClub Loan Default dataset** (Kaggle, 252 runs) — for a combined total of **2,337 experiment runs**.
 
 ## Core Research Question
 
@@ -61,7 +61,29 @@ Experiments are conducted on both **synthetic data** (controlled weight-vector d
 | Drift point | t = 25,000 |
 | Dataset | LUFlow (Lancaster University) — 28 day-CSVs, ~21 M rows |
 
-### Grand Total: **2,085 experiment runs**
+### Real-World Data — LendingClub Loan Default
+
+| Factor | Levels |
+|---|---|
+| Drift type | Abrupt, Gradual, Recurring |
+| Policy | Periodic, Error-Threshold, Drift-Triggered (ADWIN), No-Retrain (baseline) |
+| Budget (K) | 5, 10, 20 |
+| Latency | Low (11), Medium (105), High (520) |
+| Seed configs | 3 (year-pair configurations) |
+
+| Phase | Runs | Description |
+|---|---|---|
+| Phase 5 | 252 | 3 seeds × 3 drifts × 3 budgets × 3 latencies × 3 policies + 9 baseline |
+
+| Parameter | Value |
+|---|---|
+| Features | 16 origination-time (loan_amnt, int_rate, FICO, DTI, etc.) → 34 after one-hot encoding |
+| Stream length | 50,000 samples |
+| Drift point | t = 25,000 |
+| Dataset | LendingClub (Kaggle) — accepted loans 2007–2018, ~1.35 M rows after filtering |
+| Drift source | Real-world feature-space drift from underwriting policy changes (2012–2016) |
+
+### Grand Total: **2,337 experiment runs**
 
 ---
 
@@ -70,11 +92,13 @@ Experiments are conducted on both **synthetic data** (controlled weight-vector d
 ```
 ├── main.py                  # CLI entry point — synthetic experiments (--policy, --seeds)
 ├── luflow_main.py           # CLI entry point — LUFlow real-world experiments (--policy)
+├── lendingclub_main.py      # CLI entry point — LendingClub real-world experiments (--policy)
 ├── luflow_fitness_check.py  # LUFlow dataset suitability gate checks
+├── lendingclub_fitness_check.py # LendingClub dataset suitability gate checks
 ├── plot_summary.py          # Dashboard PNG generator
 ├── docs/                    # All documentation
 ├── src/
-│   ├── data/                # DriftGenerator + LUFlow dataset loader
+│   ├── data/                # DriftGenerator + LUFlow & LendingClub dataset loaders
 │   ├── models/              # StreamingModel (SGDClassifier wrapper)
 │   ├── policies/            # Periodic, ErrorThreshold, DriftTriggered, NeverRetrain
 │   ├── runner/              # ExperimentRunner (streaming event loop)
@@ -84,7 +108,11 @@ Experiments are conducted on both **synthetic data** (controlled weight-vector d
     │   ├── csv/             #     Summary CSVs
     │   ├── plots/           #     Dashboard PNGs
     │   └── per_run/         #     Per-run JSONs & per-sample CSVs
-    └── luflow/              #   LUFlow real-world experiment results
+    ├── luflow/              #   LUFlow real-world experiment results
+    │   ├── csv/             #     Summary CSVs
+    │   ├── plots/           #     Dashboard PNGs
+    │   └── per_run/         #     Per-run JSONs & per-sample CSVs
+    └── lendingclub/         #   LendingClub real-world experiment results
         ├── csv/             #     Summary CSVs
         ├── plots/           #     Dashboard PNGs
         └── per_run/         #     Per-run JSONs & per-sample CSVs
@@ -99,6 +127,7 @@ python -m venv .venv && .venv\Scripts\Activate.ps1   # Windows
 pip install -r docs/requirements.txt
 python main.py                                        # synthetic experiments (all policies, 10 seeds)
 python luflow_main.py                                 # LUFlow experiments (all policies, 252 runs)
+python lendingclub_main.py                            # LendingClub experiments (all policies, 252 runs)
 ```
 
 See [setup_and_run_guide.md](docs/setup_and_run_guide.md) for full instructions.
@@ -114,6 +143,7 @@ See [setup_and_run_guide.md](docs/setup_and_run_guide.md) for full instructions.
 | Baseline | `develop_NoRetrain_NoBudget_NoLatency` | 39 |
 | Phase 3 — Extreme Latency | `develop_ExtremeLatencyLevels` | 741 |
 | Phase 4 — LUFlow Dataset | `develop_LUFlow_Dataset` | 252 |
+| Phase 5 — LendingClub Dataset | `develop_LendingClub_Data` | 252 |
 
 All **summary CSVs and dashboard PNGs** are merged into the **`main`** branch. Per-run artifacts (JSON results, per-sample CSVs) remain in their respective experiment branches only. See [experiment_scope.md](docs/experiment_scope.md) for full details.
 

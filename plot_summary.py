@@ -348,8 +348,8 @@ def plot_summary_for_no_retrain(csv_path, output_path, policy_name):
 def plot_summary():
     """Generate plots for the drift-triggered policy (backward-compatible)."""
     plot_summary_for_policy(
-        csv_path='results/synthetic/csv/summary_results_drift_triggered_retrain_3seed.csv',
-        output_path='results/synthetic/plots/summary_results_plot_drift_triggered_retrain_3seed.png',
+        csv_path='src/results/synthetic/csv/summary_results_drift_triggered_retrain_3seed.csv',
+        output_path='src/results/synthetic/plots/summary_results_plot_drift_triggered_retrain_3seed.png',
         policy_name='Drift-Triggered (ADWIN)',
     )
 

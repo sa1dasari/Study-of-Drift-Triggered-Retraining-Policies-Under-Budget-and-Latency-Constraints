@@ -26,6 +26,8 @@ should_retrain = (t % interval == 0) and (remaining_budget > 0) and not in_laten
 | 10 | 1,000 | `10,000 / 10 = 1,000` — evenly spaces 10 retrains |
 | 20 | 500 | `10,000 / 20 = 500` — evenly spaces 20 retrains |
 
+> **LUFlow & LendingClub intervals:** For the real-world experiments (50,000-sample streams), the periodic interval is `50,000 / K`: K=5 → 10,000; K=10 → 5,000; K=20 → 2,500.
+
 ### Strengths & Weaknesses
 
 | Aspect | Detail |
@@ -55,6 +57,8 @@ should_retrain = (error_rate > threshold) and (remaining_budget > 0) and not in_
 |---|---|---|
 | `error_threshold` | 0.27 | Chosen so the policy fires shortly after drift begins, but not during normal noise fluctuations |
 | `window_size` | 200 | Sliding window of the most recent 200 predictions |
+
+> **LUFlow & LendingClub calibration:** The error threshold was re-calibrated to **0.20** (window_size = 200) for the real-world datasets, where the base error rate is lower than in the synthetic experiments.
 
 ### Strengths & Weaknesses
 
@@ -97,6 +101,8 @@ The minimum split size is `max(30, n // 10)` to avoid noise-driven false detecti
 | `delta` (δ) | 0.002 | Low δ reduces false positives; higher sensitivity was too noisy pre-drift |
 | `window_size` | 500 | Maximum recent errors considered for detection |
 | `min_samples` | 300 | Detection does not activate until 300 predictions have been made (avoids warm-up false alarms) |
+
+> **LUFlow & LendingClub calibration:** For the real-world datasets, δ was set to **0.005** and min_samples reduced to **100** (window_size = 500). The higher δ and lower min_samples account for the longer 50,000-sample streams and different error distributions.
 
 ### Strengths & Weaknesses
 

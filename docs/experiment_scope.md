@@ -5,7 +5,7 @@
 This document specifies every factor varied across experiment runs, the exact parameter values used, and the total number of configurations executed.
 The study follows a **full-factorial design** — every combination of drift type, policy, budget, and latency is run with multiple random seeds.
 
-Experiments were conducted in **four phases** plus **baseline runs**:
+Experiments were conducted in **five phases** plus **baseline runs**:
 - **Phase 1 (3 seeds):** 243 runs — initial exploration with per-configuration Git branches.
 - **Phase 2 (10 seeds):** 810 runs — extended evaluation with per-policy batch Git branches.
 - **No-Retrain Baseline (3 seeds):** 9 runs — accuracy floor with Phase 1 seeds.
@@ -13,7 +13,8 @@ Experiments were conducted in **four phases** plus **baseline runs**:
 - **Phase 3 — Extreme Latency (3 seeds):** 171 runs — 2 extreme latency levels (Near-Zero=3, Extreme-High=2050).
 - **Phase 3 — Extreme Latency (10 seeds):** 570 runs — same 2 extreme levels with full 10-seed set.
 - **Phase 4 — LUFlow Real-World Dataset:** 252 runs — 3 pool configs × 3 drift types × 3 budgets × 3 latencies × 3 policies + 9 baseline runs.
-- **Combined total: 2,085 experiment runs.**
+- **Phase 5 — LendingClub Real-World Dataset:** 252 runs — 3 year-pair configs × 3 drift types × 3 budgets × 3 latencies × 3 policies + 9 baseline runs.
+- **Combined total: 2,337 experiment runs.**
 
 ---
 
@@ -202,6 +203,28 @@ Policy parameters were re-calibrated on LUFlow data:
 
 - **Branch:** `develop_LUFlow_Dataset`
 
+### Phase 5 — LendingClub Real-World Dataset (252 runs)
+
+```
+3 year-pair configs  ×  3 drift types  ×  3 budget levels  ×  3 latency levels  =  81 unique configs per policy
+81 configs  ×  3 active policies  =  243 active runs  +  9 baseline runs  =  252 total
+```
+
+The LendingClub experiment uses real-world loan default data from Kaggle (accepted loans 2007–2018, ~1.35 M rows after filtering). Instead of random seeds, three **year-pair configurations** define pre-/post-drift data by selecting different calendar-year cohorts. The drift arises from real-world feature-space drift caused by LendingClub's changing underwriting policy between 2012 and 2016. Streams are 50,000 samples with drift at t = 25,000.
+
+| Config | Pre-drift year | Post-drift year | Gap | Shift description |
+|--------|---------------|----------------|-----|-------------------|
+| Seed 1 | 2013 | 2016 | 3 years | Maximum policy shift |
+| Seed 2 | 2014 | 2016 | 2 years | Moderate drift |
+| Seed 3 | 2013 | 2015 | 2 years | Different cohort pair |
+
+Policy parameters were re-calibrated on LendingClub data:
+- **Periodic:** interval = 50,000 / K
+- **Error-Threshold:** threshold = 0.20, window_size = 200
+- **Drift-Triggered (ADWIN):** δ = 0.005, window_size = 500, min_samples = 100
+
+- **Branch:** `develop_LendingClub_Dataset`
+
 ### Combined Summary
 
 | Dimension | Values | Count |
@@ -214,12 +237,14 @@ Policy parameters were re-calibrated on LUFlow data:
 | Seeds (Phase 1 / Phase 3-3seed) | 42, 123, 456 | 3 |
 | Seeds (Phase 2 / Phase 3-10seed) | 42, 123, 456, 789, 1011, 1213, 1415, 1617, 1819, 2021 | 10 |
 | LUFlow pool configs (Phase 4) | Pool 1, Pool 2, Pool 3 | 3 |
+| LendingClub year-pair configs (Phase 5) | Seed 1 (2013→2016), Seed 2 (2014→2016), Seed 3 (2013→2015) | 3 |
 | **Total Phase 1 runs** | | **243** |
 | **Total Phase 2 runs** | | **810** |
 | **Total No-Retrain Baseline runs** | | **39** (9 + 30) |
 | **Total Phase 3 runs (Extreme Latency)** | | **741** (171 + 570) |
 | **Total Phase 4 runs (LUFlow)** | | **252** (243 + 9) |
-| **Grand total experiment runs** | | **2,085** |
+| **Total Phase 5 runs (LendingClub)** | | **252** (243 + 9) |
+| **Grand total experiment runs** | | **2,337** |
 
 The **`main`** and **`develop`** branches contain all merged results from all phases.
 
@@ -304,6 +329,24 @@ The **`main`** and **`develop`** branches contain all merged results from all ph
 | `results/luflow/plots/luflow_summary_plot_drift_triggered_retrain_3seed.png` | 2 × 3 dashboard for drift-triggered (ADWIN) policy (LUFlow) |
 | `results/luflow/plots/luflow_summary_plot_no_retrain_3seed.png` | 2 × 2 baseline dashboard for no-retrain policy (LUFlow) |
 
+### Phase 5 — LendingClub Output Artifacts (252 runs)
+
+| Artifact | Path | Description |
+|---|---|---|
+| JSON result | `results/lendingclub/per_run/lendingclub_{policy}_3seed/run_<run_tag>.json` | Full config + structured metrics per run |
+| Per-sample CSV | `results/lendingclub/per_run/lendingclub_{policy}_3seed/per_sample_<run_tag>.csv` | Per-timestep accuracy, error, latency flags |
+| Summary CSV | `results/lendingclub/csv/lendingclub_summary_{policy}_retrain_3seed.csv` | One row per run; 81 rows per active policy |
+| Baseline CSV | `results/lendingclub/csv/lendingclub_summary_no_retrain_3seed.csv` | One row per run; 9 rows |
+
+### LendingClub Visualisation Artifacts
+
+| File | Description |
+|---|---|
+| `results/lendingclub/plots/lendingclub_summary_plot_periodic_retrain_3seed.png` | 2 × 3 dashboard for periodic policy (LendingClub) |
+| `results/lendingclub/plots/lendingclub_summary_plot_error_threshold_retrain_3seed.png` | 2 × 3 dashboard for error-threshold policy (LendingClub) |
+| `results/lendingclub/plots/lendingclub_summary_plot_drift_triggered_retrain_3seed.png` | 2 × 3 dashboard for drift-triggered (ADWIN) policy (LendingClub) |
+| `results/lendingclub/plots/lendingclub_summary_plot_no_retrain_3seed.png` | 2 × 2 baseline dashboard for no-retrain policy (LendingClub) |
+
 Each retraining-policy dashboard contains six panels:
 1. **Line plot** — Accuracy vs. total latency, grouped by drift type
 2. **Bar chart** — Mean accuracy (± std) by drift type
@@ -347,6 +390,10 @@ Cumulative results per policy were merged into dedicated develop branches:
 
 - `develop_LUFlow_Dataset` (243 active runs + 9 baseline runs)
 
+### Phase 5 — LendingClub Real-World Dataset (252 runs)
+
+- `develop_LendingClub_Dataset` (243 active runs + 9 baseline runs)
+
 ### No-Retrain Baseline (39 runs)
 
 - `develop_NoRetrain_NoBudget_NoLatency` (9 runs with 3 seeds + 30 runs with 10 seeds)
@@ -357,4 +404,4 @@ Cumulative results per policy were merged into dedicated develop branches:
 
 ### Merged Results
 
-The **`main`** and **`develop`** branches contain **summary CSVs and dashboard PNGs** from all phases (2,085 total runs). Per-run artifacts (JSON results, per-sample CSVs) are too large to merge and remain in their respective experiment branches only.
+The **`main`** and **`develop`** branches contain **summary CSVs and dashboard PNGs** from all phases (2,337 total runs). Per-run artifacts (JSON results, per-sample CSVs) are too large to merge and remain in their respective experiment branches only.

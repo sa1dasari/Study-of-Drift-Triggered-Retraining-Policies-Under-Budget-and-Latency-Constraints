@@ -128,3 +128,15 @@
 11. **Discarded the dataset** — because the classification task is trivially separable for the streaming model, concept drift does not translate into meaningful performance loss. Retraining policies have nothing to recover, so running the remaining 243 active-policy experiments would produce flat, uninformative results.
 
 ---
+
+## WEEK 10 — LendingClub Real-World Dataset (Phase 5)
+
+1. Investigated the **LendingClub Loan Default dataset** (Kaggle, accepted loans 2007–2018, ~2.26 M rows raw, ~1.35 M after filtering to Fully Paid / Charged Off, 16 origination-time features → 34 after one-hot encoding) as a second real-world validation dataset.
+2. Built `lendingclub_loader.py` — origination-time-only feature selection (no post-origination leakage), `issue_d` parsing for year-cohort extraction, `emp_length` numeric conversion, one-hot encoding of `home_ownership` and `purpose`, and `get_year_cohort()` with shuffled sampling via `rng.choice`.
+3. Built `lendingclub_fitness_check.py` — a three-gate suitability check and designed three **year-pair configurations** ("seeds") with per-seed `random_state` for shuffled sub-sampling.
+4. **Calibrated policy hyperparameters** on LendingClub abrupt conditions and built `lendingclub_main.py` — a dedicated experiment runner that mirrors the synthetic and LUFlow architectures but handles LendingClub data loading, year-pair pool selection, and `StandardScaler` feature normalization.
+5. Ran the full **Phase 5 sweep**: 3 seeds × 3 drift types × 3 budgets × 3 latencies × 3 active policies = 243 active runs + 9 no-retrain baseline runs = **252 total runs**. 
+6. Generated summary dashboards for all 4 policies on LendingClub data. Merged into `main`.
+
+---
+
