@@ -7,9 +7,11 @@ venv/
 *.egg-info/
 
 # ── Large data files (not tracked in Git) ──
-# LUFlow CSVs are multi-GB — download via the LUFlow dataset page.
+# LUFlow CSVs are multi-GB -- download via the LUFlow dataset page.
 src/data/LUFlow_datasets/*.csv
 src/data/LUFlow_Network_Intrusion/datasets/*.csv
+# LendingClub CSV is ~1.6 GB -- download via Kaggle.
+src/data/LendingClub_Loan_Data/datasets/*.csv
 
 # ── IDE ──
 .idea/
