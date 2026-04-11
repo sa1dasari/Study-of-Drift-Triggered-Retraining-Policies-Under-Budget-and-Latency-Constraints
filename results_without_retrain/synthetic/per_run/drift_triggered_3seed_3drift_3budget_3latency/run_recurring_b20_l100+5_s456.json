@@ -1,0 +1,136 @@
+{
+  "configuration": {
+    "drift_type": "recurring",
+    "drift_point": 5000,
+    "policy_type": "drift_triggered",
+    "error_threshold": null,
+    "window_size": 500,
+    "budget": 20,
+    "retrain_latency": 100,
+    "deploy_latency": 5,
+    "total_samples": 10000,
+    "random_seed": 456
+  },
+  "performance_metrics": {
+    "overall_accuracy": 0.6044,
+    "pre_drift_accuracy": 0.6136,
+    "post_drift_accuracy": 0.5952,
+    "accuracy_drop": -0.018400000000000083
+  },
+  "retraining_metrics": {
+    "total_retrains": 20,
+    "budget_used": 20,
+    "budget_total": 20,
+    "budget_utilization": 1.0,
+    "retrains_before_drift": 0,
+    "retrains_after_drift": 20,
+    "retrain_timestamps": [
+      5328,
+      6034,
+      6488,
+      6593,
+      6698,
+      6803,
+      6908,
+      7036,
+      7141,
+      7246,
+      7351,
+      7456,
+      7561,
+      8028,
+      8133,
+      8238,
+      8343,
+      8448,
+      8553,
+      9024
+    ],
+    "retrain_latency_windows": [
+      [
+        5328,
+        5433
+      ],
+      [
+        6034,
+        6139
+      ],
+      [
+        6488,
+        6593
+      ],
+      [
+        6593,
+        6698
+      ],
+      [
+        6698,
+        6803
+      ],
+      [
+        6803,
+        6908
+      ],
+      [
+        6908,
+        7013
+      ],
+      [
+        7036,
+        7141
+      ],
+      [
+        7141,
+        7246
+      ],
+      [
+        7246,
+        7351
+      ],
+      [
+        7351,
+        7456
+      ],
+      [
+        7456,
+        7561
+      ],
+      [
+        7561,
+        7666
+      ],
+      [
+        8028,
+        8133
+      ],
+      [
+        8133,
+        8238
+      ],
+      [
+        8238,
+        8343
+      ],
+      [
+        8343,
+        8448
+      ],
+      [
+        8448,
+        8553
+      ],
+      [
+        8553,
+        8658
+      ],
+      [
+        9024,
+        9129
+      ]
+    ]
+  },
+  "data_metrics": {
+    "predictions_made": 10000,
+    "total_samples": 10000
+  }
+}
