@@ -137,6 +137,9 @@
 4. **Calibrated policy hyperparameters** on LendingClub abrupt conditions and built `lendingclub_main.py` — a dedicated experiment runner that mirrors the synthetic and LUFlow architectures but handles LendingClub data loading, year-pair pool selection, and `StandardScaler` feature normalization.
 5. Ran the full **Phase 5 sweep**: 3 seeds × 3 drift types × 3 budgets × 3 latencies × 3 active policies = 243 active runs + 9 no-retrain baseline runs = **252 total runs**. 
 6. Generated summary dashboards for all 4 policies on LendingClub data. Merged into `main`.
+7. Built `cross_policy_comparison.py` — a standalone analysis script that merges all per-policy summary CSVs for a given dataset into one DataFrame and produces four head-to-head comparison outputs plus a cross-dataset summary.
+8. Ran the full comparison pipeline across all three datasets: synthetic (840 rows, 10-seed), LUFlow (252 rows, 3-seed fallback), LendingClub (252 rows, 3-seed fallback). All 17 output files (4 figures + 4 tables per dataset + 1 cross-dataset figure + 1 cross-dataset table) generated successfully.
+9. Updated README and other docs with cross-policy comparison section, CLI usage, output descriptions, and repository structure.
 
 ---
 

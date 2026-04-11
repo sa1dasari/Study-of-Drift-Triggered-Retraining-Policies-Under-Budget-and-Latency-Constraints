@@ -599,7 +599,7 @@ def figure_latency_sensitivity(df, dataset, out_dir):
 def cross_dataset_summary(all_merged, out_dir):
     """Produce a single figure comparing policy rankings across datasets.
 
-    One grouped bar per dataset, bars coloured by policy, y = mean
+    One grouped bar per dataset, bars colored by policy, y = mean
     post-drift accuracy (averaged over all drift types, budgets, latencies,
     seeds).
     """

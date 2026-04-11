@@ -5,7 +5,7 @@
 This document specifies every factor varied across experiment runs, the exact parameter values used, and the total number of configurations executed.
 The study follows a **full-factorial design** — every combination of drift type, policy, budget, and latency is run with multiple random seeds.
 
-Experiments were conducted in **five phases** plus **baseline runs**:
+Experiments were conducted in **five phases** plus **baseline runs**, followed by a **cross-policy comparison** phase:
 - **Phase 1 (3 seeds):** 243 runs — initial exploration with per-configuration Git branches.
 - **Phase 2 (10 seeds):** 810 runs — extended evaluation with per-policy batch Git branches.
 - **No-Retrain Baseline (3 seeds):** 9 runs — accuracy floor with Phase 1 seeds.
@@ -14,6 +14,7 @@ Experiments were conducted in **five phases** plus **baseline runs**:
 - **Phase 3 — Extreme Latency (10 seeds):** 570 runs — same 2 extreme levels with full 10-seed set.
 - **Phase 4 — LUFlow Real-World Dataset:** 252 runs — 3 pool configs × 3 drift types × 3 budgets × 3 latencies × 3 policies + 9 baseline runs.
 - **Phase 5 — LendingClub Real-World Dataset:** 252 runs — 3 year-pair configs × 3 drift types × 3 budgets × 3 latencies × 3 policies + 9 baseline runs.
+- **Phase 6 — Cross-Policy Comparison:** Merges all per-policy summary CSVs and produces head-to-head comparison tables and figures across all three datasets. No new experiment runs — this phase analyses the 2,337 runs from Phases 1–5.
 - **Combined total: 2,337 experiment runs.**
 
 ---
@@ -244,6 +245,7 @@ Policy parameters were re-calibrated on LendingClub data:
 | **Total Phase 3 runs (Extreme Latency)** | | **741** (171 + 570) |
 | **Total Phase 4 runs (LUFlow)** | | **252** (243 + 9) |
 | **Total Phase 5 runs (LendingClub)** | | **252** (243 + 9) |
+| **Phase 6 (Cross-Policy Comparison)** | | **0** (analysis only) |
 | **Grand total experiment runs** | | **2,337** |
 
 The **`main`** and **`develop`** branches contain all merged results from all phases.
@@ -347,6 +349,44 @@ The **`main`** and **`develop`** branches contain all merged results from all ph
 | `results/lendingclub/plots/lendingclub_summary_plot_drift_triggered_retrain_3seed.png` | 2 × 3 dashboard for drift-triggered (ADWIN) policy (LendingClub) |
 | `results/lendingclub/plots/lendingclub_summary_plot_no_retrain_3seed.png` | 2 × 2 baseline dashboard for no-retrain policy (LendingClub) |
 
+### Phase 6 — Cross-Policy Comparison (Analysis Only)
+
+Phase 6 runs no new experiments. It merges all per-policy summary CSVs from Phases 1–5 and produces head-to-head comparison outputs across all four policies for each dataset, plus a cross-dataset summary.
+
+**Script:** `cross_policy_comparison.py`
+
+```bash
+python cross_policy_comparison.py                      # all 3 datasets
+python cross_policy_comparison.py --dataset synthetic   # synthetic only
+python cross_policy_comparison.py --dataset luflow      # LUFlow only
+python cross_policy_comparison.py --dataset lendingclub # LendingClub only
+python cross_policy_comparison.py --seeds 3             # force 3-seed CSVs
+```
+
+#### Per-Dataset Output Artifacts
+
+For each dataset (`synthetic`, `luflow`, `lendingclub`), four comparison outputs are produced:
+
+| # | Output | Table CSV | Figure PNG | Description |
+|---|--------|-----------|------------|-------------|
+| 1 | Post-Drift Accuracy | `table1_postdrift_accuracy_{dataset}.csv` | `fig1_postdrift_heatmap_{dataset}.png` | Mean post-drift accuracy by policy × drift type (averaged over seeds, budgets, latencies) |
+| 2 | Budget-Faceted | `table2_budget_faceted_{dataset}.csv` | `fig2_budget_faceted_{dataset}.png` | Same breakdown faceted by K=5/10/20; no-retrain baseline as dashed reference |
+| 3 | Budget Efficiency | `table3_budget_efficiency_{dataset}.csv` | `fig3_budget_efficiency_{dataset}.png` | Accuracy gain per retrain after drift (left panel) + pre-drift budget waste fraction (right panel) |
+| 4 | Latency Sensitivity | `table4_latency_sensitivity_{dataset}.csv` | `fig4_latency_sensitivity_{dataset}.png` | Post-drift accuracy vs total latency per policy, one subplot per drift type |
+
+All per-dataset outputs are saved to `results/cross_policy_comparison/{dataset}/`.
+
+#### Cross-Dataset Summary Artifacts
+
+When run on ≥ 2 datasets, a cross-dataset summary is also generated:
+
+| Output | Path | Description |
+|--------|------|-------------|
+| Grand-mean bar chart | `results/cross_policy_comparison/fig_cross_dataset_summary.png` | Policy ranking across all datasets — validates whether findings generalise |
+| Summary table | `results/cross_policy_comparison/table_cross_dataset_summary.csv` | Mean ± std post-drift accuracy per policy per dataset, with run counts |
+
+> See [cross_policy_comparison_guide.md](cross_policy_comparison_guide.md) for detailed interpretation of each output.
+
 Each retraining-policy dashboard contains six panels:
 1. **Line plot** — Accuracy vs. total latency, grouped by drift type
 2. **Bar chart** — Mean accuracy (± std) by drift type
@@ -394,6 +434,10 @@ Cumulative results per policy were merged into dedicated develop branches:
 
 - `develop_LendingClub_Dataset` (243 active runs + 9 baseline runs)
 
+### Phase 6 — Cross-Policy Comparison (analysis only)
+
+- No dedicated experiment branch — `cross_policy_comparison.py` reads existing summary CSVs from Phases 1–5 and writes output to `results/cross_policy_comparison/`. Committed directly on `main`.
+
 ### No-Retrain Baseline (39 runs)
 
 - `develop_NoRetrain_NoBudget_NoLatency` (9 runs with 3 seeds + 30 runs with 10 seeds)
@@ -404,4 +448,4 @@ Cumulative results per policy were merged into dedicated develop branches:
 
 ### Merged Results
 
-The **`main`** and **`develop`** branches contain **summary CSVs and dashboard PNGs** from all phases (2,337 total runs). Per-run artifacts (JSON results, per-sample CSVs) are too large to merge and remain in their respective experiment branches only.
+The **`main`** and **`develop`** branches contain **summary CSVs, dashboard PNGs, and cross-policy comparison outputs** from all phases (2,337 total runs). Per-run artifacts (JSON results, per-sample CSVs) are too large to merge and remain in their respective experiment branches only.

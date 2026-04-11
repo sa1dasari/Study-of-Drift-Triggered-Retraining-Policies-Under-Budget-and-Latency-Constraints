@@ -93,9 +93,10 @@ Experiments are conducted on **synthetic data** (controlled weight-vector drift,
 ├── main.py                  # CLI entry point — synthetic experiments (--policy, --seeds)
 ├── luflow_main.py           # CLI entry point — LUFlow real-world experiments (--policy)
 ├── lendingclub_main.py      # CLI entry point — LendingClub real-world experiments (--policy)
+├── cross_policy_comparison.py # Cross-policy head-to-head comparison (--dataset, --seeds)
 ├── luflow_fitness_check.py  # LUFlow dataset suitability gate checks
 ├── lendingclub_fitness_check.py # LendingClub dataset suitability gate checks
-├── plot_summary.py          # Dashboard PNG generator
+├── plot_summary.py          # Per-policy dashboard PNG generator
 ├── docs/                    # All documentation
 ├── src/
 │   ├── data/                # DriftGenerator + LUFlow & LendingClub dataset loaders
@@ -112,10 +113,16 @@ Experiments are conducted on **synthetic data** (controlled weight-vector drift,
     │   ├── csv/             #     Summary CSVs
     │   ├── plots/           #     Dashboard PNGs
     │   └── per_run/         #     Per-run JSONs & per-sample CSVs
-    └── lendingclub/         #   LendingClub real-world experiment results
-        ├── csv/             #     Summary CSVs
-        ├── plots/           #     Dashboard PNGs
-        └── per_run/         #     Per-run JSONs & per-sample CSVs
+    ├── lendingclub/         #   LendingClub real-world experiment results
+    │   ├── csv/             #     Summary CSVs
+    │   ├── plots/           #     Dashboard PNGs
+    │   └── per_run/         #     Per-run JSONs & per-sample CSVs
+    └── cross_policy_comparison/ # Head-to-head cross-policy outputs
+        ├── synthetic/       #     Synthetic comparison tables & figures
+        ├── luflow/          #     LUFlow comparison tables & figures
+        ├── lendingclub/     #     LendingClub comparison tables & figures
+        ├── fig_cross_dataset_summary.png
+        └── table_cross_dataset_summary.csv
 ```
 
 ---
@@ -128,9 +135,24 @@ pip install -r docs/requirements.txt
 python main.py                                        # synthetic experiments (all policies, 10 seeds)
 python luflow_main.py                                 # LUFlow experiments (all policies, 252 runs)
 python lendingclub_main.py                            # LendingClub experiments (all policies, 252 runs)
+python cross_policy_comparison.py                     # cross-policy head-to-head comparison (all datasets)
 ```
 
 See [setup_and_run_guide.md](docs/setup_and_run_guide.md) for full instructions.
+
+---
+
+## Cross-Policy Comparison
+
+`cross_policy_comparison.py` merges all per-policy summary CSVs for a given dataset into a single DataFrame and produces four head-to-head comparison outputs per dataset, plus a cross-dataset summary when multiple datasets are available.
+
+```bash
+python cross_policy_comparison.py                      # all 3 datasets (auto-detects seed label)
+python cross_policy_comparison.py --dataset synthetic   # synthetic only
+python cross_policy_comparison.py --dataset luflow      # LUFlow only
+python cross_policy_comparison.py --dataset lendingclub # LendingClub only
+python cross_policy_comparison.py --seeds 3             # force 3-seed CSVs
+```
 
 ---
 
@@ -156,7 +178,8 @@ All **summary CSVs and dashboard PNGs** are merged into the **`main`** branch. P
 | [setup_and_run_guide.md](docs/setup_and_run_guide.md) | Setup, running experiments                                                   |
 | [design.md](docs/design.md) | System architecture and component details                                    |
 | [drift_guide.md](docs/drift_guide.md) | Concept drift types and simulation mechanics                                 |
-| [experiment_scope.md](docs/experiment_scope.md) | Full experiment scope — all 3 phases, run counts, branches, output artifacts |
+| [experiment_scope.md](docs/experiment_scope.md) | Full experiment scope — all phases, run counts, branches, output artifacts |
 | [policies_guide.md](docs/policies_guide.md) | Policy algorithms, parameters, and trade-offs                                |
 | [research_log.md](docs/research_log.md) | Week-by-week experiment log                                                  |
-| [results_interpretation_guide.md](docs/results_interpretation_guide.md) | How to read the CSV and PNG files                                            |
+| [results_interpretation_guide.md](docs/results_interpretation_guide.md) | How to read the per-policy CSV and PNG files                                 |
+| [cross_policy_comparison_guide.md](docs/cross_policy_comparison_guide.md) | How to read the cross-policy comparison outputs                              |
