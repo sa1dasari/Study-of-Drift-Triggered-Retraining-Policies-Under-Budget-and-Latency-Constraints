@@ -1,11 +1,16 @@
 """
-Main entry point for the Drift-Triggered Retraining Policy experiment.
+Synthetic Experiment Runner — CLI entry point for all retraining policies.
 
-Runs full-factorial sweeps for one or all retraining policies:
+Runs full-factorial sweeps on synthetic data for one or all retraining
+policies (Periodic, Error-Threshold, Drift-Triggered ADWIN, No-Retrain):
+
   Periodic / Error-Threshold / Drift-Triggered:
       3 drift types × 3 budgets × 3 latency levels × N seeds
   No-Retrain (baseline):
       3 drift types × N seeds  (30 runs @10 seeds) — no budget/latency grid
+
+The --policy flag selects which policy to sweep (default: all four).
+The --seeds flag selects the seed set size (3 or 10, default: 10).
 
 Usage:
     python main.py                            # all 4 policies (840 runs with 10 seeds)

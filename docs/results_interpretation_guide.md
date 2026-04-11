@@ -2,10 +2,11 @@
 
 This document explains how to read and interpret the CSV and PNG files in the `results/` folder.
 
-Results are organized into three subdirectories:
+Results are organized into four subdirectories:
 - **`results/synthetic/`** — Synthetic data experiments (`csv/` for summary CSVs, `plots/` for dashboard PNGs, `per_run/` for per-run details).
 - **`results/luflow/`** — LUFlow real-world data experiments (same sub-structure).
 - **`results/lendingclub/`** — LendingClub real-world data experiments (same sub-structure).
+- **`results/cross_policy_comparison/`** — Cross-policy head-to-head comparison outputs (tables & figures). See [cross_policy_comparison_guide.md](cross_policy_comparison_guide.md) for a detailed interpretation of each output.
 
 ---
 
@@ -137,3 +138,12 @@ The **no-retrain baseline** dashboard is a **2×2 PNG** with four panels:
 - **Y-axis:** Average post-drift retrains.
 - Staircase pattern (K=20 > K=10 > K=5) = budget is the bottleneck.
 - Flat bars = policy doesn't trigger more retrains even with more budget.
+
+---
+
+## 4. Cross-Policy Comparison Outputs
+
+The `cross_policy_comparison.py` script merges all per-policy summary CSVs and produces head-to-head comparison tables and figures across all four policies. Outputs are saved to `results/cross_policy_comparison/{dataset}/`.
+
+For a full panel-by-panel interpretation guide, see **[cross_policy_comparison_guide.md](cross_policy_comparison_guide.md)**.
+

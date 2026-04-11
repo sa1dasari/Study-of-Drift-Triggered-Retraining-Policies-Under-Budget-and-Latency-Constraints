@@ -1,0 +1,10 @@
+policy_type,drift_type,acc_gain_per_retrain,pre_drift_waste_frac
+periodic,abrupt,-0.0006394771241830031,0.5142857142857143
+periodic,gradual,-0.0005573856209150401,0.5142857142857143
+periodic,recurring,-0.00026718954248366685,0.5142857142857143
+error_threshold,abrupt,0.0009384615384615376,0.0
+error_threshold,gradual,0.0030799999999998606,0.0
+error_threshold,recurring,0.0011849999999999695,0.0
+drift_triggered,abrupt,0.0003689473684210637,0.0
+drift_triggered,gradual,0.0,0.0
+drift_triggered,recurring,5.349693251532009e-05,0.0
