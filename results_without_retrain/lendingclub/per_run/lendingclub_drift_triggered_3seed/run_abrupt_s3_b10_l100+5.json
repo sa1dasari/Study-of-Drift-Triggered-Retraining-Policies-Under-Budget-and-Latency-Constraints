@@ -1,0 +1,76 @@
+{
+  "configuration": {
+    "drift_type": "abrupt",
+    "drift_point": 25000,
+    "policy_type": "drift_triggered",
+    "error_threshold": null,
+    "window_size": 500,
+    "budget": 10,
+    "retrain_latency": 100,
+    "deploy_latency": 5,
+    "total_samples": 50000,
+    "random_seed": 3
+  },
+  "performance_metrics": {
+    "overall_accuracy": 0.70078,
+    "pre_drift_accuracy": 0.7076,
+    "post_drift_accuracy": 0.69396,
+    "accuracy_drop": -0.013639999999999985
+  },
+  "retraining_metrics": {
+    "total_retrains": 8,
+    "budget_used": 8,
+    "budget_total": 10,
+    "budget_utilization": 0.8,
+    "retrains_before_drift": 7,
+    "retrains_after_drift": 1,
+    "retrain_timestamps": [
+      4445,
+      4550,
+      4655,
+      4760,
+      4865,
+      7574,
+      7679,
+      31365
+    ],
+    "retrain_latency_windows": [
+      [
+        4445,
+        4550
+      ],
+      [
+        4550,
+        4655
+      ],
+      [
+        4655,
+        4760
+      ],
+      [
+        4760,
+        4865
+      ],
+      [
+        4865,
+        4970
+      ],
+      [
+        7574,
+        7679
+      ],
+      [
+        7679,
+        7784
+      ],
+      [
+        31365,
+        31470
+      ]
+    ]
+  },
+  "data_metrics": {
+    "predictions_made": 50000,
+    "total_samples": 50000
+  }
+}
