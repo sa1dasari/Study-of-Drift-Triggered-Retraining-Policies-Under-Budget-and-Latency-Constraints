@@ -1,0 +1,136 @@
+{
+  "configuration": {
+    "drift_type": "recurring",
+    "drift_point": 25000,
+    "policy_type": "drift_triggered",
+    "error_threshold": null,
+    "window_size": 500,
+    "budget": 20,
+    "retrain_latency": 500,
+    "deploy_latency": 20,
+    "total_samples": 50000,
+    "random_seed": 2
+  },
+  "performance_metrics": {
+    "overall_accuracy": 0.86136,
+    "pre_drift_accuracy": 0.9138,
+    "post_drift_accuracy": 0.80892,
+    "accuracy_drop": -0.10487999999999997
+  },
+  "retraining_metrics": {
+    "total_retrains": 20,
+    "budget_used": 20,
+    "budget_total": 20,
+    "budget_utilization": 1.0,
+    "retrains_before_drift": 11,
+    "retrains_after_drift": 9,
+    "retrain_timestamps": [
+      281,
+      1718,
+      3050,
+      3596,
+      4116,
+      10141,
+      10661,
+      11747,
+      17123,
+      17643,
+      24540,
+      25060,
+      30361,
+      31536,
+      32073,
+      35041,
+      36340,
+      37358,
+      40188,
+      40708
+    ],
+    "retrain_latency_windows": [
+      [
+        281,
+        801
+      ],
+      [
+        1718,
+        2238
+      ],
+      [
+        3050,
+        3570
+      ],
+      [
+        3596,
+        4116
+      ],
+      [
+        4116,
+        4636
+      ],
+      [
+        10141,
+        10661
+      ],
+      [
+        10661,
+        11181
+      ],
+      [
+        11747,
+        12267
+      ],
+      [
+        17123,
+        17643
+      ],
+      [
+        17643,
+        18163
+      ],
+      [
+        24540,
+        25060
+      ],
+      [
+        25060,
+        25580
+      ],
+      [
+        30361,
+        30881
+      ],
+      [
+        31536,
+        32056
+      ],
+      [
+        32073,
+        32593
+      ],
+      [
+        35041,
+        35561
+      ],
+      [
+        36340,
+        36860
+      ],
+      [
+        37358,
+        37878
+      ],
+      [
+        40188,
+        40708
+      ],
+      [
+        40708,
+        41228
+      ]
+    ]
+  },
+  "data_metrics": {
+    "predictions_made": 50000,
+    "total_samples": 50000
+  }
+}
