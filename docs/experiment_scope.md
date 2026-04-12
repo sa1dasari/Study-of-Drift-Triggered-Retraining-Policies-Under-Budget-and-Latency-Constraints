@@ -5,6 +5,12 @@
 This document specifies every factor varied across experiment runs, the exact parameter values used, and the total number of configurations executed.
 The study follows a **full-factorial design** — every combination of drift type, policy, budget, and latency is run with multiple random seeds.
 
+Experiments were conducted in two modes:
+- **With partial_fit (incremental learning):** The model receives `partial_fit` on every sample. Results stored in `results_with_retrain/`.
+- **Without partial_fit (static model):** The model is frozen between explicit retrains. Results stored in `results_without_retrain/`.
+
+### With partial_fit — Phases 1–6
+
 Experiments were conducted in **five phases** plus **baseline runs**, followed by a **cross-policy comparison** phase:
 - **Phase 1 (3 seeds):** 243 runs — initial exploration with per-configuration Git branches.
 - **Phase 2 (10 seeds):** 810 runs — extended evaluation with per-policy batch Git branches.
@@ -15,7 +21,20 @@ Experiments were conducted in **five phases** plus **baseline runs**, followed b
 - **Phase 4 — LUFlow Real-World Dataset:** 252 runs — 3 pool configs × 3 drift types × 3 budgets × 3 latencies × 3 policies + 9 baseline runs.
 - **Phase 5 — LendingClub Real-World Dataset:** 252 runs — 3 year-pair configs × 3 drift types × 3 budgets × 3 latencies × 3 policies + 9 baseline runs.
 - **Phase 6 — Cross-Policy Comparison:** Merges all per-policy summary CSVs and produces head-to-head comparison tables and figures across all three datasets. No new experiment runs — this phase analyses the 2,337 runs from Phases 1–5.
-- **Combined total: 2,337 experiment runs.**
+- **Combined total (with partial_fit): 2,337 experiment runs.**
+
+### Without partial_fit — Phase 7
+
+The same factorial grid was re-run using `ExperimentRunnerNoPartialFit`, which removes the per-sample `partial_fit` call. The model is frozen between explicit retrains, isolating the pure effect of the retraining policy.
+
+- **Phase 7a — Synthetic (3 seeds):** 252 runs — 3 drift types × 3 budgets × 3 latencies × 3 seeds × 3 active policies + 9 no-retrain baseline.
+- **Phase 7b — Synthetic (10 seeds):** 840 runs — same grid × 10 seeds + 30 baseline.
+- **Phase 7c — LUFlow (3 seeds):** 252 runs — 3 pool configs × 3 drift types × 3 budgets × 3 latencies × 3 policies + 9 baseline.
+- **Phase 7d — LendingClub (3 seeds):** 252 runs — 3 year-pair configs × 3 drift types × 3 budgets × 3 latencies × 3 policies + 9 baseline.
+- **Phase 7e — Cross-Policy Comparison (without partial_fit):** Analysis only — merges summary CSVs from Phases 7a–7d.
+- **Combined total (without partial_fit): 1,596 experiment runs.**
+
+### Grand total across both modes: **3,933 experiment runs.**
 
 ---
 
@@ -38,21 +57,9 @@ All drift types share the same pre-drift concept (`w₁`) for `t ∈ [0, 5000)`,
 | **Periodic** | `interval` ∈ {500, 1000, 2000} (derived from budget) | Retrain every `interval` timesteps on a fixed schedule |
 | **Error-Threshold** | `error_threshold = 0.27`, `window_size = 200` | Retrain when rolling error rate over last 200 predictions exceeds 27 % |
 | **Drift-Triggered (ADWIN)** | `delta = 0.002`, `window_size = 500`, `min_samples = 300` | Retrain when ADWIN detects a statistically significant shift in error distribution |
-| **No-Retrain (Baseline)** | None — budget = 0, latency = 0 | Never retrains; model adapts only via `partial_fit` (incremental learning) |
+| **No-Retrain (Baseline)** | None — budget = 0, latency = 0 | Never retrains; in with-partial-fit mode, model adapts only via `partial_fit`; in without-partial-fit mode, model is frozen after initial training |
 
 > The **No-Retrain baseline** has no budget or latency grid — it is a single-configuration policy run across 3 drift types × N seeds. It provides the accuracy floor that makes all other policies' numbers interpretable.
-
-### Periodic Interval Selection
-
-The periodic interval is chosen so that the maximum possible retrains exactly equals the budget:
-
-| Budget (K) | Interval | Calculation |
-|---|---|---|
-| 5 | 2,000 | 10,000 / 5 = 2,000 |
-| 10 | 1,000 | 10,000 / 10 = 1,000 |
-| 20 | 500 | 10,000 / 20 = 500 |
-
----
 
 ## Factor 3 — Budget Levels (3)
 
@@ -162,7 +169,7 @@ Budget  = 0  (always)
 Latency = 0  (always)
 ```
 
-The no-retrain baseline has **no budget or latency grid** — the model uses only `partial_fit` (incremental learning) and is never retrained from scratch. This provides the **accuracy floor** that makes all other policies' accuracy numbers interpretable.
+The no-retrain baseline has **no budget or latency grid** — the model is never retrained from scratch. In with-partial-fit mode, it uses only `partial_fit` (incremental learning). In without-partial-fit mode, the model is completely frozen after initial training. This provides the **accuracy floor** that makes all other policies' accuracy numbers interpretable.
 
 - **Branch:** `develop_NoRetrain_NoBudget_NoLatency`
 
@@ -226,7 +233,7 @@ Policy parameters were re-calibrated on LendingClub data:
 
 - **Branch:** `develop_LendingClub_Dataset`
 
-### Combined Summary
+### Combined Summary (With partial_fit)
 
 | Dimension | Values | Count |
 |---|---|---|
@@ -246,114 +253,232 @@ Policy parameters were re-calibrated on LendingClub data:
 | **Total Phase 4 runs (LUFlow)** | | **252** (243 + 9) |
 | **Total Phase 5 runs (LendingClub)** | | **252** (243 + 9) |
 | **Phase 6 (Cross-Policy Comparison)** | | **0** (analysis only) |
-| **Grand total experiment runs** | | **2,337** |
+| **Grand total (with partial_fit)** | | **2,337** |
 
-The **`main`** and **`develop`** branches contain all merged results from all phases.
+### Phase 7 — Without partial_fit (Static Model)
+
+All experiment grids below use `ExperimentRunnerNoPartialFit`. The model is frozen between explicit retrains. Entry points live in `experiments/`:
+- `experiments/main_no_partial_fit.py` (synthetic)
+- `experiments/luflow_main_no_partial_fit.py` (LUFlow)
+- `experiments/lendingclub_main_no_partial_fit.py` (LendingClub)
+
+Results are written to `results_without_retrain/` (never overwriting `results_with_retrain/`).
+
+#### Phase 7a — Synthetic, 3 Seeds (252 runs)
+
+```
+3 drift types  ×  3 budget levels  ×  3 latency levels  =  27 unique configs per policy
+27 configs  ×  3 seeds  =  81 experiment runs per active policy
+81 runs  ×  3 active policies  =  243 active runs  +  9 baseline runs  =  252 total
+```
+
+#### Phase 7b — Synthetic, 10 Seeds (840 runs)
+
+```
+3 drift types  ×  3 budget levels  ×  3 latency levels  =  27 unique configs per policy
+27 configs  ×  10 seeds  =  270 experiment runs per active policy
+270 runs  ×  3 active policies  =  810 active runs  +  30 baseline runs  =  840 total
+```
+
+#### Phase 7c — LUFlow, 3 Seeds (252 runs)
+
+```
+3 pool configs  ×  3 drift types  ×  3 budget levels  ×  3 latency levels  =  81 unique configs per policy
+81 configs  ×  3 active policies  =  243 active runs  +  9 baseline runs  =  252 total
+```
+
+#### Phase 7d — LendingClub, 3 Seeds (252 runs)
+
+```
+3 year-pair configs  ×  3 drift types  ×  3 budget levels  ×  3 latency levels  =  81 unique configs per policy
+81 configs  ×  3 active policies  =  243 active runs  +  9 baseline runs  =  252 total
+```
+
+#### Phase 7e — Cross-Policy Comparison (Analysis Only)
+
+No new experiments. `cross_policy_comparison.py` reads summary CSVs from `results_without_retrain/` and produces head-to-head comparison outputs to `results_without_retrain/cross_policy_comparison/`.
+
+#### Combined Summary (Without partial_fit)
+
+| Phase | Runs | Description |
+|---|---|---|
+| Phase 7a — Synthetic (3 seeds) | 252 | 3 policies × 3 drifts × 3 budgets × 3 latencies × 3 seeds + 9 baseline |
+| Phase 7b — Synthetic (10 seeds) | 840 | 3 policies × 3 drifts × 3 budgets × 3 latencies × 10 seeds + 30 baseline |
+| Phase 7c — LUFlow (3 seeds) | 252 | 3 policies × 3 drifts × 3 budgets × 3 latencies × 3 pool configs + 9 baseline |
+| Phase 7d — LendingClub (3 seeds) | 252 | 3 policies × 3 drifts × 3 budgets × 3 latencies × 3 year-pair configs + 9 baseline |
+| Phase 7e — Cross-Policy Comparison | 0 | Analysis only |
+| **Grand total (without partial_fit)** | **1,596** | |
+
+The **`main`** branch contains all merged results from both experiment modes.
 
 ---
 
 ## Output Artifacts per Policy
 
-> **Note:** Per-run artifacts (JSON results, per-sample CSVs) remain in their respective experiment branches only. Only the **summary CSVs** and **dashboard PNGs** are merged into the `develop` and `main` branches.
+> **Note:** Results from with-partial-fit experiments are stored in `results_with_retrain/`. Results from without-partial-fit experiments are stored in `results_without_retrain/`. The sub-directory structure is identical.
 
-### Phase 1 (3-seed) — 81 runs per policy
+### With partial_fit — Phases 1–5
 
-| Artifact | Path | Description |
-|---|---|---|
-| JSON result | `results/synthetic/per_run/<policy_dir>/run_<run_tag>.json` | Full config + structured metrics per run |
-| Per-sample CSV | `results/synthetic/per_run/<policy_dir>/per_sample_<run_tag>.csv` | Per-timestep accuracy, error, latency flags |
-| Summary CSV row | `results/synthetic/csv/summary_results_{policy}_retrain_3seed.csv` | One row appended per run; 81 rows total per policy |
-
-### Phase 2 (10-seed) — 270 runs per policy
+#### Phase 1 (3-seed) — 81 runs per policy
 
 | Artifact | Path | Description |
 |---|---|---|
-| JSON result | `results/synthetic/per_run/<policy_dir>/run_<run_tag>.json` | Full config + structured metrics per run |
-| Per-sample CSV | `results/synthetic/per_run/<policy_dir>/per_sample_<run_tag>.csv` | Per-timestep accuracy, error, latency flags |
-| Summary CSV row | `results/synthetic/csv/summary_results_{policy}_retrain_10seed.csv` | One row appended per run; 270 rows total per policy |
+| JSON result | `results_with_retrain/synthetic/per_run/<policy_dir>/run_<run_tag>.json` | Full config + structured metrics per run |
+| Per-sample CSV | `results_with_retrain/synthetic/per_run/<policy_dir>/per_sample_<run_tag>.csv` | Per-timestep accuracy, error, latency flags |
+| Summary CSV row | `results_with_retrain/synthetic/csv/summary_results_{policy}_retrain_3seed.csv` | One row appended per run; 81 rows total per policy |
 
-### No-Retrain Baseline — 3-seed (9 runs) and 10-seed (30 runs)
-
-| Artifact | Path | Description |
-|---|---|---|
-| JSON result | `results/synthetic/per_run/no_retrain_{N}seed_3drift/run_<drift>_s<seed>.json` | Full config + structured metrics per run |
-| Per-sample CSV | `results/synthetic/per_run/no_retrain_{N}seed_3drift/per_sample_<drift>_s<seed>.csv` | Per-timestep accuracy and error (no latency flags) |
-| Summary CSV (3-seed) | `results/synthetic/csv/summary_results_no_retrain_3seed.csv` | One row per run; 9 rows total |
-| Summary CSV (10-seed) | `results/synthetic/csv/summary_results_no_retrain_10seed.csv` | One row per run; 30 rows total |
-
-### Phase 3 — Extreme Latency (3-seed: 54 runs per policy, 10-seed: 180 runs per policy)
+#### Phase 2 (10-seed) — 270 runs per policy
 
 | Artifact | Path | Description |
 |---|---|---|
-| JSON result | `results/synthetic/per_run/<policy>_ExtremeLatency_{N}seed/run_<run_tag>.json` | Full config + structured metrics per run |
-| Per-sample CSV | `results/synthetic/per_run/<policy>_ExtremeLatency_{N}seed/per_sample_<run_tag>.csv` | Per-timestep accuracy, error, latency flags |
-| Summary CSV (3-seed) | `results/synthetic/csv/summary_results_{policy}_retrain_ExtremeLatency_3seed.csv` | One row per run; 54 rows per active policy |
-| Summary CSV (10-seed) | `results/synthetic/csv/summary_results_{policy}_retrain_ExtremeLatency_10seed.csv` | One row per run; 180 rows per active policy |
-| Baseline CSV (3-seed) | `results/synthetic/csv/summary_results_no_retrain_ExtremeLatency_3seed.csv` | One row per run; 9 rows |
-| Baseline CSV (10-seed) | `results/synthetic/csv/summary_results_no_retrain_ExtremeLatency_10seed.csv` | One row per run; 30 rows |
+| JSON result | `results_with_retrain/synthetic/per_run/<policy_dir>/run_<run_tag>.json` | Full config + structured metrics per run |
+| Per-sample CSV | `results_with_retrain/synthetic/per_run/<policy_dir>/per_sample_<run_tag>.csv` | Per-timestep accuracy, error, latency flags |
+| Summary CSV row | `results_with_retrain/synthetic/csv/summary_results_{policy}_retrain_10seed.csv` | One row appended per run; 270 rows total per policy |
 
-### Visualisation Artifacts
+#### No-Retrain Baseline — 3-seed (9 runs) and 10-seed (30 runs)
+
+| Artifact | Path | Description |
+|---|---|---|
+| JSON result | `results_with_retrain/synthetic/per_run/no_retrain_{N}seed_3drift/run_<drift>_s<seed>.json` | Full config + structured metrics per run |
+| Per-sample CSV | `results_with_retrain/synthetic/per_run/no_retrain_{N}seed_3drift/per_sample_<drift>_s<seed>.csv` | Per-timestep accuracy and error (no latency flags) |
+| Summary CSV (3-seed) | `results_with_retrain/synthetic/csv/summary_results_no_retrain_3seed.csv` | One row per run; 9 rows total |
+| Summary CSV (10-seed) | `results_with_retrain/synthetic/csv/summary_results_no_retrain_10seed.csv` | One row per run; 30 rows total |
+
+#### Phase 3 — Extreme Latency (3-seed: 54 runs per policy, 10-seed: 180 runs per policy)
+
+| Artifact | Path | Description |
+|---|---|---|
+| JSON result | `results_with_retrain/synthetic/per_run/<policy>_ExtremeLatency_{N}seed/run_<run_tag>.json` | Full config + structured metrics per run |
+| Per-sample CSV | `results_with_retrain/synthetic/per_run/<policy>_ExtremeLatency_{N}seed/per_sample_<run_tag>.csv` | Per-timestep accuracy, error, latency flags |
+| Summary CSV (3-seed) | `results_with_retrain/synthetic/csv/summary_results_{policy}_retrain_ExtremeLatency_3seed.csv` | One row per run; 54 rows per active policy |
+| Summary CSV (10-seed) | `results_with_retrain/synthetic/csv/summary_results_{policy}_retrain_ExtremeLatency_10seed.csv` | One row per run; 180 rows per active policy |
+| Baseline CSV (3-seed) | `results_with_retrain/synthetic/csv/summary_results_no_retrain_ExtremeLatency_3seed.csv` | One row per run; 9 rows |
+| Baseline CSV (10-seed) | `results_with_retrain/synthetic/csv/summary_results_no_retrain_ExtremeLatency_10seed.csv` | One row per run; 30 rows |
+
+#### Visualisation Artifacts (With partial_fit)
 
 | File | Description |
 |---|---|
-| `results/synthetic/plots/summary_results_plot_periodic_retrain_3seed.png` | 2 × 3 dashboard for periodic policy (Phase 1, 3 seeds) |
-| `results/synthetic/plots/summary_results_plot_periodic_retrain_10seed.png` | 2 × 3 dashboard for periodic policy (Phase 2, 10 seeds) |
-| `results/synthetic/plots/summary_results_plot_error_threshold_retrain_3seed.png` | 2 × 3 dashboard for error-threshold policy (Phase 1, 3 seeds) |
-| `results/synthetic/plots/summary_results_plot_error_threshold_retrain_10seed.png` | 2 × 3 dashboard for error-threshold policy (Phase 2, 10 seeds) |
-| `results/synthetic/plots/summary_results_plot_drift_triggered_retrain_3seed.png` | 2 × 3 dashboard for drift-triggered (ADWIN) policy (Phase 1, 3 seeds) |
-| `results/synthetic/plots/summary_results_plot_drift_triggered_retrain_10seed.png` | 2 × 3 dashboard for drift-triggered (ADWIN) policy (Phase 2, 10 seeds) |
-| `results/synthetic/plots/summary_results_plot_no_retrain_3seed.png` | 2 × 2 baseline dashboard for no-retrain policy (3 seeds) |
-| `results/synthetic/plots/summary_results_plot_no_retrain_10seed.png` | 2 × 2 baseline dashboard for no-retrain policy (10 seeds) |
-| `results/synthetic/plots/summary_results_plot_periodic_retrain_ExtremeLatency_3seed.png` | 2 × 3 dashboard for periodic policy (Phase 3, 3 seeds, extreme latency) |
-| `results/synthetic/plots/summary_results_plot_periodic_retrain_ExtremeLatency_10seed.png` | 2 × 3 dashboard for periodic policy (Phase 3, 10 seeds, extreme latency) |
-| `results/synthetic/plots/summary_results_plot_error_threshold_retrain_ExtremeLatency_3seed.png` | 2 × 3 dashboard for error-threshold policy (Phase 3, 3 seeds, extreme latency) |
-| `results/synthetic/plots/summary_results_plot_error_threshold_retrain_ExtremeLatency_10seed.png` | 2 × 3 dashboard for error-threshold policy (Phase 3, 10 seeds, extreme latency) |
-| `results/synthetic/plots/summary_results_plot_drift_triggered_retrain_ExtremeLatency_3seed.png` | 2 × 3 dashboard for drift-triggered (ADWIN) policy (Phase 3, 3 seeds, extreme latency) |
-| `results/synthetic/plots/summary_results_plot_drift_triggered_retrain_ExtremeLatency_10seed.png` | 2 × 3 dashboard for drift-triggered (ADWIN) policy (Phase 3, 10 seeds, extreme latency) |
-| `results/synthetic/plots/summary_results_plot_no_retrain_ExtremeLatency_3seed.png` | 2 × 2 baseline dashboard for no-retrain policy (Phase 3, 3 seeds, extreme latency) |
-| `results/synthetic/plots/summary_results_plot_no_retrain_ExtremeLatency_10seed.png` | 2 × 2 baseline dashboard for no-retrain policy (Phase 3, 10 seeds, extreme latency) |
+| `results_with_retrain/synthetic/plots/summary_results_plot_periodic_retrain_3seed.png` | 2 × 3 dashboard for periodic policy (Phase 1, 3 seeds) |
+| `results_with_retrain/synthetic/plots/summary_results_plot_periodic_retrain_10seed.png` | 2 × 3 dashboard for periodic policy (Phase 2, 10 seeds) |
+| `results_with_retrain/synthetic/plots/summary_results_plot_error_threshold_retrain_3seed.png` | 2 × 3 dashboard for error-threshold policy (Phase 1, 3 seeds) |
+| `results_with_retrain/synthetic/plots/summary_results_plot_error_threshold_retrain_10seed.png` | 2 × 3 dashboard for error-threshold policy (Phase 2, 10 seeds) |
+| `results_with_retrain/synthetic/plots/summary_results_plot_drift_triggered_retrain_3seed.png` | 2 × 3 dashboard for drift-triggered (ADWIN) policy (Phase 1, 3 seeds) |
+| `results_with_retrain/synthetic/plots/summary_results_plot_drift_triggered_retrain_10seed.png` | 2 × 3 dashboard for drift-triggered (ADWIN) policy (Phase 2, 10 seeds) |
+| `results_with_retrain/synthetic/plots/summary_results_plot_no_retrain_3seed.png` | 2 × 2 baseline dashboard for no-retrain policy (3 seeds) |
+| `results_with_retrain/synthetic/plots/summary_results_plot_no_retrain_10seed.png` | 2 × 2 baseline dashboard for no-retrain policy (10 seeds) |
+| `results_with_retrain/synthetic/plots/summary_results_plot_periodic_retrain_ExtremeLatency_3seed.png` | 2 × 3 dashboard for periodic policy (Phase 3, 3 seeds, extreme latency) |
+| `results_with_retrain/synthetic/plots/summary_results_plot_periodic_retrain_ExtremeLatency_10seed.png` | 2 × 3 dashboard for periodic policy (Phase 3, 10 seeds, extreme latency) |
+| `results_with_retrain/synthetic/plots/summary_results_plot_error_threshold_retrain_ExtremeLatency_3seed.png` | 2 × 3 dashboard for error-threshold policy (Phase 3, 3 seeds, extreme latency) |
+| `results_with_retrain/synthetic/plots/summary_results_plot_error_threshold_retrain_ExtremeLatency_10seed.png` | 2 × 3 dashboard for error-threshold policy (Phase 3, 10 seeds, extreme latency) |
+| `results_with_retrain/synthetic/plots/summary_results_plot_drift_triggered_retrain_ExtremeLatency_3seed.png` | 2 × 3 dashboard for drift-triggered (ADWIN) policy (Phase 3, 3 seeds, extreme latency) |
+| `results_with_retrain/synthetic/plots/summary_results_plot_drift_triggered_retrain_ExtremeLatency_10seed.png` | 2 × 3 dashboard for drift-triggered (ADWIN) policy (Phase 3, 10 seeds, extreme latency) |
+| `results_with_retrain/synthetic/plots/summary_results_plot_no_retrain_ExtremeLatency_3seed.png` | 2 × 2 baseline dashboard for no-retrain policy (Phase 3, 3 seeds, extreme latency) |
+| `results_with_retrain/synthetic/plots/summary_results_plot_no_retrain_ExtremeLatency_10seed.png` | 2 × 2 baseline dashboard for no-retrain policy (Phase 3, 10 seeds, extreme latency) |
 
-### Phase 4 — LUFlow Output Artifacts (252 runs)
-
-| Artifact | Path | Description |
-|---|---|---|
-| JSON result | `results/luflow/per_run/luflow_{policy}_3seed/run_<run_tag>.json` | Full config + structured metrics per run |
-| Per-sample CSV | `results/luflow/per_run/luflow_{policy}_3seed/per_sample_<run_tag>.csv` | Per-timestep accuracy, error, latency flags |
-| Summary CSV | `results/luflow/csv/luflow_summary_{policy}_retrain_3seed.csv` | One row per run; 81 rows per active policy |
-| Baseline CSV | `results/luflow/csv/luflow_summary_no_retrain_3seed.csv` | One row per run; 9 rows |
-
-### LUFlow Visualisation Artifacts
-
-| File | Description |
-|---|---|
-| `results/luflow/plots/luflow_summary_plot_periodic_retrain_3seed.png` | 2 × 3 dashboard for periodic policy (LUFlow) |
-| `results/luflow/plots/luflow_summary_plot_error_threshold_retrain_3seed.png` | 2 × 3 dashboard for error-threshold policy (LUFlow) |
-| `results/luflow/plots/luflow_summary_plot_drift_triggered_retrain_3seed.png` | 2 × 3 dashboard for drift-triggered (ADWIN) policy (LUFlow) |
-| `results/luflow/plots/luflow_summary_plot_no_retrain_3seed.png` | 2 × 2 baseline dashboard for no-retrain policy (LUFlow) |
-
-### Phase 5 — LendingClub Output Artifacts (252 runs)
+#### Phase 4 — LUFlow Output Artifacts (252 runs)
 
 | Artifact | Path | Description |
 |---|---|---|
-| JSON result | `results/lendingclub/per_run/lendingclub_{policy}_3seed/run_<run_tag>.json` | Full config + structured metrics per run |
-| Per-sample CSV | `results/lendingclub/per_run/lendingclub_{policy}_3seed/per_sample_<run_tag>.csv` | Per-timestep accuracy, error, latency flags |
-| Summary CSV | `results/lendingclub/csv/lendingclub_summary_{policy}_retrain_3seed.csv` | One row per run; 81 rows per active policy |
-| Baseline CSV | `results/lendingclub/csv/lendingclub_summary_no_retrain_3seed.csv` | One row per run; 9 rows |
+| JSON result | `results_with_retrain/luflow/per_run/luflow_{policy}_3seed/run_<run_tag>.json` | Full config + structured metrics per run |
+| Per-sample CSV | `results_with_retrain/luflow/per_run/luflow_{policy}_3seed/per_sample_<run_tag>.csv` | Per-timestep accuracy, error, latency flags |
+| Summary CSV | `results_with_retrain/luflow/csv/luflow_summary_{policy}_retrain_3seed.csv` | One row per run; 81 rows per active policy |
+| Baseline CSV | `results_with_retrain/luflow/csv/luflow_summary_no_retrain_3seed.csv` | One row per run; 9 rows |
 
-### LendingClub Visualisation Artifacts
+#### LUFlow Visualisation Artifacts (With partial_fit)
 
 | File | Description |
 |---|---|
-| `results/lendingclub/plots/lendingclub_summary_plot_periodic_retrain_3seed.png` | 2 × 3 dashboard for periodic policy (LendingClub) |
-| `results/lendingclub/plots/lendingclub_summary_plot_error_threshold_retrain_3seed.png` | 2 × 3 dashboard for error-threshold policy (LendingClub) |
-| `results/lendingclub/plots/lendingclub_summary_plot_drift_triggered_retrain_3seed.png` | 2 × 3 dashboard for drift-triggered (ADWIN) policy (LendingClub) |
-| `results/lendingclub/plots/lendingclub_summary_plot_no_retrain_3seed.png` | 2 × 2 baseline dashboard for no-retrain policy (LendingClub) |
+| `results_with_retrain/luflow/plots/luflow_summary_plot_periodic_retrain_3seed.png` | 2 × 3 dashboard for periodic policy (LUFlow) |
+| `results_with_retrain/luflow/plots/luflow_summary_plot_error_threshold_retrain_3seed.png` | 2 × 3 dashboard for error-threshold policy (LUFlow) |
+| `results_with_retrain/luflow/plots/luflow_summary_plot_drift_triggered_retrain_3seed.png` | 2 × 3 dashboard for drift-triggered (ADWIN) policy (LUFlow) |
+| `results_with_retrain/luflow/plots/luflow_summary_plot_no_retrain_3seed.png` | 2 × 2 baseline dashboard for no-retrain policy (LUFlow) |
 
-### Phase 6 — Cross-Policy Comparison (Analysis Only)
+#### Phase 5 — LendingClub Output Artifacts (252 runs)
+
+| Artifact | Path | Description |
+|---|---|---|
+| JSON result | `results_with_retrain/lendingclub/per_run/lendingclub_{policy}_3seed/run_<run_tag>.json` | Full config + structured metrics per run |
+| Per-sample CSV | `results_with_retrain/lendingclub/per_run/lendingclub_{policy}_3seed/per_sample_<run_tag>.csv` | Per-timestep accuracy, error, latency flags |
+| Summary CSV | `results_with_retrain/lendingclub/csv/lendingclub_summary_{policy}_retrain_3seed.csv` | One row per run; 81 rows per active policy |
+| Baseline CSV | `results_with_retrain/lendingclub/csv/lendingclub_summary_no_retrain_3seed.csv` | One row per run; 9 rows |
+
+#### LendingClub Visualisation Artifacts (With partial_fit)
+
+| File | Description |
+|---|---|
+| `results_with_retrain/lendingclub/plots/lendingclub_summary_plot_periodic_retrain_3seed.png` | 2 × 3 dashboard for periodic policy (LendingClub) |
+| `results_with_retrain/lendingclub/plots/lendingclub_summary_plot_error_threshold_retrain_3seed.png` | 2 × 3 dashboard for error-threshold policy (LendingClub) |
+| `results_with_retrain/lendingclub/plots/lendingclub_summary_plot_drift_triggered_retrain_3seed.png` | 2 × 3 dashboard for drift-triggered (ADWIN) policy (LendingClub) |
+| `results_with_retrain/lendingclub/plots/lendingclub_summary_plot_no_retrain_3seed.png` | 2 × 2 baseline dashboard for no-retrain policy (LendingClub) |
+
+#### Phase 6 — Cross-Policy Comparison (With partial_fit, Analysis Only)
 
 Phase 6 runs no new experiments. It merges all per-policy summary CSVs from Phases 1–5 and produces head-to-head comparison outputs across all four policies for each dataset, plus a cross-dataset summary.
 
-**Script:** `cross_policy_comparison.py`
+All per-dataset outputs are saved to `results_with_retrain/cross_policy_comparison/{dataset}/`.
+
+### Without partial_fit — Phase 7
+
+#### Synthetic Output Artifacts
+
+| Artifact | Path | Description |
+|---|---|---|
+| JSON result | `results_without_retrain/synthetic/per_run/<policy_dir>/run_<run_tag>.json` | Full config + structured metrics per run |
+| Per-sample CSV | `results_without_retrain/synthetic/per_run/<policy_dir>/per_sample_<run_tag>.csv` | Per-timestep accuracy, error, latency flags |
+| Summary CSV (3-seed) | `results_without_retrain/synthetic/csv/summary_results_{policy}_retrain_3seed.csv` | One row per run |
+| Summary CSV (10-seed) | `results_without_retrain/synthetic/csv/summary_results_{policy}_retrain_10seed.csv` | One row per run |
+| Baseline CSV (3-seed) | `results_without_retrain/synthetic/csv/summary_results_no_retrain_3seed.csv` | One row per run |
+| Baseline CSV (10-seed) | `results_without_retrain/synthetic/csv/summary_results_no_retrain_10seed.csv` | One row per run |
+
+#### Synthetic Visualisation Artifacts (Without partial_fit)
+
+| File | Description |
+|---|---|
+| `results_without_retrain/synthetic/plots/summary_results_plot_periodic_retrain_3seed.png` | Dashboard for periodic policy (3 seeds, no partial_fit) |
+| `results_without_retrain/synthetic/plots/summary_results_plot_periodic_retrain_10seed.png` | Dashboard for periodic policy (10 seeds, no partial_fit) |
+| `results_without_retrain/synthetic/plots/summary_results_plot_error_threshold_retrain_3seed.png` | Dashboard for error-threshold policy (3 seeds, no partial_fit) |
+| `results_without_retrain/synthetic/plots/summary_results_plot_error_threshold_retrain_10seed.png` | Dashboard for error-threshold policy (10 seeds, no partial_fit) |
+| `results_without_retrain/synthetic/plots/summary_results_plot_drift_triggered_retrain_3seed.png` | Dashboard for drift-triggered policy (3 seeds, no partial_fit) |
+| `results_without_retrain/synthetic/plots/summary_results_plot_drift_triggered_retrain_10seed.png` | Dashboard for drift-triggered policy (10 seeds, no partial_fit) |
+| `results_without_retrain/synthetic/plots/summary_results_plot_no_retrain_3seed.png` | Baseline dashboard (3 seeds, no partial_fit) |
+| `results_without_retrain/synthetic/plots/summary_results_plot_no_retrain_10seed.png` | Baseline dashboard (10 seeds, no partial_fit) |
+
+#### LUFlow Output Artifacts (Without partial_fit)
+
+| Artifact | Path | Description |
+|---|---|---|
+| Summary CSV | `results_without_retrain/luflow/csv/luflow_summary_{policy}_retrain_3seed.csv` | One row per run |
+| Baseline CSV | `results_without_retrain/luflow/csv/luflow_summary_no_retrain_3seed.csv` | One row per run |
+
+#### LUFlow Visualisation Artifacts (Without partial_fit)
+
+| File | Description |
+|---|---|
+| `results_without_retrain/luflow/plots/luflow_summary_plot_periodic_retrain_3seed.png` | Dashboard for periodic policy (LUFlow, no partial_fit) |
+| `results_without_retrain/luflow/plots/luflow_summary_plot_error_threshold_retrain_3seed.png` | Dashboard for error-threshold policy (LUFlow, no partial_fit) |
+| `results_without_retrain/luflow/plots/luflow_summary_plot_drift_triggered_retrain_3seed.png` | Dashboard for drift-triggered policy (LUFlow, no partial_fit) |
+| `results_without_retrain/luflow/plots/luflow_summary_plot_no_retrain_3seed.png` | Baseline dashboard (LUFlow, no partial_fit) |
+
+#### LendingClub Output Artifacts (Without partial_fit)
+
+| Artifact | Path | Description |
+|---|---|---|
+| Summary CSV | `results_without_retrain/lendingclub/csv/lendingclub_summary_{policy}_retrain_3seed.csv` | One row per run |
+| Baseline CSV | `results_without_retrain/lendingclub/csv/lendingclub_summary_no_retrain_3seed.csv` | One row per run |
+
+#### LendingClub Visualisation Artifacts (Without partial_fit)
+
+| File | Description |
+|---|---|
+| `results_without_retrain/lendingclub/plots/lendingclub_summary_plot_periodic_retrain_3seed.png` | Dashboard for periodic policy (LendingClub, no partial_fit) |
+| `results_without_retrain/lendingclub/plots/lendingclub_summary_plot_error_threshold_retrain_3seed.png` | Dashboard for error-threshold policy (LendingClub, no partial_fit) |
+| `results_without_retrain/lendingclub/plots/lendingclub_summary_plot_drift_triggered_retrain_3seed.png` | Dashboard for drift-triggered policy (LendingClub, no partial_fit) |
+| `results_without_retrain/lendingclub/plots/lendingclub_summary_plot_no_retrain_3seed.png` | Baseline dashboard (LendingClub, no partial_fit) |
+
+#### Phase 7e — Cross-Policy Comparison (Without partial_fit, Analysis Only)
+
+**Script:** `cross_policy_comparison.py` (reads from `results_without_retrain/`)
 
 ```bash
 python cross_policy_comparison.py                      # all 3 datasets
@@ -362,6 +487,8 @@ python cross_policy_comparison.py --dataset luflow      # LUFlow only
 python cross_policy_comparison.py --dataset lendingclub # LendingClub only
 python cross_policy_comparison.py --seeds 3             # force 3-seed CSVs
 ```
+
+Per-dataset and cross-dataset outputs are saved to `results_without_retrain/cross_policy_comparison/`.
 
 #### Per-Dataset Output Artifacts
 
@@ -374,18 +501,18 @@ For each dataset (`synthetic`, `luflow`, `lendingclub`), four comparison outputs
 | 3 | Budget Efficiency | `table3_budget_efficiency_{dataset}.csv` | `fig3_budget_efficiency_{dataset}.png` | Accuracy gain per retrain after drift (left panel) + pre-drift budget waste fraction (right panel) |
 | 4 | Latency Sensitivity | `table4_latency_sensitivity_{dataset}.csv` | `fig4_latency_sensitivity_{dataset}.png` | Post-drift accuracy vs total latency per policy, one subplot per drift type |
 
-All per-dataset outputs are saved to `results/cross_policy_comparison/{dataset}/`.
-
 #### Cross-Dataset Summary Artifacts
 
 When run on ≥ 2 datasets, a cross-dataset summary is also generated:
 
 | Output | Path | Description |
 |--------|------|-------------|
-| Grand-mean bar chart | `results/cross_policy_comparison/fig_cross_dataset_summary.png` | Policy ranking across all datasets — validates whether findings generalise |
-| Summary table | `results/cross_policy_comparison/table_cross_dataset_summary.csv` | Mean ± std post-drift accuracy per policy per dataset, with run counts |
+| Grand-mean bar chart | `results_without_retrain/cross_policy_comparison/fig_cross_dataset_summary.png` | Policy ranking across all datasets — validates whether findings generalise |
+| Summary table | `results_without_retrain/cross_policy_comparison/table_cross_dataset_summary.csv` | Mean ± std post-drift accuracy per policy per dataset, with run counts |
 
 > See [cross_policy_comparison_guide.md](cross_policy_comparison_guide.md) for detailed interpretation of each output.
+
+### Visualisation Dashboard Layout
 
 Each retraining-policy dashboard contains six panels:
 1. **Line plot** — Accuracy vs. total latency, grouped by drift type
@@ -434,18 +561,18 @@ Cumulative results per policy were merged into dedicated develop branches:
 
 - `develop_LendingClub_Dataset` (243 active runs + 9 baseline runs)
 
-### Phase 6 — Cross-Policy Comparison (analysis only)
+### Phase 6 — Cross-Policy Comparison (with partial_fit, analysis only)
 
-- No dedicated experiment branch — `cross_policy_comparison.py` reads existing summary CSVs from Phases 1–5 and writes output to `results/cross_policy_comparison/`. Committed directly on `main`.
+- No dedicated experiment branch — `cross_policy_comparison.py` reads existing summary CSVs from `results_with_retrain/` and writes output to `results_with_retrain/cross_policy_comparison/`. Committed directly on `main`.
 
-### No-Retrain Baseline (39 runs)
+### Phase 7 — Without partial_fit (1,596 runs)
+
+- `develop_no_partial_fit` — All without-partial-fit experiments (synthetic 3-seed, 10-seed; LUFlow 3-seed; LendingClub 3-seed) plus cross-policy comparison. Results in `results_without_retrain/`.
+
+### No-Retrain Baseline (39 runs, with partial_fit)
 
 - `develop_NoRetrain_NoBudget_NoLatency` (9 runs with 3 seeds + 30 runs with 10 seeds)
 
-### CIS Fraud Detection Investigation (not merged)
-
-- `develop_CIS-Fraud_detection` — Calibration, drift diagnosis, and streaming sanity checks on the IEEE-CIS Fraud Detection dataset. Discarded after sanity checks showed inconsistent post-drift degradation across temporal offsets (see [research_log.md](research_log.md), Week 8).
-
 ### Merged Results
 
-The **`main`** and **`develop`** branches contain **summary CSVs, dashboard PNGs, and cross-policy comparison outputs** from all phases (2,337 total runs). Per-run artifacts (JSON results, per-sample CSVs) are too large to merge and remain in their respective experiment branches only.
+The **`main`** branch contains **summary CSVs, dashboard PNGs, and cross-policy comparison outputs** from all phases across both experiment modes (with and without partial_fit). Per-run artifacts (JSON results, per-sample CSVs) are too large to merge and remain in their respective experiment branches only.

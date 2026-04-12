@@ -139,7 +139,15 @@
 6. Generated summary dashboards for all 4 policies on LendingClub data. Merged into `main`.
 7. Built `cross_policy_comparison.py` — a standalone analysis script that merges all per-policy summary CSVs for a given dataset into one DataFrame and produces four head-to-head comparison outputs plus a cross-dataset summary.
 8. Ran the full comparison pipeline across all three datasets: synthetic (840 rows, 10-seed), LUFlow (252 rows, 3-seed fallback), LendingClub (252 rows, 3-seed fallback). All 17 output files (4 figures + 4 tables per dataset + 1 cross-dataset figure + 1 cross-dataset table) generated successfully.
-9. Updated README and other docs with cross-policy comparison section, CLI usage, output descriptions, and repository structure.
+9. Updated README and other docs with cross-policy comparison section, CLI usage, output descriptions, and repository structure. 
+10. Designed and implemented the **without-partial-fit experiment mode** to isolate the pure effect of the retraining policy from any benefit provided by continuous incremental learning. 
+11. Ran the full **Phase 7 sweep** across all datasets:
+   - **Synthetic (3 seeds):** 252 runs (243 active + 9 baseline).
+   - **Synthetic (10 seeds):** 840 runs (810 active + 30 baseline).
+   - **LUFlow (3 seeds):** 252 runs (243 active + 9 baseline).
+   - **LendingClub (3 seeds):** 252 runs (243 active + 9 baseline).
+   - **Total:** 1,596 without-partial-fit runs. 
+12. Updated all documentation to reflect the dual experiment modes, new project structure, and updated results directory layout.
 
 ---
 

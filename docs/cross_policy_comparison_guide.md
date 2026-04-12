@@ -18,7 +18,7 @@ The cross-policy comparison produces **four outputs per dataset** (synthetic, LU
 | 4 | Latency Sensitivity | Which policy degrades most as deployment latency increases? |
 | 5 | Cross-Dataset Summary | Do the policy rankings hold across synthetic, LUFlow, and LendingClub data? |
 
-All outputs are saved to `results/cross_policy_comparison/{dataset}/`.
+All outputs are saved to `{results_dir}/cross_policy_comparison/{dataset}/` (where `{results_dir}` is `results_with_retrain` or `results_without_retrain` depending on which mode's CSVs are being analyzed).
 
 ---
 
@@ -193,7 +193,7 @@ A single **grouped bar chart** with one group per dataset (Synthetic, LUFlow, Le
 ### How to read it
 
 - **X-axis** = datasets.
-- **Bars** = one per policy, coloured consistently.
+- **Bars** = one per policy, colored consistently.
 - **Bar labels** = accuracy value to 3 decimal places.
 
 ### What to look for
@@ -222,7 +222,7 @@ A single **grouped bar chart** with one group per dataset (Synthetic, LUFlow, Le
 For each dataset `{ds}` ∈ {`synthetic`, `luflow`, `lendingclub`}:
 
 ```
-results/cross_policy_comparison/
+{results_dir}/cross_policy_comparison/
 ├── {ds}/
 │   ├── table1_postdrift_accuracy_{ds}.csv
 │   ├── fig1_postdrift_heatmap_{ds}.png
@@ -236,5 +236,7 @@ results/cross_policy_comparison/
 └── table_cross_dataset_summary.csv
 ```
 
-**Total:** 8 files per dataset × 3 datasets + 2 cross-dataset files = **26 output files**.
+Where `{results_dir}` is `results_with_retrain` or `results_without_retrain`.
+
+**Total:** 8 files per dataset × 3 datasets + 2 cross-dataset files = **26 output files** (per experiment mode).
 

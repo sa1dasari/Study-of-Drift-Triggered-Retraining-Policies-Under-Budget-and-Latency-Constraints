@@ -1,18 +1,22 @@
 # Results Interpretation Guide
 
-This document explains how to read and interpret the CSV and PNG files in the `results/` folder.
+This document explains how to read and interpret the CSV and PNG files in the results directories.
 
-Results are organized into four subdirectories:
-- **`results/synthetic/`** — Synthetic data experiments (`csv/` for summary CSVs, `plots/` for dashboard PNGs, `per_run/` for per-run details).
-- **`results/luflow/`** — LUFlow real-world data experiments (same sub-structure).
-- **`results/lendingclub/`** — LendingClub real-world data experiments (same sub-structure).
-- **`results/cross_policy_comparison/`** — Cross-policy head-to-head comparison outputs (tables & figures). See [cross_policy_comparison_guide.md](cross_policy_comparison_guide.md) for a detailed interpretation of each output.
+Results are organized into two top-level directories based on the experiment mode:
+- **`results_with_retrain/`** — Experiments **with** partial_fit (incremental learning).
+- **`results_without_retrain/`** — Experiments **without** partial_fit (static model between retrains).
+
+Both directories share the same internal structure:
+- **`{results_dir}/synthetic/`** — Synthetic data experiments (`csv/` for summary CSVs, `plots/` for dashboard PNGs, `per_run/` for per-run details).
+- **`{results_dir}/luflow/`** — LUFlow real-world data experiments (same sub-structure).
+- **`{results_dir}/lendingclub/`** — LendingClub real-world data experiments (same sub-structure).
+- **`{results_dir}/cross_policy_comparison/`** — Cross-policy head-to-head comparison outputs (tables & figures). See [cross_policy_comparison_guide.md](cross_policy_comparison_guide.md) for a detailed interpretation of each output.
 
 ---
 
 ## 1. Summary CSV Files — Column Reference
 
-The CSV structure is the same for synthetic (`results/synthetic/csv/`), LUFlow (`results/luflow/csv/`), and LendingClub (`results/lendingclub/csv/`) experiments. Key differences:
+The CSV structure is the same across both experiment modes and all datasets. Key differences between datasets:
 - **Synthetic:** `random_seed` identifies the data generation seed; stream length = 10,000; drift point = 5,000.
 - **LUFlow:** `random_seed` is the pool-config ID (1, 2, or 3); stream length = 50,000; drift point = 25,000. Additional columns `dataset` and `pool_config` identify the LUFlow experiment.
 - **LendingClub:** `random_seed` is the year-pair seed ID (1, 2, or 3); stream length = 50,000; drift point = 25,000. Additional columns `dataset` and `pool_config` identify the LendingClub experiment (pool_config contains the year-pair label, e.g. "2013->2016 (3-yr gap, max policy shift)").
@@ -143,7 +147,7 @@ The **no-retrain baseline** dashboard is a **2×2 PNG** with four panels:
 
 ## 4. Cross-Policy Comparison Outputs
 
-The `cross_policy_comparison.py` script merges all per-policy summary CSVs and produces head-to-head comparison tables and figures across all four policies. Outputs are saved to `results/cross_policy_comparison/{dataset}/`.
+The `cross_policy_comparison.py` script merges all per-policy summary CSVs and produces head-to-head comparison tables and figures across all four policies. Outputs are saved to `{results_dir}/cross_policy_comparison/{dataset}/` (where `{results_dir}` is `results_with_retrain` or `results_without_retrain` depending on the mode).
 
 For a full panel-by-panel interpretation guide, see **[cross_policy_comparison_guide.md](cross_policy_comparison_guide.md)**.
 
