@@ -1,0 +1,136 @@
+{
+  "configuration": {
+    "drift_type": "abrupt",
+    "drift_point": 5000,
+    "policy_type": "error_threshold",
+    "error_threshold": 0.27,
+    "window_size": 200,
+    "budget": 20,
+    "retrain_latency": 100,
+    "deploy_latency": 5,
+    "total_samples": 10000,
+    "random_seed": 1819
+  },
+  "performance_metrics": {
+    "overall_accuracy": 0.7419,
+    "pre_drift_accuracy": 0.7732,
+    "post_drift_accuracy": 0.7106,
+    "accuracy_drop": -0.06259999999999999
+  },
+  "retraining_metrics": {
+    "total_retrains": 20,
+    "budget_used": 20,
+    "budget_total": 20,
+    "budget_utilization": 1.0,
+    "retrains_before_drift": 10,
+    "retrains_after_drift": 10,
+    "retrain_timestamps": [
+      199,
+      304,
+      411,
+      516,
+      1086,
+      2886,
+      2991,
+      3421,
+      4748,
+      4853,
+      5020,
+      5125,
+      5230,
+      5455,
+      5560,
+      5665,
+      5770,
+      5946,
+      6051,
+      6163
+    ],
+    "retrain_latency_windows": [
+      [
+        199,
+        304
+      ],
+      [
+        304,
+        409
+      ],
+      [
+        411,
+        516
+      ],
+      [
+        516,
+        621
+      ],
+      [
+        1086,
+        1191
+      ],
+      [
+        2886,
+        2991
+      ],
+      [
+        2991,
+        3096
+      ],
+      [
+        3421,
+        3526
+      ],
+      [
+        4748,
+        4853
+      ],
+      [
+        4853,
+        4958
+      ],
+      [
+        5020,
+        5125
+      ],
+      [
+        5125,
+        5230
+      ],
+      [
+        5230,
+        5335
+      ],
+      [
+        5455,
+        5560
+      ],
+      [
+        5560,
+        5665
+      ],
+      [
+        5665,
+        5770
+      ],
+      [
+        5770,
+        5875
+      ],
+      [
+        5946,
+        6051
+      ],
+      [
+        6051,
+        6156
+      ],
+      [
+        6163,
+        6268
+      ]
+    ]
+  },
+  "data_metrics": {
+    "predictions_made": 10000,
+    "total_samples": 10000
+  }
+}

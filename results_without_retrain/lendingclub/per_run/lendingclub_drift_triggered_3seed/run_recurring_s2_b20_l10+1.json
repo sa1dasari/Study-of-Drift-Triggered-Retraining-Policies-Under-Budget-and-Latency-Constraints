@@ -1,0 +1,136 @@
+{
+  "configuration": {
+    "drift_type": "recurring",
+    "drift_point": 25000,
+    "policy_type": "drift_triggered",
+    "error_threshold": null,
+    "window_size": 500,
+    "budget": 20,
+    "retrain_latency": 10,
+    "deploy_latency": 1,
+    "total_samples": 50000,
+    "random_seed": 2
+  },
+  "performance_metrics": {
+    "overall_accuracy": 0.54576,
+    "pre_drift_accuracy": 0.55316,
+    "post_drift_accuracy": 0.53836,
+    "accuracy_drop": -0.014800000000000035
+  },
+  "retraining_metrics": {
+    "total_retrains": 20,
+    "budget_used": 20,
+    "budget_total": 20,
+    "budget_utilization": 1.0,
+    "retrains_before_drift": 20,
+    "retrains_after_drift": 0,
+    "retrain_timestamps": [
+      6706,
+      6933,
+      6944,
+      6956,
+      7694,
+      7705,
+      7716,
+      7727,
+      7738,
+      7749,
+      7760,
+      7771,
+      7782,
+      13199,
+      13306,
+      13317,
+      13328,
+      13339,
+      13350,
+      13361
+    ],
+    "retrain_latency_windows": [
+      [
+        6706,
+        6717
+      ],
+      [
+        6933,
+        6944
+      ],
+      [
+        6944,
+        6955
+      ],
+      [
+        6956,
+        6967
+      ],
+      [
+        7694,
+        7705
+      ],
+      [
+        7705,
+        7716
+      ],
+      [
+        7716,
+        7727
+      ],
+      [
+        7727,
+        7738
+      ],
+      [
+        7738,
+        7749
+      ],
+      [
+        7749,
+        7760
+      ],
+      [
+        7760,
+        7771
+      ],
+      [
+        7771,
+        7782
+      ],
+      [
+        7782,
+        7793
+      ],
+      [
+        13199,
+        13210
+      ],
+      [
+        13306,
+        13317
+      ],
+      [
+        13317,
+        13328
+      ],
+      [
+        13328,
+        13339
+      ],
+      [
+        13339,
+        13350
+      ],
+      [
+        13350,
+        13361
+      ],
+      [
+        13361,
+        13372
+      ]
+    ]
+  },
+  "data_metrics": {
+    "predictions_made": 50000,
+    "total_samples": 50000
+  }
+}

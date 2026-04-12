@@ -85,7 +85,7 @@ LATENCY_LABELS = {
 def _csv_search_patterns(dataset, seed_label):
     """Return (dir, glob_patterns) for a given dataset."""
     if dataset == "synthetic":
-        base = PROJECT_ROOT / "src" / "results" / "synthetic" / "csv"
+        base = PROJECT_ROOT / "results_without_retrain" / "synthetic" / "csv"
         patterns = [
             f"summary_results_periodic_retrain_{seed_label}.csv",
             f"summary_results_error_threshold_retrain_{seed_label}.csv",
@@ -93,7 +93,7 @@ def _csv_search_patterns(dataset, seed_label):
             f"summary_results_no_retrain_{seed_label}.csv",
         ]
     elif dataset == "luflow":
-        base = PROJECT_ROOT / "src" / "results" / "luflow" / "csv"
+        base = PROJECT_ROOT / "results_without_retrain" / "luflow" / "csv"
         patterns = [
             f"luflow_summary_periodic_retrain_{seed_label}.csv",
             f"luflow_summary_error_threshold_retrain_{seed_label}.csv",
@@ -101,7 +101,7 @@ def _csv_search_patterns(dataset, seed_label):
             f"luflow_summary_no_retrain_{seed_label}.csv",
         ]
     elif dataset == "lendingclub":
-        base = PROJECT_ROOT / "src" / "results" / "lendingclub" / "csv"
+        base = PROJECT_ROOT / "results_without_retrain" / "lendingclub" / "csv"
         patterns = [
             f"lendingclub_summary_periodic_retrain_{seed_label}.csv",
             f"lendingclub_summary_error_threshold_retrain_{seed_label}.csv",
@@ -727,7 +727,7 @@ def main():
         else [args.dataset]
     )
 
-    out_dir = PROJECT_ROOT / "src" / "results" / "cross_policy_comparison"
+    out_dir = PROJECT_ROOT / "results_without_retrain" / "cross_policy_comparison"
     out_dir.mkdir(parents=True, exist_ok=True)
 
     all_merged = {}
