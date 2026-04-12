@@ -1,0 +1,136 @@
+{
+  "configuration": {
+    "drift_type": "recurring",
+    "drift_point": 5000,
+    "policy_type": "drift_triggered",
+    "error_threshold": null,
+    "window_size": 500,
+    "budget": 20,
+    "retrain_latency": 100,
+    "deploy_latency": 5,
+    "total_samples": 10000,
+    "random_seed": 1819
+  },
+  "performance_metrics": {
+    "overall_accuracy": 0.6421,
+    "pre_drift_accuracy": 0.6504,
+    "post_drift_accuracy": 0.6338,
+    "accuracy_drop": -0.016599999999999948
+  },
+  "retraining_metrics": {
+    "total_retrains": 20,
+    "budget_used": 20,
+    "budget_total": 20,
+    "budget_utilization": 1.0,
+    "retrains_before_drift": 0,
+    "retrains_after_drift": 20,
+    "retrain_timestamps": [
+      5050,
+      5155,
+      5325,
+      5430,
+      5535,
+      6031,
+      6136,
+      6243,
+      6388,
+      6493,
+      7056,
+      7161,
+      7266,
+      7371,
+      7476,
+      7581,
+      8017,
+      8122,
+      8227,
+      8332
+    ],
+    "retrain_latency_windows": [
+      [
+        5050,
+        5155
+      ],
+      [
+        5155,
+        5260
+      ],
+      [
+        5325,
+        5430
+      ],
+      [
+        5430,
+        5535
+      ],
+      [
+        5535,
+        5640
+      ],
+      [
+        6031,
+        6136
+      ],
+      [
+        6136,
+        6241
+      ],
+      [
+        6243,
+        6348
+      ],
+      [
+        6388,
+        6493
+      ],
+      [
+        6493,
+        6598
+      ],
+      [
+        7056,
+        7161
+      ],
+      [
+        7161,
+        7266
+      ],
+      [
+        7266,
+        7371
+      ],
+      [
+        7371,
+        7476
+      ],
+      [
+        7476,
+        7581
+      ],
+      [
+        7581,
+        7686
+      ],
+      [
+        8017,
+        8122
+      ],
+      [
+        8122,
+        8227
+      ],
+      [
+        8227,
+        8332
+      ],
+      [
+        8332,
+        8437
+      ]
+    ]
+  },
+  "data_metrics": {
+    "predictions_made": 10000,
+    "total_samples": 10000
+  }
+}

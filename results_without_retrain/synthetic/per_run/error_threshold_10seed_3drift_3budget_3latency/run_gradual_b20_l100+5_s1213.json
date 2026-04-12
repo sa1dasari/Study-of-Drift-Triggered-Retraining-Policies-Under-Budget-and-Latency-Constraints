@@ -1,0 +1,136 @@
+{
+  "configuration": {
+    "drift_type": "gradual",
+    "drift_point": 5000,
+    "policy_type": "error_threshold",
+    "error_threshold": 0.27,
+    "window_size": 200,
+    "budget": 20,
+    "retrain_latency": 100,
+    "deploy_latency": 5,
+    "total_samples": 10000,
+    "random_seed": 1213
+  },
+  "performance_metrics": {
+    "overall_accuracy": 0.5977,
+    "pre_drift_accuracy": 0.7048,
+    "post_drift_accuracy": 0.4906,
+    "accuracy_drop": -0.2142
+  },
+  "retraining_metrics": {
+    "total_retrains": 20,
+    "budget_used": 20,
+    "budget_total": 20,
+    "budget_utilization": 1.0,
+    "retrains_before_drift": 20,
+    "retrains_after_drift": 0,
+    "retrain_timestamps": [
+      199,
+      304,
+      409,
+      531,
+      640,
+      745,
+      850,
+      955,
+      1060,
+      1165,
+      1270,
+      1375,
+      1480,
+      1591,
+      1737,
+      1842,
+      1947,
+      2126,
+      2231,
+      2336
+    ],
+    "retrain_latency_windows": [
+      [
+        199,
+        304
+      ],
+      [
+        304,
+        409
+      ],
+      [
+        409,
+        514
+      ],
+      [
+        531,
+        636
+      ],
+      [
+        640,
+        745
+      ],
+      [
+        745,
+        850
+      ],
+      [
+        850,
+        955
+      ],
+      [
+        955,
+        1060
+      ],
+      [
+        1060,
+        1165
+      ],
+      [
+        1165,
+        1270
+      ],
+      [
+        1270,
+        1375
+      ],
+      [
+        1375,
+        1480
+      ],
+      [
+        1480,
+        1585
+      ],
+      [
+        1591,
+        1696
+      ],
+      [
+        1737,
+        1842
+      ],
+      [
+        1842,
+        1947
+      ],
+      [
+        1947,
+        2052
+      ],
+      [
+        2126,
+        2231
+      ],
+      [
+        2231,
+        2336
+      ],
+      [
+        2336,
+        2441
+      ]
+    ]
+  },
+  "data_metrics": {
+    "predictions_made": 10000,
+    "total_samples": 10000
+  }
+}

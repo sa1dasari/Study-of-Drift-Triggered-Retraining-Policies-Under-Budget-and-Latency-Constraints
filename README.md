@@ -4,7 +4,11 @@
 
 A reproducible empirical study comparing three model retraining policies — periodic, error-threshold, and drift-triggered (ADWIN) — for streaming ML systems under concept drift, budget constraints, and deployment latency. A no-retrain baseline provides the accuracy floor.
 
-Experiments are conducted on **synthetic data** (controlled weight-vector drift, 1,833 runs) and two **real-world datasets** — the **LUFlow Network Intrusion Detection dataset** (Lancaster University, 252 runs) and the **LendingClub Loan Default dataset** (Kaggle, 252 runs) — for a combined total of **2,337 experiment runs**.
+Experiments are conducted in two modes:
+- **With partial_fit (incremental learning):** The model receives `partial_fit` on every sample — 2,337 runs across synthetic, LUFlow, and LendingClub datasets.
+- **Without partial_fit (static model):** The model is frozen between explicit retrains, isolating the pure policy effect — 1,596 runs across the same datasets.
+
+**Grand total: 3,933 experiment runs.**
 
 ## Core Research Question
 
@@ -83,46 +87,43 @@ Experiments are conducted on **synthetic data** (controlled weight-vector drift,
 | Dataset | LendingClub (Kaggle) — accepted loans 2007–2018, ~1.35 M rows after filtering |
 | Drift source | Real-world feature-space drift from underwriting policy changes (2012–2016) |
 
-### Grand Total: **2,337 experiment runs**
+### Grand Total: **3,933 experiment runs** (2,337 with partial_fit + 1,596 without partial_fit)
 
 ---
 
 ## Repository Structure
 
 ```
-├── main.py                  # CLI entry point — synthetic experiments (--policy, --seeds)
-├── luflow_main.py           # CLI entry point — LUFlow real-world experiments (--policy)
-├── lendingclub_main.py      # CLI entry point — LendingClub real-world experiments (--policy)
-├── cross_policy_comparison.py # Cross-policy head-to-head comparison (--dataset, --seeds)
-├── luflow_fitness_check.py  # LUFlow dataset suitability gate checks
-├── lendingclub_fitness_check.py # LendingClub dataset suitability gate checks
-├── plot_summary.py          # Per-policy dashboard PNG generator
-├── docs/                    # All documentation
+├── experiments/                     # CLI entry points for all experiment runs
+│   ├── main.py                      #   Synthetic experiments (with partial_fit)
+│   ├── main_no_partial_fit.py       #   Synthetic experiments (NO partial_fit)
+│   ├── luflow_main.py               #   LUFlow experiments (with partial_fit)
+│   ├── luflow_main_no_partial_fit.py#   LUFlow experiments (NO partial_fit)
+│   ├── lendingclub_main.py          #   LendingClub experiments (with partial_fit)
+│   └── lendingclub_main_no_partial_fit.py # LendingClub experiments (NO partial_fit)
+├── cross_policy_comparison.py       # Cross-policy head-to-head comparison (--dataset, --seeds)
+├── luflow_fitness_check.py          # LUFlow dataset suitability gate checks
+├── lendingclub_fitness_check.py     # LendingClub dataset suitability gate checks
+├── plot_summary.py                  # Per-policy dashboard PNG generator
+├── docs/                            # All documentation
 ├── src/
-│   ├── data/                # DriftGenerator + LUFlow & LendingClub dataset loaders
-│   ├── models/              # StreamingModel (SGDClassifier wrapper)
-│   ├── policies/            # Periodic, ErrorThreshold, DriftTriggered, NeverRetrain
-│   ├── runner/              # ExperimentRunner (streaming event loop)
-│   └── evaluation/          # MetricsTracker, CSV/JSON export, plots
-└── results/                 # Organised output directory
-    ├── synthetic/           #   Synthetic experiment results
-    │   ├── csv/             #     Summary CSVs
-    │   ├── plots/           #     Dashboard PNGs
-    │   └── per_run/         #     Per-run JSONs & per-sample CSVs
-    ├── luflow/              #   LUFlow real-world experiment results
-    │   ├── csv/             #     Summary CSVs
-    │   ├── plots/           #     Dashboard PNGs
-    │   └── per_run/         #     Per-run JSONs & per-sample CSVs
-    ├── lendingclub/         #   LendingClub real-world experiment results
-    │   ├── csv/             #     Summary CSVs
-    │   ├── plots/           #     Dashboard PNGs
-    │   └── per_run/         #     Per-run JSONs & per-sample CSVs
-    └── cross_policy_comparison/ # Head-to-head cross-policy outputs
-        ├── synthetic/       #     Synthetic comparison tables & figures
-        ├── luflow/          #     LUFlow comparison tables & figures
-        ├── lendingclub/     #     LendingClub comparison tables & figures
-        ├── fig_cross_dataset_summary.png
-        └── table_cross_dataset_summary.csv
+│   ├── data/                        # DriftGenerator + LUFlow & LendingClub dataset loaders
+│   ├── models/                      # StreamingModel (SGDClassifier wrapper)
+│   ├── policies/                    # Periodic, ErrorThreshold, DriftTriggered, NeverRetrain
+│   ├── runner/
+│   │   ├── experiment_runner.py     #   Streaming event loop (with partial_fit)
+│   │   └── experiment_runner_no_partial_fit.py # Streaming event loop (NO partial_fit)
+│   └── evaluation/                  # MetricsTracker, CSV/JSON export, plots
+├── results_with_retrain/            # Results from experiments WITH partial_fit
+│   ├── synthetic/                   #   csv/, plots/, per_run/
+│   ├── luflow/                      #   csv/, plots/, per_run/
+│   ├── lendingclub/                 #   csv/, plots/, per_run/
+│   └── cross_policy_comparison/     #   Head-to-head cross-policy outputs
+└── results_without_retrain/         # Results from experiments WITHOUT partial_fit
+    ├── synthetic/                   #   csv/, plots/, per_run/
+    ├── luflow/                      #   csv/, plots/, per_run/
+    ├── lendingclub/                 #   csv/, plots/, per_run/
+    └── cross_policy_comparison/     #   Head-to-head cross-policy outputs
 ```
 
 ---
@@ -132,10 +133,19 @@ Experiments are conducted on **synthetic data** (controlled weight-vector drift,
 ```bash
 python -m venv .venv && .venv\Scripts\Activate.ps1   # Windows
 pip install -r docs/requirements.txt
-python main.py                                        # synthetic experiments (all policies, 10 seeds)
-python luflow_main.py                                 # LUFlow experiments (all policies, 252 runs)
-python lendingclub_main.py                            # LendingClub experiments (all policies, 252 runs)
-python cross_policy_comparison.py                     # cross-policy head-to-head comparison (all datasets)
+
+# With partial_fit (incremental learning)
+python experiments/main.py                                        # synthetic experiments
+python experiments/luflow_main.py                                 # LUFlow experiments
+python experiments/lendingclub_main.py                            # LendingClub experiments
+
+# Without partial_fit (static model)
+python experiments/main_no_partial_fit.py                         # synthetic experiments
+python experiments/luflow_main_no_partial_fit.py                  # LUFlow experiments
+python experiments/lendingclub_main_no_partial_fit.py             # LendingClub experiments
+
+# Cross-policy comparison (reads from results_without_retrain/ by default)
+python cross_policy_comparison.py                                 # all datasets
 ```
 
 See [setup_and_run_guide.md](docs/setup_and_run_guide.md) for full instructions.
@@ -166,6 +176,7 @@ python cross_policy_comparison.py --seeds 3             # force 3-seed CSVs
 | Phase 3 — Extreme Latency | `develop_ExtremeLatencyLevels` | 741 |
 | Phase 4 — LUFlow Dataset | `develop_LUFlow_Dataset` | 252 |
 | Phase 5 — LendingClub Dataset | `develop_LendingClub_Data` | 252 |
+| Phase 7 — Without partial_fit | `develop_no_partial_fit` | 1,596 |
 
 All **summary CSVs and dashboard PNGs** are merged into the **`main`** branch. Per-run artifacts (JSON results, per-sample CSVs) remain in their respective experiment branches only. See [experiment_scope.md](docs/experiment_scope.md) for full details.
 

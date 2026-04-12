@@ -1,0 +1,51 @@
+{
+  "configuration": {
+    "drift_type": "recurring",
+    "drift_point": 5000,
+    "policy_type": "drift_triggered",
+    "error_threshold": null,
+    "window_size": 500,
+    "budget": 20,
+    "retrain_latency": 500,
+    "deploy_latency": 20,
+    "total_samples": 10000,
+    "random_seed": 1011
+  },
+  "performance_metrics": {
+    "overall_accuracy": 0.6061,
+    "pre_drift_accuracy": 0.543,
+    "post_drift_accuracy": 0.6692,
+    "accuracy_drop": 0.12619999999999998
+  },
+  "retraining_metrics": {
+    "total_retrains": 3,
+    "budget_used": 3,
+    "budget_total": 20,
+    "budget_utilization": 0.15,
+    "retrains_before_drift": 0,
+    "retrains_after_drift": 3,
+    "retrain_timestamps": [
+      5210,
+      6164,
+      7074
+    ],
+    "retrain_latency_windows": [
+      [
+        5210,
+        5730
+      ],
+      [
+        6164,
+        6684
+      ],
+      [
+        7074,
+        7594
+      ]
+    ]
+  },
+  "data_metrics": {
+    "predictions_made": 10000,
+    "total_samples": 10000
+  }
+}
