@@ -1,5 +1,5 @@
 """
-Never-retrain (baseline) policy — partial_fit only, no full retraining.
+Never-retrain (baseline) policy -- partial_fit only, no full retraining.
 
 This policy serves as the **floor baseline** for all experiments.
 The model is updated incrementally via partial_fit on every sample but is
@@ -29,7 +29,7 @@ class NeverRetrainPolicy(RetrainPolicy):
         super().__init__(budget=0, retrain_latency=0, deploy_latency=0)
 
     def should_retrain(self, t, metrics):
-        """Never retrain — always returns False.
+        """Never retrain -- always returns False.
 
         Args:
             t (int): Current timestep.

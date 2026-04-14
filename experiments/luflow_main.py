@@ -7,21 +7,21 @@ gradual, recurring) to evaluate retraining policies under budget and
 latency constraints.
 
 Design (mirrors the synthetic study):
-    3 seeds × 3 drift types × 3 budgets × 3 latency levels × 3 policies
+    3 seeds x 3 drift types x 3 budgets x 3 latency levels x 3 policies
     = 243 active runs  +  9 baseline runs  =  252 total
 
 Seeds (pool-pair configurations):
-    seed1: Jan-2021 low-mal  →  Feb-2021 high-mal   (class-balance shift)
-    seed2: Jan-2021 high-mal →  Feb-2021 high-mal   (feature drift, similar balance)
-    seed3: Jan-2021 low-mal  →  Feb-2021 extreme-mal (class-balance shift, extreme attacks)
+    seed1: Jan-2021 low-mal  ->  Feb-2021 high-mal   (class-balance shift)
+    seed2: Jan-2021 high-mal ->  Feb-2021 high-mal   (feature drift, similar balance)
+    seed3: Jan-2021 low-mal  ->  Feb-2021 extreme-mal (class-balance shift, extreme attacks)
 
 Drift types (applied to the pre/post pools selected by each seed):
     abrupt:    hard switch at t = 25,000
-    gradual:   linear blend over 5,000 steps [25,000 … 30,000)
+    gradual:   linear blend over 5,000 steps [25,000 ... 30,000)
     recurring: concept alternates every 5,000 steps after t = 25,000
 
 Locked policy parameters (from calibration on LUFlow abrupt condition):
-    Periodic:        interval = 50,000 / K  (K=5→10,000; K=10→5,000; K=20→2,500)
+    Periodic:        interval = 50,000 / K  (K=5->10,000; K=10->5,000; K=20->2,500)
     Error-Threshold: threshold = 0.20, window_size = 200
     Drift-Triggered: delta = 0.005, window_size = 500, min_samples = 100
 
@@ -45,7 +45,7 @@ import numpy as np
 import pandas as pd
 from sklearn.preprocessing import StandardScaler
 
-# ── Ensure project root is on sys.path ──────────────────────────────────
+# -- Ensure project root is on sys.path ----------------------------------
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(PROJECT_ROOT))
 
@@ -77,13 +77,13 @@ POSITIVE_LABEL = "malicious"
 NEGATIVE_LABEL = "benign"
 MAX_ROWS_PER_DAY = 50_000
 
-# ── Stream parameters ────────────────────────────────────────────────────
+# -- Stream parameters ----------------------------------------------------
 N_SAMPLES = 50_000
 DRIFT_POINT = 25_000
 GRADUAL_WINDOW = 5_000       # transition window for gradual drift
 RECURRENCE_PERIOD = 5_000    # alternation period for recurring drift
 
-# ── Experiment grid ──────────────────────────────────────────────────────
+# -- Experiment grid ------------------------------------------------------
 DRIFT_TYPES = ["abrupt", "gradual", "recurring"]
 BUDGETS = [5, 10, 20]
 LATENCY_CONFIGS = [
@@ -92,7 +92,7 @@ LATENCY_CONFIGS = [
     (500, 20),    # High latency  (total = 520)
 ]
 
-# ── Pool-pair configurations ("seeds") ───────────────────────────────────
+# -- Pool-pair configurations ("seeds") -----------------------------------
 #   Each entry defines which LUFlow days form the pre-drift and post-drift
 #   data pools.  Month prefixes filter by filename; mal_min / mal_max
 #   constrain the % malicious of included days.
@@ -117,7 +117,7 @@ POOL_CONFIGS = [
     },
 ]
 
-# ── Locked policy parameters (calibrated on LUFlow abrupt condition) ─────
+# -- Locked policy parameters (calibrated on LUFlow abrupt condition) -----
 POLICY_PARAMS = {
     "periodic": {},                                          # interval = N_SAMPLES / K
     "error_threshold": {"error_threshold": 0.20, "window_size": 200},
@@ -254,14 +254,14 @@ def build_stream(pre_X, pre_y, post_X, post_y, drift_type):
     pre_n, post_n = len(pre_X), len(post_X)
 
     if drift_type == "abrupt":
-        # ── Hard switch at dp ────────────────────────────────────────
+        # -- Hard switch at dp ----------------------------------------
         pre_idx = np.arange(dp) % pre_n
         post_idx = np.arange(n - dp) % post_n
         X = np.vstack([pre_X[pre_idx], post_X[post_idx]])
         y = np.concatenate([pre_y[pre_idx], post_y[post_idx]])
 
     elif drift_type == "gradual":
-        # ── Linear blend over GRADUAL_WINDOW steps ───────────────────
+        # -- Linear blend over GRADUAL_WINDOW steps -------------------
         rng = np.random.default_rng(42)
         gw = GRADUAL_WINDOW
         post_only = n - dp - gw
@@ -293,7 +293,7 @@ def build_stream(pre_X, pre_y, post_X, post_y, drift_type):
         y = np.concatenate([pre_y[pre_idx], np.array(trans_y), post_y[post_rem_idx]])
 
     elif drift_type == "recurring":
-        # ── Alternating chunks after dp ──────────────────────────────
+        # -- Alternating chunks after dp ------------------------------
         pre_idx = np.arange(dp) % pre_n
         pre_cursor = dp
         post_cursor = 0
@@ -326,7 +326,7 @@ def build_stream(pre_X, pre_y, post_X, post_y, drift_type):
     else:
         raise ValueError(f"Unknown drift_type: {drift_type!r}")
 
-    # ── Standardise features across the whole stream ─────────────────
+    # -- Standardise features across the whole stream -----------------
     scaler = StandardScaler()
     X = scaler.fit_transform(X)
 
@@ -422,7 +422,7 @@ def run_policy_sweep(policy_type, per_day, pool_cache):
     start_time = time.time()
 
     print(f"\n{'=' * 72}")
-    print(f"LUFlow — {display} POLICY  ({total_runs} runs)")
+    print(f"LUFlow -- {display} POLICY  ({total_runs} runs)")
     print(f"{'=' * 72}")
     print(f"  Dataset       : LUFlow  ({n_pools} pool configs x {n_drifts} drift types)")
     print(f"  Stream        : {N_SAMPLES:,} samples, drift at t = {DRIFT_POINT:,}")
@@ -441,7 +441,7 @@ def run_policy_sweep(policy_type, per_day, pool_cache):
         pre_X, pre_y, post_X, post_y = pool_cache[sid]
 
         for drift_type in DRIFT_TYPES:
-            # Build stream once per (seed, drift_type) — reused across
+            # Build stream once per (seed, drift_type) -- reused across
             # the 9 budget x latency combos that share this stream.
             X, y, dp = build_stream(pre_X, pre_y, post_X, post_y, drift_type)
 
@@ -502,7 +502,7 @@ def run_policy_sweep(policy_type, per_day, pool_cache):
           f"{elapsed / 60:.1f} minutes")
     print(f"Summary CSV -> {summary_csv}")
 
-    # ── Generate summary dashboard ───────────────────────────────────
+    # -- Generate summary dashboard -----------------------------------
     print(f"Generating LUFlow {display} summary plot ...")
     from plot_summary import plot_summary_for_policy
     plot_output = str(PROJECT_ROOT / f"results_with_retrain/luflow/plots/luflow_summary_plot_{policy_type}_retrain_{seed_label}.png")
@@ -535,7 +535,7 @@ def _run_no_retrain_sweep(per_day, pool_cache):
     start_time = time.time()
 
     print(f"\n{'=' * 72}")
-    print(f"LUFlow — {display}  Baseline Sweep ({total_runs} runs)")
+    print(f"LUFlow -- {display}  Baseline Sweep ({total_runs} runs)")
     print(f"{'=' * 72}")
     print(f"  Stream   : {N_SAMPLES:,} samples, drift at t = {DRIFT_POINT:,}")
     print(f"  Budget   : N/A (always 0)")
@@ -593,7 +593,7 @@ def _run_no_retrain_sweep(per_day, pool_cache):
           f"{elapsed / 60:.1f} minutes")
     print(f"Summary CSV -> {summary_csv}")
 
-    # ── Generate baseline summary plot ────────────────────────────────
+    # -- Generate baseline summary plot --------------------------------
     print(f"Generating LUFlow {display} summary plot ...")
     from plot_summary import plot_summary_for_no_retrain
     plot_output = str(PROJECT_ROOT / f"results_with_retrain/luflow/plots/luflow_summary_plot_{policy_type}_{seed_label}.png")
@@ -630,7 +630,7 @@ def main():
         else [args.policy]
     )
 
-    # ── Banner ────────────────────────────────────────────────────────
+    # -- Banner --------------------------------------------------------
     print(f"{'#' * 72}")
     print(f"  LUFlow EXPERIMENT RUNNER")
     print(f"  Data directory : {DATA_DIR}")
@@ -641,14 +641,14 @@ def main():
     print(f"  Pool configs   : {len(POOL_CONFIGS)} seeds")
     print(f"{'#' * 72}")
 
-    # ── Scan data ─────────────────────────────────────────────────────
+    # -- Scan data -----------------------------------------------------
     per_day = _scan_days()
     print(f"\n  Scanned {len(per_day)} day-CSVs:")
     for stem, n, nb, nm, pct in per_day:
         tag = "LOW " if pct <= 5 else ("HIGH" if pct >= 15 else "MID ")
         print(f"    {stem}  binary={nb:>7,}  mal={nm:>6,} ({pct:5.1f}%)  [{tag}]")
 
-    # ── Pre-load all pools ────────────────────────────────────────────
+    # -- Pre-load all pools --------------------------------------------
     print(f"\n  Loading pool data ...")
     pool_cache = {}
     for cfg in POOL_CONFIGS:
@@ -659,13 +659,13 @@ def main():
               f"pre = {len(pre_X):>6,} samples ({100*pre_y.mean():.1f}% mal)   "
               f"post = {len(post_X):>6,} samples ({100*post_y.mean():.1f}% mal)")
 
-    # ── Locked parameters ─────────────────────────────────────────────
+    # -- Locked parameters ---------------------------------------------
     print(f"\n  Locked policy parameters (from calibration):")
     print(f"    Periodic:        interval = {N_SAMPLES} / K")
     print(f"    Error-Threshold: {POLICY_PARAMS['error_threshold']}")
     print(f"    Drift-Triggered: {POLICY_PARAMS['drift_triggered']}")
 
-    # ── Compute total runs ────────────────────────────────────────────
+    # -- Compute total runs --------------------------------------------
     total_runs = 0
     for p in policies:
         if p == "no_retrain":
@@ -677,17 +677,17 @@ def main():
     total_start = time.time()
 
     print(f"\n{'#' * 72}")
-    print(f"  LUFlow FULL SWEEP — {len(policies)} policy(ies), "
+    print(f"  LUFlow FULL SWEEP -- {len(policies)} policy(ies), "
           f"{total_runs} total runs")
     print(f"{'#' * 72}")
 
-    # ── Run sweeps ────────────────────────────────────────────────────
+    # -- Run sweeps ----------------------------------------------------
     for policy_type in policies:
         run_policy_sweep(policy_type, per_day, pool_cache)
 
     total_elapsed = time.time() - total_start
     print(f"\n{'#' * 72}")
-    print(f"  ALL DONE — {len(policies)} policy(ies) completed in "
+    print(f"  ALL DONE -- {len(policies)} policy(ies) completed in "
           f"{total_elapsed / 60:.1f} minutes")
     print(f"{'#' * 72}")
 

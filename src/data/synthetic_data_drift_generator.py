@@ -109,7 +109,7 @@ class DriftGenerator:
         for t in range(n_samples):
             w = self._get_weights(t)
 
-            # Linear model: logit = X[t] · w
+            # Linear model: logit = X[t] * w
             logit = X[t] @ w
 
             # Apply logistic transformation to get probability

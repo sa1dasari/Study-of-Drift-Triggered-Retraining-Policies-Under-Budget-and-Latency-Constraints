@@ -31,7 +31,7 @@ class ErrorThresholdPolicy(RetrainPolicy):
         Initialize error-threshold retraining policy.
 
         Args:
-            error_threshold (float): Error rate threshold (0.0–1.0)
+            error_threshold (float): Error rate threshold (0.0--1.0)
             window_size (int): Number of recent predictions to consider when
                 computing the rolling error rate
             budget (int): Maximum number of retrains allowed.

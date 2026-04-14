@@ -1,5 +1,5 @@
 """
-LUFlow Experiment Runner — NO partial_fit (static model between retrains).
+LUFlow Experiment Runner -- NO partial_fit (static model between retrains).
 
 Identical factorial grid as luflow_main.py but uses
 ExperimentRunnerNoPartialFit so the model is completely frozen between
@@ -7,7 +7,7 @@ explicit retrains.  Results are written to separate directories so they
 never overwrite the incremental (partial_fit) results.
 
 Design (mirrors the incremental study):
-    3 seeds × 3 drift types × 3 budgets × 3 latency levels × 3 policies
+    3 seeds x 3 drift types x 3 budgets x 3 latency levels x 3 policies
     = 243 active runs  +  9 baseline runs  =  252 total
 
 Usage:
@@ -28,7 +28,7 @@ import numpy as np
 import pandas as pd
 from sklearn.preprocessing import StandardScaler
 
-# ── Ensure project root is on sys.path ──────────────────────────────────
+# -- Ensure project root is on sys.path ----------------------------------
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(PROJECT_ROOT))
 
@@ -60,13 +60,13 @@ POSITIVE_LABEL = "malicious"
 NEGATIVE_LABEL = "benign"
 MAX_ROWS_PER_DAY = 50_000
 
-# ── Stream parameters ────────────────────────────────────────────────────
+# -- Stream parameters ----------------------------------------------------
 N_SAMPLES = 50_000
 DRIFT_POINT = 25_000
 GRADUAL_WINDOW = 5_000
 RECURRENCE_PERIOD = 5_000
 
-# ── Experiment grid ──────────────────────────────────────────────────────
+# -- Experiment grid ------------------------------------------------------
 DRIFT_TYPES = ["abrupt", "gradual", "recurring"]
 BUDGETS = [5, 10, 20]
 LATENCY_CONFIGS = [
@@ -75,7 +75,7 @@ LATENCY_CONFIGS = [
     (500, 20),    # High latency  (total = 520)
 ]
 
-# ── Pool-pair configurations ("seeds") ───────────────────────────────────
+# -- Pool-pair configurations ("seeds") -----------------------------------
 POOL_CONFIGS = [
     {
         "id": 1,
@@ -97,7 +97,7 @@ POOL_CONFIGS = [
     },
 ]
 
-# ── Locked policy parameters ─────────────────────────────────────────────
+# -- Locked policy parameters ---------------------------------------------
 POLICY_PARAMS = {
     "periodic": {},
     "error_threshold": {"error_threshold": 0.20, "window_size": 200},
@@ -112,7 +112,7 @@ POLICY_DISPLAY = {
     "no_retrain":       "No-Retrain (Baseline)",
 }
 
-# ── Result directory prefix ──────────────────────────────────────────────
+# -- Result directory prefix ----------------------------------------------
 RESULTS_BASE = "results_without_retrain/luflow"
 
 
@@ -337,7 +337,7 @@ def run_policy_sweep(policy_type, per_day, pool_cache):
     start_time = time.time()
 
     print(f"\n{'=' * 72}")
-    print(f"[NO PARTIAL FIT] LUFlow — {display} POLICY  ({total_runs} runs)")
+    print(f"[NO PARTIAL FIT] LUFlow -- {display} POLICY  ({total_runs} runs)")
     print(f"{'=' * 72}")
     print(f"  Dataset       : LUFlow  ({n_pools} pool configs x {n_drifts} drift types)")
     print(f"  Stream        : {N_SAMPLES:,} samples, drift at t = {DRIFT_POINT:,}")
@@ -445,7 +445,7 @@ def _run_no_retrain_sweep(per_day, pool_cache):
     start_time = time.time()
 
     print(f"\n{'=' * 72}")
-    print(f"[NO PARTIAL FIT] LUFlow — {display}  Baseline Sweep ({total_runs} runs)")
+    print(f"[NO PARTIAL FIT] LUFlow -- {display}  Baseline Sweep ({total_runs} runs)")
     print(f"{'=' * 72}")
     print(f"  Stream   : {N_SAMPLES:,} samples, drift at t = {DRIFT_POINT:,}")
     print(f"  Budget   : N/A (always 0)")
@@ -540,9 +540,9 @@ def main():
         else [args.policy]
     )
 
-    # ── Banner ────────────────────────────────────────────────────────
+    # -- Banner --------------------------------------------------------
     print(f"{'#' * 72}")
-    print(f"  LUFlow EXPERIMENT RUNNER — NO PARTIAL FIT (static model)")
+    print(f"  LUFlow EXPERIMENT RUNNER -- NO PARTIAL FIT (static model)")
     print(f"  Data directory : {DATA_DIR}")
     print(f"  Stream         : {N_SAMPLES:,} samples, drift at t = {DRIFT_POINT:,}")
     print(f"  Drift types    : {DRIFT_TYPES}")
@@ -552,14 +552,14 @@ def main():
     print(f"  Incremental    : DISABLED")
     print(f"{'#' * 72}")
 
-    # ── Scan data ─────────────────────────────────────────────────────
+    # -- Scan data -----------------------------------------------------
     per_day = _scan_days()
     print(f"\n  Scanned {len(per_day)} day-CSVs:")
     for stem, n, nb, nm, pct in per_day:
         tag = "LOW " if pct <= 5 else ("HIGH" if pct >= 15 else "MID ")
         print(f"    {stem}  binary={nb:>7,}  mal={nm:>6,} ({pct:5.1f}%)  [{tag}]")
 
-    # ── Pre-load all pools ────────────────────────────────────────────
+    # -- Pre-load all pools --------------------------------------------
     print(f"\n  Loading pool data ...")
     pool_cache = {}
     for cfg in POOL_CONFIGS:
@@ -570,13 +570,13 @@ def main():
               f"pre = {len(pre_X):>6,} samples ({100*pre_y.mean():.1f}% mal)   "
               f"post = {len(post_X):>6,} samples ({100*post_y.mean():.1f}% mal)")
 
-    # ── Locked parameters ─────────────────────────────────────────────
+    # -- Locked parameters ---------------------------------------------
     print(f"\n  Locked policy parameters (from calibration):")
     print(f"    Periodic:        interval = {N_SAMPLES} / K")
     print(f"    Error-Threshold: {POLICY_PARAMS['error_threshold']}")
     print(f"    Drift-Triggered: {POLICY_PARAMS['drift_triggered']}")
 
-    # ── Compute total runs ────────────────────────────────────────────
+    # -- Compute total runs --------------------------------------------
     total_runs = 0
     for p in policies:
         if p == "no_retrain":
@@ -588,17 +588,17 @@ def main():
     total_start = time.time()
 
     print(f"\n{'#' * 72}")
-    print(f"  LUFlow FULL SWEEP (NO PARTIAL FIT) — {len(policies)} policy(ies), "
+    print(f"  LUFlow FULL SWEEP (NO PARTIAL FIT) -- {len(policies)} policy(ies), "
           f"{total_runs} total runs")
     print(f"{'#' * 72}")
 
-    # ── Run sweeps ────────────────────────────────────────────────────
+    # -- Run sweeps ----------------------------------------------------
     for policy_type in policies:
         run_policy_sweep(policy_type, per_day, pool_cache)
 
     total_elapsed = time.time() - total_start
     print(f"\n{'#' * 72}")
-    print(f"  ALL DONE (NO PARTIAL FIT) — {len(policies)} policy(ies) completed in "
+    print(f"  ALL DONE (NO PARTIAL FIT) -- {len(policies)} policy(ies) completed in "
           f"{total_elapsed / 60:.1f} minutes")
     print(f"{'#' * 72}")
 

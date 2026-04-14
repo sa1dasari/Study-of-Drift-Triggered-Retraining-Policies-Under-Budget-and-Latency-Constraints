@@ -7,7 +7,7 @@ distribution. When drift is detected, a retrain is triggered.
 
 Unlike the error-threshold policy (which reacts to high error rates) or the periodic
 policy (which retrains on a fixed schedule), this policy specifically looks for
-*changes* in the error distribution — the hallmark of concept drift.
+*changes* in the error distribution -- the hallmark of concept drift.
 """
 
 import numpy as np
@@ -30,7 +30,7 @@ class DriftTriggeredPolicy(RetrainPolicy):
     Attributes:
         delta (float): Confidence parameter for the Hoeffding bound.
             Lower values make the detector *less* sensitive (fewer false alarms).
-            Typical range: 0.0001 – 0.05.
+            Typical range: 0.0001 -- 0.05.
         window_size (int): Maximum number of recent errors to consider
             for drift detection.  Older errors are discarded.
         min_samples (int): Minimum number of observed errors before drift
@@ -45,8 +45,8 @@ class DriftTriggeredPolicy(RetrainPolicy):
 
         Args:
             delta (float): Confidence parameter for ADWIN Hoeffding bound.
-                Smaller → less sensitive (fewer false positives, may miss subtle drift).
-                Larger  → more sensitive (catches subtle drift, more false alarms).
+                Smaller -> less sensitive (fewer false positives, may miss subtle drift).
+                Larger  -> more sensitive (catches subtle drift, more false alarms).
             window_size (int): Max number of recent errors kept for detection.
             min_samples (int): Minimum errors observed before detection begins.
             budget (int): Maximum number of retrains allowed.
@@ -64,10 +64,10 @@ class DriftTriggeredPolicy(RetrainPolicy):
 
         Scans every valid split point in the window.  For each split, the
         left and right sub-window means are compared.  If the absolute
-        difference exceeds the Hoeffding bound ε, drift is detected.
+        difference exceeds the Hoeffding bound epsilon, drift is detected.
 
         The Hoeffding bound used is:
-            ε = sqrt( ln(4/δ) / (2·m) )
+            epsilon = sqrt( ln(4/delta) / (2*m) )
         where m = 1 / (1/n_left + 1/n_right)  (harmonic-style sample size).
 
         Args:

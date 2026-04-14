@@ -1,5 +1,5 @@
 """
-Synthetic Experiment Runner — NO partial_fit (static model between retrains).
+Synthetic Experiment Runner -- NO partial_fit (static model between retrains).
 
 Identical factorial grid as main.py but uses ExperimentRunnerNoPartialFit
 so the model is completely frozen between explicit retrains.  Results are
@@ -7,9 +7,9 @@ written to separate directories so they never overwrite the incremental
 (partial_fit) results.
 
   Periodic / Error-Threshold / Drift-Triggered:
-      3 drift types × 3 budgets × 3 latency levels × N seeds
+      3 drift types x 3 budgets x 3 latency levels x N seeds
   No-Retrain (baseline):
-      3 drift types × N seeds
+      3 drift types x N seeds
 
 The --policy flag selects which policy to sweep (default: all four).
 The --seeds flag selects the seed set size (3 or 10, default: 10).
@@ -28,7 +28,7 @@ import sys
 from pathlib import Path
 import time
 
-# ── Ensure project root is on sys.path ──────────────────────────────────
+# -- Ensure project root is on sys.path ----------------------------------
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(PROJECT_ROOT))
 
@@ -42,11 +42,11 @@ from src.evaluation.metrics import MetricsTracker
 from src.runner.experiment_runner_no_partial_fit import ExperimentRunnerNoPartialFit
 from src.evaluation.results_export import export_to_json, export_to_csv, export_summary_to_csv
 
-# ── Seed sets ───────────────────────────────────────────────────────────
+# -- Seed sets -----------------------------------------------------------
 SEEDS_3 = [42, 123, 456]
 SEEDS_10 = [42, 123, 456, 789, 1011, 1213, 1415, 1617, 1819, 2021]
 
-# ── Shared experiment grid ──────────────────────────────────────────────
+# -- Shared experiment grid ----------------------------------------------
 DRIFT_TYPES = ["abrupt", "gradual", "recurring"]
 BUDGETS = [5, 10, 20]
 LATENCY_CONFIGS = [
@@ -58,12 +58,12 @@ DRIFT_POINT = 5000
 N_SAMPLES = 10000
 RECURRENCE_PERIOD = 1000
 
-# ── Per-policy fixed parameters ─────────────────────────────────────────
+# -- Per-policy fixed parameters -----------------------------------------
 POLICY_PARAMS = {
     "periodic": {},                                          # interval derived from budget
     "error_threshold": {"error_threshold": 0.27, "window_size": 200},
     "drift_triggered": {"delta": 0.002, "window_size": 500, "min_samples": 100},
-    "no_retrain": {},                                        # baseline — no retraining
+    "no_retrain": {},                                        # baseline -- no retraining
 }
 
 POLICY_DISPLAY = {
@@ -73,14 +73,14 @@ POLICY_DISPLAY = {
     "no_retrain":       "No-Retrain (Baseline)",
 }
 
-# ── Result directory prefix (separates from incremental results) ─────────
+# -- Result directory prefix (separates from incremental results) ---------
 RESULTS_BASE = "results_without_retrain/synthetic"
 
 
 def _build_policy(policy_type, budget, retrain_latency, deploy_latency):
     """Instantiate the requested policy with the correct parameters."""
     if policy_type == "periodic":
-        interval = N_SAMPLES // budget          # 5→2000, 10→1000, 20→500
+        interval = N_SAMPLES // budget          # 5->2000, 10->1000, 20->500
         return PeriodicPolicy(
             interval=interval,
             budget=budget,
@@ -143,7 +143,7 @@ def run_policy_sweep(policy_type, seeds):
     n_latencies = len(LATENCY_CONFIGS)
     total_runs = n_drifts * n_budgets * n_latencies * len(seeds)
 
-    # Output paths — separate from incremental results
+    # Output paths -- separate from incremental results
     run_label = f"{seed_label}_{n_drifts}drift_{n_budgets}budget_{n_latencies}latency"
     results_dir = PROJECT_ROOT / f"{RESULTS_BASE}/per_run/{policy_type}_{run_label}"
     results_dir.mkdir(parents=True, exist_ok=True)
@@ -157,7 +157,7 @@ def run_policy_sweep(policy_type, seeds):
     start_time = time.time()
 
     print(f"\n{'=' * 70}")
-    print(f"[NO PARTIAL FIT] {display} POLICY – Full Experiment Sweep ({total_runs} runs)")
+    print(f"[NO PARTIAL FIT] {display} POLICY -- Full Experiment Sweep ({total_runs} runs)")
     print(f"{'=' * 70}")
     print(f"  Drift types      : {DRIFT_TYPES}")
     print(f"  Budgets          : {BUDGETS}")
@@ -231,7 +231,7 @@ def run_policy_sweep(policy_type, seeds):
 
     elapsed = time.time() - start_time
     print(f"\n[NO PARTIAL FIT] {display}: {total_runs} runs completed in {elapsed / 60:.1f} minutes")
-    print(f"Summary CSV → {summary_csv}")
+    print(f"Summary CSV -> {summary_csv}")
 
     # Generate summary dashboard
     print(f"Generating {display} summary plot (no partial_fit)...")
@@ -248,7 +248,7 @@ def run_policy_sweep(policy_type, seeds):
 
 
 def _run_no_retrain_sweep(seeds):
-    """No-retrain baseline sweep (no partial_fit): 3 drift types × N seeds.
+    """No-retrain baseline sweep (no partial_fit): 3 drift types x N seeds.
 
     The model is trained on the first sample only and never updated again.
     """
@@ -269,7 +269,7 @@ def _run_no_retrain_sweep(seeds):
     start_time = time.time()
 
     print(f"\n{'=' * 70}")
-    print(f"[NO PARTIAL FIT] {display} POLICY – Baseline Sweep ({total_runs} runs)")
+    print(f"[NO PARTIAL FIT] {display} POLICY -- Baseline Sweep ({total_runs} runs)")
     print(f"{'=' * 70}")
     print(f"  Drift types      : {DRIFT_TYPES}")
     print(f"  Budget           : N/A (always 0)")
@@ -327,7 +327,7 @@ def _run_no_retrain_sweep(seeds):
 
     elapsed = time.time() - start_time
     print(f"\n[NO PARTIAL FIT] {display}: {total_runs} runs completed in {elapsed / 60:.1f} minutes")
-    print(f"Summary CSV → {summary_csv}")
+    print(f"Summary CSV -> {summary_csv}")
 
     print(f"Generating {display} summary plot (no partial_fit)...")
     from plot_summary import plot_summary_for_no_retrain
@@ -379,7 +379,7 @@ def main():
     total_start = time.time()
 
     print(f"{'#' * 70}")
-    print(f"  EXPERIMENT SWEEP — NO PARTIAL FIT (static model)")
+    print(f"  EXPERIMENT SWEEP -- NO PARTIAL FIT (static model)")
     print(f"  {len(policies)} policy(ies), "
           f"{len(seeds)} seeds, "
           f"{total_runs} total runs")
@@ -390,7 +390,7 @@ def main():
 
     total_elapsed = time.time() - total_start
     print(f"\n{'#' * 70}")
-    print(f"  ALL DONE (NO PARTIAL FIT) — {len(policies)} policy(ies) "
+    print(f"  ALL DONE (NO PARTIAL FIT) -- {len(policies)} policy(ies) "
           f"completed in {total_elapsed / 60:.1f} minutes")
     print(f"{'#' * 70}")
 
