@@ -1,16 +1,16 @@
 """
-Cross-Policy Comparison — Head-to-head analysis across all retraining
+Cross-Policy Comparison -- Head-to-head analysis across all retraining
 policies for synthetic, LUFlow, and LendingClub datasets.
 
 Produces four key outputs per dataset:
-  1. Table & heatmap  : Mean post-drift accuracy by policy × drift type
+  1. Table & heatmap  : Mean post-drift accuracy by policy x drift type
                         (averaged over seeds).  "Table 1 / Figure 1" of the paper.
   2. Budget-faceted   : Same breakdown faceted by budget level (K=5/10/20),
                         showing how budget changes the policy ranking.
   3. Budget efficiency : Accuracy gained per retrain used, by policy.
                         Highlights error-threshold's pre-drift budget waste.
   4. Latency sensitivity: Accuracy degradation as latency increases from
-                        low → medium → high (→ extreme if available).
+                        low -> medium -> high (-> extreme if available).
                         Shows periodic's interval-vs-latency collision.
 
 Usage:
@@ -34,10 +34,10 @@ import pandas as pd
 
 warnings.filterwarnings("ignore")
 
-# ─── Project root ────────────────────────────────────────────────────────
+# --- Project root --------------------------------------------------------
 PROJECT_ROOT = Path(__file__).resolve().parent
 
-# ─── Display names & consistent colours ──────────────────────────────────
+# --- Display names & consistent colours ----------------------------------
 POLICY_ORDER = ["periodic", "error_threshold", "drift_triggered", "no_retrain"]
 POLICY_DISPLAY = {
     "periodic":         "Periodic",
@@ -79,7 +79,7 @@ LATENCY_LABELS = {
 
 
 # =====================================================================
-#  DATA LOADING — auto-discover & merge all policy CSVs for a dataset
+#  DATA LOADING -- auto-discover & merge all policy CSVs for a dataset
 # =====================================================================
 
 def _csv_search_patterns(dataset, seed_label):
@@ -127,7 +127,7 @@ def load_merged(dataset, seed_label="10seed"):
             df = pd.read_csv(fpath)
             frames.append(df)
         else:
-            print(f"  ⚠  Not found (skipping): {fpath.name}")
+            print(f"  [WARN]  Not found (skipping): {fpath.name}")
 
     # Fallback: try 3seed if nothing found with requested label
     if not frames and seed_label != "3seed":
@@ -135,7 +135,7 @@ def load_merged(dataset, seed_label="10seed"):
         return load_merged(dataset, seed_label="3seed")
 
     if not frames:
-        print(f"  ✗  No CSVs found for {dataset}. Skipping.")
+        print(f"  [FAIL]  No CSVs found for {dataset}. Skipping.")
         return pd.DataFrame()
 
     merged = pd.concat(frames, ignore_index=True)
@@ -147,7 +147,7 @@ def load_merged(dataset, seed_label="10seed"):
 
 
 # =====================================================================
-#  HELPER — consistent policy label on an axis
+#  HELPER -- consistent policy label on an axis
 # =====================================================================
 
 def _policy_label(p):
@@ -166,14 +166,14 @@ def _active_policies_retrain(df):
 
 
 # =====================================================================
-#  OUTPUT 1 — Table & Heatmap: post-drift accuracy by policy × drift
+#  OUTPUT 1 -- Table & Heatmap: post-drift accuracy by policy x drift
 # =====================================================================
 
 def table_postdrift_by_policy_drift(df, dataset, out_dir):
-    """Produce Table 1: mean post-drift accuracy (policy × drift type).
+    """Produce Table 1: mean post-drift accuracy (policy x drift type).
 
     For policies with a budget/latency grid, we average over all
-    budget × latency × seed combinations.  For no_retrain we average
+    budget x latency x seed combinations.  For no_retrain we average
     over seeds only.  This gives the "grand-mean" view.
     """
     policies = _active_policies(df)
@@ -193,7 +193,7 @@ def table_postdrift_by_policy_drift(df, dataset, out_dir):
     header = f"{'Policy':<22}" + "".join(f"{d.capitalize():>18}" for d in drifts)
     sep = "-" * len(header)
     print(f"\n{'=' * 70}")
-    print(f" TABLE 1 — Mean Post-Drift Accuracy by Policy × Drift [{dataset.upper()}]")
+    print(f" TABLE 1 -- Mean Post-Drift Accuracy by Policy x Drift [{dataset.upper()}]")
     print(f"{'=' * 70}")
     print(header)
     print(sep)
@@ -204,7 +204,7 @@ def table_postdrift_by_policy_drift(df, dataset, out_dir):
         for d in drifts:
             m = pivot.loc[p, ("mean", d)]
             s = pivot.loc[p, ("std", d)]
-            row += f"  {m:.4f} ± {s:.4f}  "
+            row += f"  {m:.4f} +/- {s:.4f}  "
         print(row)
     print(sep)
 
@@ -236,7 +236,7 @@ def table_postdrift_by_policy_drift(df, dataset, out_dir):
     ax.set_xlabel("Drift Type", fontsize=12)
     ax.set_ylabel("Policy", fontsize=12)
     ax.set_title(
-        f"Mean Post-Drift Accuracy — Policy × Drift Type\n[{dataset.upper()}]",
+        f"Mean Post-Drift Accuracy -- Policy x Drift Type\n[{dataset.upper()}]",
         fontsize=13, fontweight="bold",
     )
 
@@ -260,7 +260,7 @@ def table_postdrift_by_policy_drift(df, dataset, out_dir):
 
 
 # =====================================================================
-#  OUTPUT 2 — Budget-faceted post-drift accuracy
+#  OUTPUT 2 -- Budget-faceted post-drift accuracy
 # =====================================================================
 
 def figure_budget_faceted(df, dataset, out_dir):
@@ -273,10 +273,10 @@ def figure_budget_faceted(df, dataset, out_dir):
     policies_retrain = _active_policies_retrain(df)
 
     if not budgets or not policies_retrain:
-        print(f"  ⚠  Skipping budget-faceted plot for {dataset} (no budget data)")
+        print(f"  [WARN]  Skipping budget-faceted plot for {dataset} (no budget data)")
         return
 
-    # Baseline reference (no_retrain) — one value per drift type
+    # Baseline reference (no_retrain) -- one value per drift type
     baseline = (
         df[df["policy_type"] == "no_retrain"]
         .groupby("drift_type")["post_drift_accuracy"]
@@ -339,7 +339,7 @@ def figure_budget_faceted(df, dataset, out_dir):
     fig.legend(handles, labels, loc="upper center", ncol=len(labels),
                fontsize=10, bbox_to_anchor=(0.5, 1.02))
     fig.suptitle(
-        f"Post-Drift Accuracy by Policy × Drift Type — Faceted by Budget\n[{dataset.upper()}]",
+        f"Post-Drift Accuracy by Policy x Drift Type -- Faceted by Budget\n[{dataset.upper()}]",
         fontsize=13, fontweight="bold", y=1.08,
     )
     plt.tight_layout()
@@ -359,13 +359,13 @@ def figure_budget_faceted(df, dataset, out_dir):
 
 
 # =====================================================================
-#  OUTPUT 3 — Budget Efficiency: accuracy-per-retrain & waste analysis
+#  OUTPUT 3 -- Budget Efficiency: accuracy-per-retrain & waste analysis
 # =====================================================================
 
 def figure_budget_efficiency(df, dataset, out_dir):
     """Two-panel figure:
-      Left  — Accuracy gained per retrain (post-drift acc − baseline) / retrains_after_drift.
-      Right — Pre-drift budget waste: fraction of total retrains spent before drift.
+      Left  -- Accuracy gained per retrain (post-drift acc - baseline) / retrains_after_drift.
+      Right -- Pre-drift budget waste: fraction of total retrains spent before drift.
 
     Both are grouped bars: one group per drift type, one bar per policy.
     """
@@ -373,7 +373,7 @@ def figure_budget_efficiency(df, dataset, out_dir):
     policies_retrain = _active_policies_retrain(df)
 
     if not policies_retrain:
-        print(f"  ⚠  Skipping budget-efficiency plot for {dataset}")
+        print(f"  [WARN]  Skipping budget-efficiency plot for {dataset}")
         return
 
     # Baseline reference
@@ -422,7 +422,7 @@ def figure_budget_efficiency(df, dataset, out_dir):
     x = np.arange(len(drifts))
     width = 0.8 / max(len(policies_retrain), 1)
 
-    # LEFT — accuracy gain per retrain after drift
+    # LEFT -- accuracy gain per retrain after drift
     for i, p in enumerate(policies_retrain):
         vals = [efficiency[p].get(d, 0) for d in drifts]
         ax1.bar(
@@ -442,13 +442,13 @@ def figure_budget_efficiency(df, dataset, out_dir):
 
     ax1.set_xticks(x)
     ax1.set_xticklabels([d.capitalize() for d in drifts], fontsize=10)
-    ax1.set_ylabel("Δ Post-Drift Acc / Retrain After Drift", fontsize=10)
+    ax1.set_ylabel("delta Post-Drift Acc / Retrain After Drift", fontsize=10)
     ax1.set_title("Accuracy Gain per Retrain Used", fontsize=12, fontweight="bold")
     ax1.axhline(0, color="gray", linestyle="--", linewidth=0.8)
     ax1.legend(fontsize=9)
     ax1.grid(axis="y", alpha=0.3)
 
-    # RIGHT — pre-drift budget waste (fraction of retrains before drift)
+    # RIGHT -- pre-drift budget waste (fraction of retrains before drift)
     for i, p in enumerate(policies_retrain):
         vals = [waste[p].get(d, 0) for d in drifts]
         bars = ax2.bar(
@@ -476,7 +476,7 @@ def figure_budget_efficiency(df, dataset, out_dir):
     ax2.grid(axis="y", alpha=0.3)
 
     fig.suptitle(
-        f"Budget Efficiency — Accuracy per Retrain & Pre-Drift Waste\n[{dataset.upper()}]",
+        f"Budget Efficiency -- Accuracy per Retrain & Pre-Drift Waste\n[{dataset.upper()}]",
         fontsize=13, fontweight="bold",
     )
     plt.tight_layout(rect=[0, 0, 1, 0.93])
@@ -501,7 +501,7 @@ def figure_budget_efficiency(df, dataset, out_dir):
 
 
 # =====================================================================
-#  OUTPUT 4 — Latency Sensitivity Comparison
+#  OUTPUT 4 -- Latency Sensitivity Comparison
 # =====================================================================
 
 def figure_latency_sensitivity(df, dataset, out_dir):
@@ -517,7 +517,7 @@ def figure_latency_sensitivity(df, dataset, out_dir):
     latencies_all = sorted(df["total_latency"].unique())
     latencies_active = [l for l in latencies_all if l > 0]
     if not latencies_active:
-        print(f"  ⚠  Skipping latency sensitivity plot for {dataset} (no latency data)")
+        print(f"  [WARN]  Skipping latency sensitivity plot for {dataset} (no latency data)")
         return
 
     n_drifts = len(drifts)
@@ -563,7 +563,7 @@ def figure_latency_sensitivity(df, dataset, out_dir):
 
     axes[0].set_ylabel("Mean Post-Drift Accuracy", fontsize=11)
     fig.suptitle(
-        f"Latency Sensitivity — Post-Drift Accuracy vs. Latency\n[{dataset.upper()}]",
+        f"Latency Sensitivity -- Post-Drift Accuracy vs. Latency\n[{dataset.upper()}]",
         fontsize=13, fontweight="bold",
     )
     plt.tight_layout(rect=[0, 0, 1, 0.93])
@@ -638,7 +638,7 @@ def cross_dataset_summary(all_merged, out_dir):
     ax.set_xticklabels([ds.upper() for ds in datasets], fontsize=11)
     ax.set_ylabel("Mean Post-Drift Accuracy (all conditions)", fontsize=11)
     ax.set_title(
-        "Cross-Dataset Policy Comparison — Grand Mean Post-Drift Accuracy",
+        "Cross-Dataset Policy Comparison -- Grand Mean Post-Drift Accuracy",
         fontsize=13, fontweight="bold",
     )
     ax.legend(fontsize=10)
@@ -676,7 +676,7 @@ def cross_dataset_summary(all_merged, out_dir):
 def run_comparison_for_dataset(dataset, seed_label, out_dir):
     """Run all four comparison analyses for one dataset."""
     print(f"\n{'#' * 70}")
-    print(f"  CROSS-POLICY COMPARISON — {dataset.upper()}")
+    print(f"  CROSS-POLICY COMPARISON -- {dataset.upper()}")
     print(f"{'#' * 70}")
 
     df = load_merged(dataset, seed_label)
@@ -736,7 +736,7 @@ def main():
         if df is not None and not df.empty:
             all_merged[ds] = df
 
-    # Cross-dataset summary (only if ≥2 datasets available)
+    # Cross-dataset summary (only if >=2 datasets available)
     if len(all_merged) >= 2:
         print(f"\n{'#' * 70}")
         print(f"  CROSS-DATASET SUMMARY")

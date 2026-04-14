@@ -1,5 +1,5 @@
 """
-Experiment runner module — static model variant (NO incremental learning).
+Experiment runner module -- static model variant (NO incremental learning).
 
 Identical to ExperimentRunner except the per-sample ``partial_fit`` call
 is removed.  The model is initialized once on the first sample and then
@@ -22,8 +22,8 @@ class ExperimentRunnerNoPartialFit:
     2. Record accuracy / error
     3. Accumulate sample in the sliding window
     4. Ask the policy whether to retrain
-    5. If yes → retrain on the window, reset window
-    6. (NO partial_fit — model is static between retrains)
+    5. If yes -> retrain on the window, reset window
+    6. (NO partial_fit -- model is static between retrains)
 
     Attributes:
         model (StreamingModel): The ML model
@@ -55,7 +55,7 @@ class ExperimentRunnerNoPartialFit:
         4. Add sample to sliding window buffer
         5. Check if policy says to retrain
         6. If retraining needed: reset and retrain on window data
-        7. (Skipped) NO partial_fit — model stays frozen between retrains
+        7. (Skipped) NO partial_fit -- model stays frozen between retrains
 
         Args:
             X (np.ndarray): Feature matrix, shape (n_samples, n_features)
@@ -92,5 +92,5 @@ class ExperimentRunnerNoPartialFit:
                 self.metrics.record_retrain(t, self.policy.retrain_latency, self.policy.deploy_latency)
                 window_X, window_y = [], []
 
-            # Step 7: SKIPPED — no partial_fit, model is frozen between retrains
+            # Step 7: SKIPPED -- no partial_fit, model is frozen between retrains
 

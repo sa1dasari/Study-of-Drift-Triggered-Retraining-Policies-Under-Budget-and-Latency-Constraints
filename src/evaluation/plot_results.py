@@ -161,7 +161,7 @@ def plot_results(seeds, policy, drift_point, drift_type, recurrence_period=1000,
     if policy_type == "error_threshold":
         config_text = f'Policy: Error Threshold | Budget={policy.budget} | Threshold={policy.error_threshold} | Window={policy.window_size} | Latency={total_latency}'
     elif policy_type == "drift_triggered":
-        config_text = f'Policy: Drift-Triggered (ADWIN) | Budget={policy.budget} | δ={policy.delta} | Window={policy.window_size} | MinSamples={policy.min_samples} | Latency={total_latency}'
+        config_text = f'Policy: Drift-Triggered (ADWIN) | Budget={policy.budget} | delta={policy.delta} | Window={policy.window_size} | MinSamples={policy.min_samples} | Latency={total_latency}'
     else:
         config_text = f'Policy: Periodic | Budget={policy.budget} | Interval={policy.interval} | Latency={total_latency}'
     fig.text(0.5, 0.02, config_text, ha='center', fontsize=10, style='italic',

@@ -1,5 +1,5 @@
 """
-LendingClub Experiment Runner — NO partial_fit (static model between retrains).
+LendingClub Experiment Runner -- NO partial_fit (static model between retrains).
 
 Identical factorial grid as lendingclub_main.py but uses
 ExperimentRunnerNoPartialFit so the model is completely frozen between
@@ -473,7 +473,7 @@ def main():
 
     # -- Banner --------------------------------------------------------
     print(f"{'#' * 72}")
-    print(f"  LendingClub EXPERIMENT RUNNER — NO PARTIAL FIT (static model)")
+    print(f"  LendingClub EXPERIMENT RUNNER -- NO PARTIAL FIT (static model)")
     print(f"  Stream         : {N_SAMPLES:,} samples, drift at t = {DRIFT_POINT:,}")
     print(f"  Drift types    : {DRIFT_TYPES}")
     print(f"  Budgets        : {BUDGETS}")

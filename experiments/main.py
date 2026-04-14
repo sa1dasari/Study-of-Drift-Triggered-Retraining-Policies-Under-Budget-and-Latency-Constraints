@@ -1,13 +1,13 @@
 """
-Synthetic Experiment Runner — CLI entry point for all retraining policies.
+Synthetic Experiment Runner -- CLI entry point for all retraining policies.
 
 Runs full-factorial sweeps on synthetic data for one or all retraining
 policies (Periodic, Error-Threshold, Drift-Triggered, No-Retrain):
 
   Periodic / Error-Threshold / Drift-Triggered:
-      3 drift types × 3 budgets × 3 latency levels × N seeds
+      3 drift types x 3 budgets x 3 latency levels x N seeds
   No-Retrain (baseline):
-      3 drift types × N seeds  (30 runs @10 seeds) — no budget/latency grid
+      3 drift types x N seeds  (30 runs @10 seeds) -- no budget/latency grid
 
 The --policy flag selects which policy to sweep (default: all four).
 The --seeds flag selects the seed set size (3 or 10, default: 10).
@@ -26,7 +26,7 @@ import sys
 from pathlib import Path
 import time
 
-# ── Ensure project root is on sys.path ──────────────────────────────────
+# -- Ensure project root is on sys.path ----------------------------------
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(PROJECT_ROOT))
 
@@ -40,11 +40,11 @@ from src.evaluation.metrics import MetricsTracker
 from src.runner.experiment_runner import ExperimentRunner
 from src.evaluation.results_export import export_to_json, export_to_csv, export_summary_to_csv
 
-# ── Seed sets ───────────────────────────────────────────────────────────
+# -- Seed sets -----------------------------------------------------------
 SEEDS_3 = [42, 123, 456]
 SEEDS_10 = [42, 123, 456, 789, 1011, 1213, 1415, 1617, 1819, 2021]
 
-# ── Shared experiment grid ──────────────────────────────────────────────
+# -- Shared experiment grid ----------------------------------------------
 DRIFT_TYPES = ["abrupt", "gradual", "recurring"]
 BUDGETS = [5, 10, 20]
 LATENCY_CONFIGS = [
@@ -56,12 +56,12 @@ DRIFT_POINT = 5000
 N_SAMPLES = 10000
 RECURRENCE_PERIOD = 1000
 
-# ── Per-policy fixed parameters ─────────────────────────────────────────
+# -- Per-policy fixed parameters -----------------------------------------
 POLICY_PARAMS = {
     "periodic": {},                                          # interval derived from budget
     "error_threshold": {"error_threshold": 0.27, "window_size": 200},
     "drift_triggered": {"delta": 0.002, "window_size": 500, "min_samples": 100},
-    "no_retrain": {},                                        # baseline — no retraining
+    "no_retrain": {},                                        # baseline -- no retraining
 }
 
 POLICY_DISPLAY = {
@@ -75,7 +75,7 @@ POLICY_DISPLAY = {
 def _build_policy(policy_type, budget, retrain_latency, deploy_latency):
     """Instantiate the requested policy with the correct parameters."""
     if policy_type == "periodic":
-        interval = N_SAMPLES // budget          # 5→2000, 10→1000, 20→500
+        interval = N_SAMPLES // budget          # 5->2000, 10->1000, 20->500
         return PeriodicPolicy(
             interval=interval,
             budget=budget,
@@ -152,7 +152,7 @@ def run_policy_sweep(policy_type, seeds):
     start_time = time.time()
 
     print(f"\n{'=' * 70}")
-    print(f"{display} POLICY – Full Experiment Sweep ({total_runs} runs)")
+    print(f"{display} POLICY -- Full Experiment Sweep ({total_runs} runs)")
     print(f"{'=' * 70}")
     print(f"  Drift types      : {DRIFT_TYPES}")
     print(f"  Budgets          : {BUDGETS}")
@@ -225,7 +225,7 @@ def run_policy_sweep(policy_type, seeds):
 
     elapsed = time.time() - start_time
     print(f"\n{display}: {total_runs} runs completed in {elapsed / 60:.1f} minutes")
-    print(f"Summary CSV → {summary_csv}")
+    print(f"Summary CSV -> {summary_csv}")
 
     # Generate summary dashboard
     print(f"Generating {display} summary plot...")
@@ -242,9 +242,9 @@ def run_policy_sweep(policy_type, seeds):
 
 
 def _run_no_retrain_sweep(seeds):
-    """Execute the no-retrain baseline sweep: 3 drift types × N seeds.
+    """Execute the no-retrain baseline sweep: 3 drift types x N seeds.
 
-    Budget and latency are always 0 — there is no budget/latency grid.
+    Budget and latency are always 0 -- there is no budget/latency grid.
     The model is only updated via partial_fit (incremental learning).
     """
     policy_type = "no_retrain"
@@ -265,7 +265,7 @@ def _run_no_retrain_sweep(seeds):
     start_time = time.time()
 
     print(f"\n{'=' * 70}")
-    print(f"{display} POLICY – Baseline Sweep ({total_runs} runs)")
+    print(f"{display} POLICY -- Baseline Sweep ({total_runs} runs)")
     print(f"{'=' * 70}")
     print(f"  Drift types      : {DRIFT_TYPES}")
     print(f"  Budget           : N/A (always 0)")
@@ -327,7 +327,7 @@ def _run_no_retrain_sweep(seeds):
 
     elapsed = time.time() - start_time
     print(f"\n{display}: {total_runs} runs completed in {elapsed / 60:.1f} minutes")
-    print(f"Summary CSV → {summary_csv}")
+    print(f"Summary CSV -> {summary_csv}")
 
     # Generate baseline summary plot
     print(f"Generating {display} summary plot...")
@@ -379,7 +379,7 @@ def main():
     total_start = time.time()
 
     print(f"{'#' * 70}")
-    print(f"  EXPERIMENT SWEEP — {len(policies)} policy(ies), "
+    print(f"  EXPERIMENT SWEEP -- {len(policies)} policy(ies), "
           f"{len(seeds)} seeds, "
           f"{total_runs} total runs")
     print(f"{'#' * 70}")
@@ -389,7 +389,7 @@ def main():
 
     total_elapsed = time.time() - total_start
     print(f"\n{'#' * 70}")
-    print(f"  ALL DONE — {len(policies)} policy(ies) completed in {total_elapsed / 60:.1f} minutes")
+    print(f"  ALL DONE -- {len(policies)} policy(ies) completed in {total_elapsed / 60:.1f} minutes")
     print(f"{'#' * 70}")
 
 

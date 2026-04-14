@@ -20,7 +20,7 @@ import matplotlib.pyplot as plt
 import pandas as pd
 import numpy as np
 
-# ── Known label mappings ────────────────────────────────────────────────
+# -- Known label mappings ------------------------------------------------
 # Extend these dicts when new budget or latency levels are added.
 _LATENCY_LABELS = {
     3:    'Near-Zero (3)',
@@ -49,7 +49,7 @@ def _lookup_label(value, known, kind='value'):
 
 
 def plot_summary_for_policy(csv_path, output_path, policy_name):
-    """Generate comprehensive 2×3 summary plots from a summary CSV.
+    """Generate comprehensive 2x3 summary plots from a summary CSV.
 
     Args:
         csv_path (str):    Path to the summary CSV (one row per run).
@@ -63,14 +63,14 @@ def plot_summary_for_policy(csv_path, output_path, policy_name):
     print(f"  Budgets     : {sorted(df['budget'].unique())}")
     print(f"  Latencies   : {sorted(df['retrain_latency'].unique())}")
 
-    # ── Derived columns ─────────────────────────────────────────────────
+    # -- Derived columns -------------------------------------------------
     df['total_latency'] = df['retrain_latency'] + df['deploy_latency']
     df['latency_label'] = df['total_latency'].apply(
         lambda v: _lookup_label(v, _LATENCY_LABELS, kind='total_latency'))
     df['budget_label'] = df['budget'].apply(
         lambda v: _lookup_label(v, _BUDGET_LABELS, kind='budget'))
 
-    # ── Dynamic ordering (sorted by numeric value) ──────────────────────
+    # -- Dynamic ordering (sorted by numeric value) ----------------------
     latency_order = [
         _lookup_label(v, _LATENCY_LABELS, kind='total_latency')
         for v in sorted(df['total_latency'].unique())
@@ -80,7 +80,7 @@ def plot_summary_for_policy(csv_path, output_path, policy_name):
         for v in sorted(df['budget'].unique())
     ]
 
-    # ── Figure ──────────────────────────────────────────────────────────
+    # -- Figure ----------------------------------------------------------
     fig, axes = plt.subplots(2, 3, figsize=(16, 10))
     fig.suptitle(f'{policy_name} Policy: Summary Results Across All Configurations',
                  fontsize=14, fontweight='bold')
@@ -91,7 +91,7 @@ def plot_summary_for_policy(csv_path, output_path, policy_name):
     colors_lat = ['#2ecc71', '#f39c12', '#e74c3c']
     colors_bud = ['#2ecc71', '#f39c12', '#e74c3c']
 
-    # ── Plot 1: Accuracy vs Latency by Drift Type ──────────────────────
+    # -- Plot 1: Accuracy vs Latency by Drift Type ----------------------
     ax1 = axes[0, 0]
     for drift_type in sorted(df['drift_type'].unique()):
         df_drift = df[df['drift_type'] == drift_type]
@@ -107,7 +107,7 @@ def plot_summary_for_policy(csv_path, output_path, policy_name):
     ax1.legend(fontsize=9)
     ax1.grid(alpha=0.3)
 
-    # ── Plot 2: Mean Accuracy by Drift Type ────────────────────────────
+    # -- Plot 2: Mean Accuracy by Drift Type ----------------------------
     ax2 = axes[0, 1]
     drift_means = df.groupby('drift_type')['overall_accuracy'].agg(['mean', 'std'])
     bar_colors = [colors_drift.get(dt, 'gray') for dt in drift_means.index]
@@ -122,7 +122,7 @@ def plot_summary_for_policy(csv_path, output_path, policy_name):
     ax2.set_title('Mean Accuracy by Drift Type', fontsize=11)
     ax2.grid(axis='y', alpha=0.3)
 
-    # ── Plot 3: Heatmap – Accuracy across Budget × Latency ────────────
+    # -- Plot 3: Heatmap -- Accuracy across Budget x Latency ------------
     ax3 = axes[0, 2]
     pivot = df.pivot_table(values='overall_accuracy', index='budget_label',
                            columns='latency_label', aggfunc='mean')
@@ -135,7 +135,7 @@ def plot_summary_for_policy(csv_path, output_path, policy_name):
     ax3.set_yticklabels(pivot.index)
     ax3.set_xlabel('Latency', fontsize=10)
     ax3.set_ylabel('Budget', fontsize=10)
-    ax3.set_title('Accuracy Heatmap: Budget × Latency', fontsize=11)
+    ax3.set_title('Accuracy Heatmap: Budget x Latency', fontsize=11)
     cbar = plt.colorbar(im, ax=ax3)
     cbar.set_label('Accuracy', fontsize=9)
     for i in range(len(pivot.index)):
@@ -148,7 +148,7 @@ def plot_summary_for_policy(csv_path, output_path, policy_name):
                 ax3.text(j, i, f'{val:.3f}', ha='center', va='center',
                          color=text_color, fontsize=9)
 
-    # ── Plot 4: Budget Utilization by Budget & Latency ─────────────────
+    # -- Plot 4: Budget Utilization by Budget & Latency -----------------
     ax4 = axes[1, 0]
     grouped = df.groupby(['budget_label', 'latency_label'])['budget_utilization'].mean().unstack()
     grouped = grouped.reindex(index=[b for b in budget_order if b in grouped.index],
@@ -173,7 +173,7 @@ def plot_summary_for_policy(csv_path, output_path, policy_name):
     ax4.axhline(y=1.0, color='gray', linestyle='--', alpha=0.5)
     ax4.grid(axis='y', alpha=0.3)
 
-    # ── Plot 5: Retrains After Drift by Drift Type & Latency ──────────
+    # -- Plot 5: Retrains After Drift by Drift Type & Latency ----------
     ax5 = axes[1, 1]
     grouped = df.groupby(['drift_type', 'latency_label'])['retrains_after_drift'].mean().unstack()
     grouped = grouped.reindex(columns=[l for l in latency_order if l in grouped.columns])
@@ -195,7 +195,7 @@ def plot_summary_for_policy(csv_path, output_path, policy_name):
     ax5.legend(title='Latency', fontsize=8)
     ax5.grid(axis='y', alpha=0.3)
 
-    # ── Plot 6: Retrains After Drift by Drift Type & Budget ───────────
+    # -- Plot 6: Retrains After Drift by Drift Type & Budget -----------
     ax6 = axes[1, 2]
     grouped = df.groupby(['drift_type', 'budget_label'])['retrains_after_drift'].mean().unstack()
     grouped = grouped.reindex(columns=[b for b in budget_order if b in grouped.columns])
@@ -217,20 +217,20 @@ def plot_summary_for_policy(csv_path, output_path, policy_name):
     ax6.legend(title='Budget', fontsize=8)
     ax6.grid(axis='y', alpha=0.3)
 
-    # ── Save ────────────────────────────────────────────────────────────
+    # -- Save ------------------------------------------------------------
     plt.tight_layout(rect=[0, 0, 1, 0.96])
     plt.savefig(output_path, dpi=150, bbox_inches='tight')
     plt.close()
     print(f"Graph saved: {output_path}")
 
-    # ── Console summary stats ───────────────────────────────────────────
+    # -- Console summary stats -------------------------------------------
     print(f"\n{'=' * 60}")
-    print(f"SUMMARY STATISTICS – {policy_name} Policy")
+    print(f"SUMMARY STATISTICS -- {policy_name} Policy")
     print(f"{'=' * 60}")
     for drift_type in sorted(df['drift_type'].unique()):
         df_d = df[df['drift_type'] == drift_type]
         print(f"\n{drift_type.upper()} DRIFT:")
-        print(f"  Overall Accuracy       : {df_d['overall_accuracy'].mean():.4f} ± {df_d['overall_accuracy'].std():.4f}")
+        print(f"  Overall Accuracy       : {df_d['overall_accuracy'].mean():.4f} +/- {df_d['overall_accuracy'].std():.4f}")
         print(f"  Pre-Drift Accuracy     : {df_d['pre_drift_accuracy'].mean():.4f}")
         print(f"  Post-Drift Accuracy    : {df_d['post_drift_accuracy'].mean():.4f}")
         print(f"  Accuracy Drop          : {df_d['accuracy_drop'].mean():.4f}")
@@ -239,7 +239,7 @@ def plot_summary_for_policy(csv_path, output_path, policy_name):
 
 
 def plot_summary_for_no_retrain(csv_path, output_path, policy_name):
-    """Generate a 2×2 baseline-specific summary plot (no budget/latency axes).
+    """Generate a 2x2 baseline-specific summary plot (no budget/latency axes).
 
     Args:
         csv_path (str):    Path to the no-retrain summary CSV (one row per run).
@@ -259,7 +259,7 @@ def plot_summary_for_no_retrain(csv_path, output_path, policy_name):
     fig.suptitle(f'{policy_name}: Baseline Floor (partial_fit only, 0 retrains)',
                  fontsize=14, fontweight='bold')
 
-    # ── Plot 1: Mean Overall Accuracy by Drift Type ─────────────────────
+    # -- Plot 1: Mean Overall Accuracy by Drift Type ---------------------
     ax1 = axes[0, 0]
     stats = df.groupby('drift_type')['overall_accuracy'].agg(['mean', 'std'])
     bar_colors = [colors_drift.get(dt, 'gray') for dt in stats.index]
@@ -273,7 +273,7 @@ def plot_summary_for_no_retrain(csv_path, output_path, policy_name):
     ax1.set_title('Mean Overall Accuracy by Drift Type', fontsize=11)
     ax1.grid(axis='y', alpha=0.3)
 
-    # ── Plot 2: Pre- vs Post-Drift Accuracy ─────────────────────────────
+    # -- Plot 2: Pre- vs Post-Drift Accuracy -----------------------------
     ax2 = axes[0, 1]
     pre = df.groupby('drift_type')['pre_drift_accuracy'].mean()
     post = df.groupby('drift_type')['post_drift_accuracy'].mean()
@@ -293,7 +293,7 @@ def plot_summary_for_no_retrain(csv_path, output_path, policy_name):
     ax2.legend(fontsize=9)
     ax2.grid(axis='y', alpha=0.3)
 
-    # ── Plot 3: Accuracy Drop (post − pre) ──────────────────────────────
+    # -- Plot 3: Accuracy Drop (post - pre) ------------------------------
     ax3 = axes[1, 0]
     drop = df.groupby('drift_type')['accuracy_drop'].agg(['mean', 'std'])
     bar_colors_drop = [colors_drift.get(dt, 'gray') for dt in drop.index]
@@ -306,11 +306,11 @@ def plot_summary_for_no_retrain(csv_path, output_path, policy_name):
                  bar.get_height() + offset,
                  f"{row['mean']:.4f}", ha='center', va=va, fontsize=10)
     ax3.axhline(y=0, color='gray', linestyle='--', alpha=0.5)
-    ax3.set_ylabel('Accuracy Drop (post − pre)', fontsize=10)
+    ax3.set_ylabel('Accuracy Drop (post - pre)', fontsize=10)
     ax3.set_title('Accuracy Drop by Drift Type', fontsize=11)
     ax3.grid(axis='y', alpha=0.3)
 
-    # ── Plot 4: Box Plot – Overall Accuracy Distribution per Drift Type ─
+    # -- Plot 4: Box Plot -- Overall Accuracy Distribution per Drift Type -
     ax4 = axes[1, 1]
     box_data = [df[df['drift_type'] == dt]['overall_accuracy'].values for dt in drift_types]
     bp = ax4.boxplot(box_data, labels=[dt.capitalize() for dt in drift_types],
@@ -322,29 +322,29 @@ def plot_summary_for_no_retrain(csv_path, output_path, policy_name):
     ax4.set_title('Accuracy Distribution Across Seeds', fontsize=11)
     ax4.grid(axis='y', alpha=0.3)
 
-    # ── Save ────────────────────────────────────────────────────────────
+    # -- Save ------------------------------------------------------------
     plt.tight_layout(rect=[0, 0, 1, 0.96])
     plt.savefig(output_path, dpi=150, bbox_inches='tight')
     plt.close()
     print(f"Graph saved: {output_path}")
 
-    # ── Console summary ─────────────────────────────────────────────────
+    # -- Console summary -------------------------------------------------
     print(f"\n{'=' * 60}")
-    print(f"BASELINE SUMMARY – {policy_name}")
+    print(f"BASELINE SUMMARY -- {policy_name}")
     print(f"{'=' * 60}")
     for dt in drift_types:
         df_d = df[df['drift_type'] == dt]
         print(f"\n{dt.upper()} DRIFT:")
-        print(f"  Overall Accuracy   : {df_d['overall_accuracy'].mean():.4f} ± {df_d['overall_accuracy'].std():.4f}")
+        print(f"  Overall Accuracy   : {df_d['overall_accuracy'].mean():.4f} +/- {df_d['overall_accuracy'].std():.4f}")
         print(f"  Pre-Drift Accuracy : {df_d['pre_drift_accuracy'].mean():.4f}")
         print(f"  Post-Drift Accuracy: {df_d['post_drift_accuracy'].mean():.4f}")
         print(f"  Accuracy Drop      : {df_d['accuracy_drop'].mean():.4f}")
         print(f"  Total Retrains     : {df_d['total_retrains'].mean():.0f}")
 
 
-# ─────────────────────────────────────────────────────────────────────────────
-# Legacy wrapper – keeps `python plot_summary.py` working for drift-triggered
-# ─────────────────────────────────────────────────────────────────────────────
+# -----------------------------------------------------------------------------
+# Legacy wrapper -- keeps `python plot_summary.py` working for drift-triggered
+# -----------------------------------------------------------------------------
 def plot_summary():
     """Generate plots for the drift-triggered policy (backward-compatible)."""
     plot_summary_for_policy(
@@ -423,4 +423,4 @@ if __name__ == "__main__":
             else:
                 plot_summary_for_policy(csv_path, output_path, policy_name)
         except FileNotFoundError:
-            print(f"  ⚠ CSV not found: {csv_path} — skipping {policy_name}")
+            print(f"  [WARN] CSV not found: {csv_path} -- skipping {policy_name}")
