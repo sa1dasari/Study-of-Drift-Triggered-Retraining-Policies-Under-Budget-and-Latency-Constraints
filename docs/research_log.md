@@ -113,7 +113,7 @@
 
 ---
 
-## WEEK 9 — Real-World Datasets (Phase 4)
+## WEEK 9 — Real-World Datasets 
 
 1. Investigated the **LUFlow Network Intrusion Detection dataset** (Lancaster University, 28 day-CSVs, ~21 M rows, 11 flow-level features, binary: benign vs malicious) as a real-world validation dataset.
 2. Built `luflow_fitness_check.py` — a three-gate suitability check and designed three **pool-pair configurations** ("seeds") for the factorial experiment
@@ -129,7 +129,7 @@
 
 ---
 
-## WEEK 10 — LendingClub Real-World Dataset (Phase 5)
+## WEEK 10 — Real-World Datasets 
 
 1. Investigated the **LendingClub Loan Default dataset** (Kaggle, accepted loans 2007–2018, ~2.26 M rows raw, ~1.35 M after filtering to Fully Paid / Charged Off, 16 origination-time features → 34 after one-hot encoding) as a second real-world validation dataset.
 2. Built `lendingclub_loader.py` — origination-time-only feature selection (no post-origination leakage), `issue_d` parsing for year-cohort extraction, `emp_length` numeric conversion, one-hot encoding of `home_ownership` and `purpose`, and `get_year_cohort()` with shuffled sampling via `rng.choice`.
@@ -148,6 +148,13 @@
    - **LendingClub (3 seeds):** 252 runs (243 active + 9 baseline).
    - **Total:** 1,596 without-partial-fit runs. 
 12. Updated all documentation to reflect the dual experiment modes, new project structure, and updated results directory layout.
+
+---
+
+## WEEK 11 — Statistical Significance Testing (Phase 8)
+
+1. Designed and implemented `statistical_significance_tests.py` — a standalone analysis script that performs paired statistical significance tests across all policy pairs and drift types. 
+2. Updated all documentation (README, design, experiment scope, setup guide, results interpretation guide, cross-policy comparison guide) to reflect the statistical significance testing capability.
 
 ---
 

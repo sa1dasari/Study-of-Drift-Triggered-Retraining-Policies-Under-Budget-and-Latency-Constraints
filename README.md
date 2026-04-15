@@ -102,6 +102,7 @@ Experiments are conducted in two modes:
 │   ├── lendingclub_main.py          #   LendingClub experiments (with partial_fit)
 │   └── lendingclub_main_no_partial_fit.py # LendingClub experiments (NO partial_fit)
 ├── cross_policy_comparison.py       # Cross-policy head-to-head comparison (--dataset, --seeds)
+├── statistical_significance_tests.py # Paired statistical significance tests (t-test, Wilcoxon, Holm-Bonferroni)
 ├── luflow_fitness_check.py          # LUFlow dataset suitability gate checks
 ├── lendingclub_fitness_check.py     # LendingClub dataset suitability gate checks
 ├── plot_summary.py                  # Per-policy dashboard PNG generator
@@ -118,12 +119,15 @@ Experiments are conducted in two modes:
 │   ├── synthetic/                   #   csv/, plots/, per_run/
 │   ├── luflow/                      #   csv/, plots/, per_run/
 │   ├── lendingclub/                 #   csv/, plots/, per_run/
-│   └── cross_policy_comparison/     #   Head-to-head cross-policy outputs
+│   ├── cross_policy_comparison/     #   Head-to-head cross-policy outputs
+│   └── statistical_tests/           #   Paired significance test CSVs
+├── results_combined_statistical_tests/ # Combined significance overview across both modes
 └── results_without_retrain/         # Results from experiments WITHOUT partial_fit
     ├── synthetic/                   #   csv/, plots/, per_run/
     ├── luflow/                      #   csv/, plots/, per_run/
     ├── lendingclub/                 #   csv/, plots/, per_run/
-    └── cross_policy_comparison/     #   Head-to-head cross-policy outputs
+    ├── cross_policy_comparison/     #   Head-to-head cross-policy outputs
+    └── statistical_tests/           #   Paired significance test CSVs
 ```
 
 ---
@@ -194,3 +198,4 @@ All **summary CSVs and dashboard PNGs** are merged into the **`main`** branch. P
 | [research_log.md](docs/research_log.md) | Week-by-week experiment log                                                  |
 | [results_interpretation_guide.md](docs/results_interpretation_guide.md) | How to read the per-policy CSV and PNG files                                 |
 | [cross_policy_comparison_guide.md](docs/cross_policy_comparison_guide.md) | How to read the cross-policy comparison outputs                              |
+| [statistical_significance_guide.md](docs/statistical_significance_guide.md) | How to read the paired significance test outputs                             |

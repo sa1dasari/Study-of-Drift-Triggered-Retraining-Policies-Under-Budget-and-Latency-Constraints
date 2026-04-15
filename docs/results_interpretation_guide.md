@@ -151,3 +151,42 @@ The `cross_policy_comparison.py` script merges all per-policy summary CSVs and p
 
 For a full panel-by-panel interpretation guide, see **[cross_policy_comparison_guide.md](cross_policy_comparison_guide.md)**.
 
+---
+
+## 5. Statistical Significance Test Outputs
+
+The `statistical_significance_tests.py` script performs paired statistical significance tests across all policy pairs and drift types to determine whether observed performance differences are statistically and practically significant. Outputs are saved to `{results_dir}/statistical_tests/{dataset}/`.
+
+### Grand-level tests (primary evidence)
+
+The grand-level CSV (`grand_significance_{dataset}.csv`) contains one row per (policy_A, policy_B, drift_type) comparison. For each row:
+
+| Column | Description |
+|--------|-------------|
+| `policy_a`, `policy_b` | The two policies being compared |
+| `drift_type` | Drift type (abrupt, gradual, recurring) |
+| `n_pairs` | Number of paired observations (= number of seeds) |
+| `mean_a`, `mean_b` | Mean metric value for each policy (averaged over budget × latency grid) |
+| `mean_diff` | `mean_a − mean_b` — positive means policy A is better |
+| `ci_lower`, `ci_upper` | 95% confidence interval for the mean difference |
+| `cohens_d` | Cohen's d effect size (paired) |
+| `t_stat`, `t_pvalue` | Paired t-test statistic and raw p-value |
+| `t_pvalue_adj` | Holm-Bonferroni corrected p-value |
+| `sig_t_005` | `True` if Holm-corrected t-test p < 0.05 |
+| `wilcoxon_stat`, `wilcoxon_pvalue` | Wilcoxon signed-rank statistic and raw p-value |
+| `wilcoxon_pvalue_adj` | Holm-Bonferroni corrected Wilcoxon p-value |
+| `sig_w_005` | `True` if Holm-corrected Wilcoxon p < 0.05 |
+| `practical_sig` | `True` if |Cohen's d| > 0.5 AND |mean_diff| > 0.02 |
+
+### Cell-level tests (exploratory detail)
+
+The cell-level CSV (`cell_significance_{dataset}.csv`) adds `budget` and `total_latency` columns, producing one row per (policy_pair, drift, budget, latency) cell. Same statistical columns as the grand-level table.
+
+> **Warning:** Cell-level observations are NOT independent across cells — the same seed appears in every budget × latency combination. Use these for exploratory breakdown only, not as primary evidence.
+
+### Significance overview
+
+The `significance_overview.csv` (per result set) and `significance_overview_combined.csv` (cross-mode) concatenate all grand-level rows with `dataset` and `results_set` columns for easy filtering.
+
+For a full interpretation guide, see **[statistical_significance_guide.md](statistical_significance_guide.md)**.
+

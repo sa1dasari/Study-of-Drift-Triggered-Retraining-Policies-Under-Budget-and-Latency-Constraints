@@ -32,6 +32,7 @@ The same factorial grid was re-run using `ExperimentRunnerNoPartialFit`, which r
 - **Phase 7c — LUFlow (3 seeds):** 252 runs — 3 pool configs × 3 drift types × 3 budgets × 3 latencies × 3 policies + 9 baseline.
 - **Phase 7d — LendingClub (3 seeds):** 252 runs — 3 year-pair configs × 3 drift types × 3 budgets × 3 latencies × 3 policies + 9 baseline.
 - **Phase 7e — Cross-Policy Comparison (without partial_fit):** Analysis only — merges summary CSVs from Phases 7a–7d.
+- **Phase 8 — Statistical Significance Tests:** Analysis only — paired t-tests, Wilcoxon signed-rank tests, Holm-Bonferroni correction, Cohen's d, and practical significance flagging across all policy pairs, drift types, and datasets (both result sets). No new experiment runs.
 - **Combined total (without partial_fit): 1,596 experiment runs.**
 
 ### Grand total across both modes: **3,933 experiment runs.**
@@ -298,6 +299,43 @@ Results are written to `results_without_retrain/` (never overwriting `results_wi
 
 No new experiments. `cross_policy_comparison.py` reads summary CSVs from `results_without_retrain/` and produces head-to-head comparison outputs to `results_without_retrain/cross_policy_comparison/`.
 
+#### Phase 8 — Statistical Significance Tests (Analysis Only)
+
+No new experiments. `statistical_significance_tests.py` reads summary CSVs from both `results_with_retrain/` and `results_without_retrain/` and produces paired statistical significance test outputs.
+
+**Script:** `statistical_significance_tests.py`
+
+```bash
+python statistical_significance_tests.py                          # all datasets, both result sets
+python statistical_significance_tests.py --dataset synthetic      # synthetic only
+python statistical_significance_tests.py --dataset luflow         # LUFlow only
+python statistical_significance_tests.py --dataset lendingclub    # LendingClub only
+python statistical_significance_tests.py --seeds 3                # use 3-seed CSVs
+python statistical_significance_tests.py --metric overall_accuracy # change metric
+python statistical_significance_tests.py --results without_retrain # one result set only
+python statistical_significance_tests.py --results with_retrain    # one result set only
+```
+
+For every pair of policies and every drift type, the script:
+1. Pairs observations by `random_seed` (metric averaged over budget × latency grid per seed).
+2. Runs a **paired t-test** and a **Wilcoxon signed-rank test**.
+3. Computes **Cohen's d** (paired) and a **95% CI** for the mean difference.
+4. Applies **Holm-Bonferroni correction** across all tests within a dataset.
+5. Flags **statistical significance** (α = 0.05, Holm-corrected) and **practical significance** (|Cohen's d| > 0.5 AND |Δ mean| > 0.02).
+
+Two levels of output:
+- **Grand-level** — one row per (policy_A, policy_B, drift_type). Primary evidence.
+- **Cell-level** — one row per (policy_A, policy_B, drift_type, budget, latency). Exploratory only.
+
+#### Phase 8 Output Artifacts
+
+| Artifact | Path | Description |
+|---|---|---|
+| Grand-level CSV | `{results_dir}/statistical_tests/{dataset}/grand_significance_{dataset}.csv` | One row per (policy_pair, drift_type) with paired t-test, Wilcoxon, Cohen's d, Holm-corrected p-values |
+| Cell-level CSV | `{results_dir}/statistical_tests/{dataset}/cell_significance_{dataset}.csv` | One row per (policy_pair, drift_type, budget, latency) — exploratory detail |
+| Per-folder overview | `{results_dir}/statistical_tests/significance_overview.csv` | Grand-level rows concatenated across all datasets for that result set |
+| Combined overview | `results_combined_statistical_tests/significance_overview_combined.csv` | Grand-level rows across both result sets and all datasets |
+
 #### Combined Summary (Without partial_fit)
 
 | Phase | Runs | Description |
@@ -307,6 +345,7 @@ No new experiments. `cross_policy_comparison.py` reads summary CSVs from `result
 | Phase 7c — LUFlow (3 seeds) | 252 | 3 policies × 3 drifts × 3 budgets × 3 latencies × 3 pool configs + 9 baseline |
 | Phase 7d — LendingClub (3 seeds) | 252 | 3 policies × 3 drifts × 3 budgets × 3 latencies × 3 year-pair configs + 9 baseline |
 | Phase 7e — Cross-Policy Comparison | 0 | Analysis only |
+| Phase 8 — Statistical Significance Tests | 0 | Analysis only — paired tests across all policy pairs, drift types, datasets |
 | **Grand total (without partial_fit)** | **1,596** | |
 
 The **`main`** branch contains all merged results from both experiment modes.
