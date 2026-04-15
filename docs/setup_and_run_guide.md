@@ -69,6 +69,7 @@ python -c "import numpy, pandas, matplotlib, sklearn; print('All dependencies OK
 │   ├── lendingclub_main.py          ← LendingClub experiments (with partial_fit)
 │   └── lendingclub_main_no_partial_fit.py ← LendingClub experiments (NO partial_fit)
 ├── cross_policy_comparison.py       ← Cross-policy head-to-head comparison
+├── statistical_significance_tests.py ← Paired statistical significance tests
 ├── luflow_fitness_check.py          ← LUFlow dataset suitability gate checks
 ├── lendingclub_fitness_check.py     ← LendingClub dataset suitability gate checks
 ├── plot_summary.py                  ← Generates dashboard PNGs (called automatically by experiment scripts)
@@ -108,6 +109,8 @@ python -c "import numpy, pandas, matplotlib, sklearn; print('All dependencies OK
 │   │   ├── plots/
 │   │   └── per_run/
 │   └── cross_policy_comparison/     ← Head-to-head cross-policy outputs
+│       statistical_tests/           ← Paired significance test CSVs
+├── results_combined_statistical_tests/ ← Combined significance overview (both modes)
 └── results_without_retrain/         ← Results from experiments WITHOUT partial_fit
     ├── synthetic/
     │   ├── csv/
@@ -121,7 +124,8 @@ python -c "import numpy, pandas, matplotlib, sklearn; print('All dependencies OK
     │   ├── csv/
     │   ├── plots/
     │   └── per_run/
-    └── cross_policy_comparison/     ← Head-to-head cross-policy outputs
+    ├── cross_policy_comparison/     ← Head-to-head cross-policy outputs
+    └── statistical_tests/           ← Paired significance test CSVs
 ```
 
 ---
@@ -283,3 +287,58 @@ Where `{results_dir}` is `results_with_retrain` or `results_without_retrain`, an
 > **Note:** Only summary CSVs and dashboard PNGs are present on the `develop` and `main` branches. Per-run artifacts (JSON results, per-sample CSVs in `per_run/`) remain in their respective experiment branches only due to their large size.
 
 > **Tip:** For detailed interpretation of the CSV columns and dashboard panels, see [results_interpretation_guide.md](results_interpretation_guide.md). For the full list of experiment phases and run counts, see [experiment_scope.md](experiment_scope.md).
+
+---
+
+## 6. Statistical Significance Tests
+
+After running experiments (or using the pre-computed summary CSVs), run paired statistical significance tests to determine whether observed performance differences between policies are statistically and practically significant.
+
+### Running the tests
+
+```bash
+# All datasets, both result sets (default)
+python statistical_significance_tests.py
+
+# Single dataset
+python statistical_significance_tests.py --dataset synthetic
+python statistical_significance_tests.py --dataset luflow
+python statistical_significance_tests.py --dataset lendingclub
+
+# Change seed label or metric
+python statistical_significance_tests.py --seeds 3
+python statistical_significance_tests.py --metric overall_accuracy
+
+# Single result set
+python statistical_significance_tests.py --results without_retrain
+python statistical_significance_tests.py --results with_retrain
+```
+
+| Flag | Values | Default | Description |
+|---|---|---|---|
+| `--dataset` | `synthetic`, `luflow`, `lendingclub`, `all` | `all` | Which dataset to analyse |
+| `--seeds` | `3`, `10` | `10` | Seed-set label |
+| `--metric` | any numeric CSV column | `post_drift_accuracy` | Metric column to test |
+| `--results` | `without_retrain`, `with_retrain`, `all` | `all` | Which result set(s) to analyse |
+
+### What the script does
+
+For every pair of policies and every drift type, the script:
+
+1. Pairs observations by `random_seed` (metric averaged over budget × latency grid per seed).
+2. Runs a **paired t-test** and a **Wilcoxon signed-rank test**.
+3. Computes **Cohen's d** (paired) and a **95% CI** for the mean difference.
+4. Applies **Holm-Bonferroni correction** across all tests within a dataset.
+5. Flags **statistical significance** (Holm-corrected p < 0.05) and **practical significance** (|Cohen's d| > 0.5 AND |Δ mean| > 0.02).
+
+### Output files
+
+| File | Location | Description |
+|---|---|---|
+| `grand_significance_{dataset}.csv` | `{results_dir}/statistical_tests/{dataset}/` | Grand-level paired tests — primary evidence |
+| `cell_significance_{dataset}.csv` | `{results_dir}/statistical_tests/{dataset}/` | Cell-level paired tests — exploratory detail |
+| `significance_overview.csv` | `{results_dir}/statistical_tests/` | Grand-level rows concatenated across all datasets |
+| `significance_overview_combined.csv` | `results_combined_statistical_tests/` | Grand-level rows across both result sets |
+
+> **Tip:** For a detailed column-by-column guide, see [statistical_significance_guide.md](statistical_significance_guide.md).
+
