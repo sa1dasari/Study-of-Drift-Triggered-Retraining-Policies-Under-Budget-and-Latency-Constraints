@@ -53,6 +53,7 @@ experiments/                            (CLI entry points for all experiment run
 │       └── plot_results.py           Per-run timeline + rolling-accuracy plots
 │
 ├── cross_policy_comparison.py       – Cross-policy head-to-head comparison (reads from results_without_retrain/)
+├── statistical_significance_tests.py – Paired statistical significance tests (t-test, Wilcoxon, Holm-Bonferroni)
 ├── luflow_fitness_check.py          – LUFlow dataset suitability gate checks
 ├── lendingclub_fitness_check.py     – LendingClub dataset suitability gate checks
 ├── plot_summary.py                  – Cross-run 2×3 summary dashboard
@@ -61,13 +62,18 @@ experiments/                            (CLI entry points for all experiment run
 │       ├── synthetic/               csv/, plots/, per_run/
 │       ├── luflow/                  csv/, plots/, per_run/
 │       ├── lendingclub/             csv/, plots/, per_run/
-│       └── cross_policy_comparison/ Per-dataset & cross-dataset comparison outputs
+│       ├── cross_policy_comparison/ Per-dataset & cross-dataset comparison outputs
+│       └── statistical_tests/       Paired significance test CSVs per dataset + overview
+│
+├── results_combined_statistical_tests/ – Combined significance overview across both modes
+│       └── significance_overview_combined.csv
 │
 └── results_without_retrain/         – Results from experiments WITHOUT partial_fit (static model)
         ├── synthetic/               csv/, plots/, per_run/
         ├── luflow/                  csv/, plots/, per_run/
         ├── lendingclub/             csv/, plots/, per_run/
-        └── cross_policy_comparison/ Per-dataset & cross-dataset comparison outputs
+        ├── cross_policy_comparison/ Per-dataset & cross-dataset comparison outputs
+        └── statistical_tests/       Paired significance test CSVs per dataset + overview
 ```
 
 ---
@@ -224,6 +230,30 @@ results_without_retrain/       ← Experiments WITHOUT partial_fit (static model
     ├── fig_cross_dataset_summary.png
     └── table_cross_dataset_summary.csv
 ```
+
+---
+
+## Statistical Significance Testing (`statistical_significance_tests.py`)
+
+A standalone analysis script that performs paired statistical significance tests on the experiment results. It reads the same summary CSVs as `cross_policy_comparison.py` and produces formal hypothesis-test outputs.
+
+### Methodology
+
+| Step | Detail |
+|---|---|
+| **Pairing** | Observations are paired by `random_seed`. For all policy pairs (including two retraining policies), the metric is first averaged over the budget × latency grid per seed, yielding `n = #seeds` independent paired observations per comparison. |
+| **Paired t-test** | Two-sided paired t-test on the per-seed metric differences. |
+| **Wilcoxon signed-rank** | Non-parametric alternative; requires `n ≥ 5` non-zero differences. |
+| **Effect size** | Cohen's d (paired) = `mean(diff) / std(diff)`. |
+| **Confidence interval** | 95% CI for the mean difference using the t-distribution. |
+| **Multiple testing correction** | Holm-Bonferroni correction applied to all p-values within each dataset. |
+| **Statistical significance** | Holm-corrected p < 0.05. |
+| **Practical significance** | |Cohen's d| > 0.5 AND |Δ mean| > 0.02 (medium effect + 2 percentage-point difference). |
+
+### Two Levels of Analysis
+
+- **Grand-level** — one row per `(policy_A, policy_B, drift_type)`. Primary evidence for significance.
+- **Cell-level** — one row per `(policy_A, policy_B, drift_type, budget, total_latency)`. Exploratory detail only — the same seed appears in every cell, so observations are correlated across cells.
 
 ---
 
